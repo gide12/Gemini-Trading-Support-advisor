@@ -1,0 +1,5 @@
+{
+  "name": "Gemini Trading Support",
+  "description": "A comprehensive AI-powered trading support interface providing news analysis, technical indicators, and forecasts using Gemini 2.5 Flash with Google Search Grounding.",
+  "requestFramePermissions": []
+}
