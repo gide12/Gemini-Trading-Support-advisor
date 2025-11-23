@@ -19,6 +19,7 @@ const MODEL_TYPES = [
   "Transformer (Time-Series)",
   "LSTM-Attention Network",
   "Autoregressive Integrated Moving Average (ARIMA)",
+  "Linear-Exponential-Polynomial model",
   "Recurrent Neural Network (RNN)",
   "Convolutional Neural Network (CNN)",
   "Back Propagation Neural Network (BPNN)",
