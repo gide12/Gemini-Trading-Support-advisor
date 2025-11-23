@@ -22,18 +22,18 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading }) => {
         value={input}
         onChange={(e) => setInput(e.target.value)}
         placeholder="Enter stock ticker (e.g., GOOGL)"
-        className="flex-1 bg-[#1e293b] border border-slate-700 text-white rounded-md px-4 py-3 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all placeholder-slate-500"
+        className="flex-1 bg-[#1e293b] border border-purple-500/30 text-white rounded-md px-4 py-3 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-slate-500 shadow-sm"
         disabled={isLoading}
       />
       <button
         type="submit"
         disabled={isLoading || !input.trim()}
         className={`
-          px-6 py-3 rounded-md font-medium text-white flex items-center gap-2 transition-colors
+          px-6 py-3 rounded-md font-medium text-white flex items-center gap-2 transition-colors border border-transparent
           ${
             isLoading || !input.trim()
-              ? "bg-slate-700 cursor-not-allowed text-slate-400"
-              : "bg-cyan-600 hover:bg-cyan-500 shadow-lg shadow-cyan-900/20"
+              ? "bg-slate-800 cursor-not-allowed text-slate-500 border-slate-700"
+              : "bg-purple-600 hover:bg-purple-500 shadow-lg shadow-purple-900/40 border-purple-500"
           }
         `}
       >

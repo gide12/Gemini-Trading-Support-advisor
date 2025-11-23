@@ -11,16 +11,15 @@ const tabs: AnalysisType[] = [
   AnalysisType.YahooFinance,
   AnalysisType.Fundamental,
   AnalysisType.Technical,
+  AnalysisType.Clustering,
   AnalysisType.Chart,
-  AnalysisType.LSTM,
-  AnalysisType.LEP,
   AnalysisType.Quantum,
   AnalysisType.Ideas,
 ];
 
 const Tabs: React.FC<TabsProps> = ({ activeTab, onTabChange }) => {
   return (
-    <div className="w-full border-b border-slate-700 mb-6 overflow-x-auto">
+    <div className="w-full border-b border-purple-500/30 mb-6 overflow-x-auto">
       <nav className="flex space-x-1 min-w-max" aria-label="Tabs">
         {tabs.map((tab) => {
           const isActive = activeTab === tab;
@@ -32,8 +31,8 @@ const Tabs: React.FC<TabsProps> = ({ activeTab, onTabChange }) => {
                 whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors duration-200
                 ${
                   isActive
-                    ? "border-cyan-400 text-cyan-400"
-                    : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-600"
+                    ? "border-purple-500 text-purple-400"
+                    : "border-transparent text-slate-400 hover:text-slate-200 hover:border-purple-500/30"
                 }
               `}
             >

@@ -5,9 +5,8 @@ export enum AnalysisType {
   YahooFinance = "Yahoo Finance",
   Fundamental = "Fundamental Analysis",
   Technical = "Technical Analysis",
+  Clustering = "Cluster Analysis",
   Chart = "Chart",
-  LSTM = "LSTM Forecast",
-  LEP = "LEP Forecast",
   Quantum = "Quantum Forecast",
   Ideas = "Trade Ideas"
 }
@@ -25,6 +24,32 @@ export interface NewsItem {
   url: string;
 }
 
+export interface TechnicalAnalysisData {
+  currentPrice: number;
+  trend: "Bullish" | "Bearish" | "Neutral";
+  signalStrength: "Strong" | "Moderate" | "Weak";
+  indicators: {
+    rsi: string;
+    macd: string;
+    movingAverages: string;
+    bollingerBands: string;
+  };
+  supportResistance: {
+    support: number[];
+    resistance: number[];
+  };
+  summary: string;
+}
+
+export interface ClusteringData {
+  algorithm: string;
+  clusters: {
+    name: string;
+    description: string;
+    stocks: string[];
+  }[];
+}
+
 export interface AnalysisResult {
   ticker: string;
   type: AnalysisType;
@@ -39,6 +64,8 @@ export interface AnalysisResult {
     takeProfit: string;
   };
   financials?: Record<string, string>;
+  technicalAnalysis?: TechnicalAnalysisData;
+  clusteringData?: ClusteringData;
 }
 
 export interface TabItem {

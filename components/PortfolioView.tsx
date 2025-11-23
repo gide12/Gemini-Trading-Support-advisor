@@ -7,6 +7,29 @@ import {
     ComposedChart, Line, Scatter, ScatterChart, ZAxis, Cell
 } from 'recharts';
 
+const AssetIcon = ({ ticker }: { ticker: string }) => {
+    const [error, setError] = useState(false);
+  
+    if (error) {
+        return (
+            <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold text-purple-400 border border-purple-500/30 shadow-inner">
+                {ticker.substring(0, 2)}
+            </div>
+        );
+    }
+  
+    return (
+        <div className="w-8 h-8 rounded-full bg-white overflow-hidden flex items-center justify-center border border-purple-500/30 shadow-inner">
+            <img 
+                src={`https://financialmodelingprep.com/image-stock/${ticker}.png`} 
+                alt={ticker}
+                className="w-full h-full object-contain p-1"
+                onError={() => setError(true)}
+            />
+        </div>
+    );
+};
+
 const PortfolioView: React.FC = () => {
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [history, setHistory] = useState<{date: string, value: number}[]>([]);
@@ -102,7 +125,7 @@ const PortfolioView: React.FC = () => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">
       {/* Portfolio Overview Card */}
       <div className="lg:col-span-2 space-y-6">
-        <div className="bg-[#0f172a] rounded-xl border border-slate-800 p-6 shadow-lg">
+        <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
           <div className="flex justify-between items-end mb-6">
              <div>
                 <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-1">Total Portfolio Value</h2>
@@ -123,25 +146,25 @@ const PortfolioView: React.FC = () => {
                 <AreaChart data={history}>
                   <defs>
                     <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#22d3ee" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                   <XAxis dataKey="date" stroke="#64748b" tick={{fontSize: 10}} tickFormatter={(val) => val.slice(5)} />
                   <YAxis stroke="#64748b" tick={{fontSize: 10}} domain={['auto', 'auto']} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155' }}
-                    itemStyle={{ color: '#22d3ee' }}
+                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#7e22ce' }}
+                    itemStyle={{ color: '#a855f7' }}
                   />
-                  <Area type="monotone" dataKey="value" stroke="#22d3ee" fillOpacity={1} fill="url(#colorValue)" />
+                  <Area type="monotone" dataKey="value" stroke="#a855f7" fillOpacity={1} fill="url(#colorValue)" />
                 </AreaChart>
              </ResponsiveContainer>
           </div>
         </div>
 
         {/* Add/Edit Asset Form */}
-        <div className="bg-[#0f172a] rounded-xl border border-slate-800 p-6 shadow-lg">
+        <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
             <h3 className="text-lg font-bold text-white mb-4">Manage Portfolio</h3>
             <form onSubmit={handleAddOrUpdate} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 <div>
@@ -151,7 +174,7 @@ const PortfolioView: React.FC = () => {
                         value={tickerInput}
                         onChange={(e) => setTickerInput(e.target.value)}
                         placeholder="e.g. TSLA"
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-cyan-500 outline-none uppercase"
+                        className="w-full bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-purple-500 outline-none uppercase"
                     />
                 </div>
                 <div>
@@ -161,7 +184,7 @@ const PortfolioView: React.FC = () => {
                         value={sharesInput}
                         onChange={(e) => setSharesInput(e.target.value)}
                         placeholder="0"
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-cyan-500 outline-none"
+                        className="w-full bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-purple-500 outline-none"
                     />
                 </div>
                 <div>
@@ -171,13 +194,13 @@ const PortfolioView: React.FC = () => {
                         value={costInput}
                         onChange={(e) => setCostInput(e.target.value)}
                         placeholder="0.00"
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-cyan-500 outline-none"
+                        className="w-full bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-purple-500 outline-none"
                     />
                 </div>
                 <button 
                     type="submit"
                     disabled={!tickerInput || !sharesInput || !costInput}
-                    className="bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-medium py-2 px-4 rounded transition-colors"
+                    className="bg-purple-600 hover:bg-purple-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-medium py-2 px-4 rounded transition-colors"
                 >
                     Add / Update
                 </button>
@@ -185,15 +208,15 @@ const PortfolioView: React.FC = () => {
         </div>
 
         {/* Holdings Table */}
-        <div className="bg-[#0f172a] rounded-xl border border-slate-800 overflow-hidden shadow-lg">
-            <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+        <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 overflow-hidden shadow-lg">
+            <div className="p-6 border-b border-purple-500/20 flex justify-between items-center">
                 <h3 className="text-xl font-semibold text-white">Current Holdings</h3>
                 <button 
                     onClick={handleRunMPT}
                     disabled={mptLoading || holdings.length < 2}
                     className={`
                         text-xs font-bold uppercase tracking-wide px-4 py-2 rounded transition-all border
-                        ${(mptLoading || holdings.length < 2) ? 'bg-slate-800 text-slate-500 border-transparent cursor-not-allowed' : 'bg-cyan-900/20 text-cyan-400 border-cyan-600/50 hover:bg-cyan-900/40 hover:text-cyan-200'}
+                        ${(mptLoading || holdings.length < 2) ? 'bg-slate-800 text-slate-500 border-transparent cursor-not-allowed' : 'bg-purple-900/20 text-purple-400 border-purple-500/50 hover:bg-purple-900/40 hover:text-purple-200'}
                     `}
                 >
                     {mptLoading ? (
@@ -217,15 +240,20 @@ const PortfolioView: React.FC = () => {
                             <th className="p-4 text-center">Action</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800 text-sm">
+                    <tbody className="divide-y divide-purple-500/10 text-sm">
                         {holdings.length === 0 ? (
                              <tr>
                                 <td colSpan={7} className="p-8 text-center text-slate-500">No assets in portfolio. Add some above.</td>
                              </tr>
                         ) : (
                             holdings.map((holding) => (
-                                <tr key={holding.ticker} className="hover:bg-slate-800/50 transition-colors group">
-                                    <td className="p-4 font-medium text-white">{holding.ticker}</td>
+                                <tr key={holding.ticker} className="hover:bg-purple-900/10 transition-colors group">
+                                    <td className="p-4 font-medium text-white">
+                                        <div className="flex items-center gap-3">
+                                            <AssetIcon ticker={holding.ticker} />
+                                            <span>{holding.ticker}</span>
+                                        </div>
+                                    </td>
                                     <td className="p-4 text-right text-slate-300">{holding.quantity}</td>
                                     <td className="p-4 text-right text-slate-300">${holding.avgBuyPrice.toFixed(2)}</td>
                                     <td className="p-4 text-right text-slate-300">${holding.currentPrice.toFixed(2)}</td>
@@ -255,15 +283,15 @@ const PortfolioView: React.FC = () => {
         
         {/* MPT Analysis Result Section */}
         {mptResult && (
-            <div className="bg-[#0f172a] rounded-xl border border-cyan-500/30 shadow-lg overflow-hidden fade-in">
-                <div className="p-6 border-b border-slate-800 bg-cyan-900/10">
+            <div className="bg-[#0f172a] rounded-xl border border-purple-500/50 shadow-lg shadow-purple-900/20 overflow-hidden fade-in">
+                <div className="p-6 border-b border-purple-500/20 bg-purple-900/10">
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-cyan-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-purple-400">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
                         </svg>
                         Modern Portfolio Theory (MPT) Analysis
                     </h3>
-                    <p className="text-cyan-200/60 text-sm mt-1">Efficient Frontier Optimization & Sharpe Ratio Maximization</p>
+                    <p className="text-purple-200/60 text-sm mt-1">Efficient Frontier Optimization & Sharpe Ratio Maximization</p>
                 </div>
 
                 <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -271,7 +299,7 @@ const PortfolioView: React.FC = () => {
                     <div>
                         <h4 className="text-sm font-bold text-slate-400 uppercase mb-4">Performance Metrics</h4>
                         <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div className="bg-slate-800/50 p-3 rounded border border-slate-700">
+                            <div className="bg-slate-800/50 p-3 rounded border border-purple-500/20">
                                 <div className="text-xs text-slate-400 mb-1">Current Sharpe Ratio</div>
                                 <div className="text-xl font-mono font-bold text-white">{mptResult.currentMetrics.sharpeRatio.toFixed(2)}</div>
                                 <div className="text-xs text-slate-500">Ret: {mptResult.currentMetrics.expectedReturn}% | Vol: {mptResult.currentMetrics.volatility}%</div>
@@ -284,7 +312,7 @@ const PortfolioView: React.FC = () => {
                         </div>
 
                         <h4 className="text-sm font-bold text-slate-400 uppercase mb-4">Efficient Frontier</h4>
-                        <div className="h-48 w-full bg-slate-900/50 rounded-lg border border-slate-800 p-2">
+                        <div className="h-48 w-full bg-slate-900/50 rounded-lg border border-purple-500/20 p-2">
                              <ResponsiveContainer width="100%" height="100%">
                                 <ComposedChart>
                                     <XAxis dataKey="risk" type="number" name="Risk" domain={['auto', 'auto']} hide />
@@ -304,7 +332,7 @@ const PortfolioView: React.FC = () => {
                                         }}
                                     />
                                     {/* The Frontier Curve */}
-                                    <Line data={mptResult.efficientFrontier} type="monotone" dataKey="return" stroke="#475569" strokeWidth={2} dot={false} />
+                                    <Line data={mptResult.efficientFrontier} type="monotone" dataKey="return" stroke="#a855f7" strokeWidth={2} dot={false} />
                                     
                                     {/* Current Portfolio Point */}
                                     <Scatter name="Current" data={[{ risk: mptResult.currentMetrics.volatility, return: mptResult.currentMetrics.expectedReturn }]} fill="#f87171">
@@ -320,7 +348,7 @@ const PortfolioView: React.FC = () => {
                              <div className="flex justify-center gap-4 mt-2 text-[10px]">
                                 <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400"></span> Current</div>
                                 <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400"></span> Optimal</div>
-                                <div className="flex items-center gap-1"><span className="w-2 h-1 bg-slate-500"></span> Efficient Frontier</div>
+                                <div className="flex items-center gap-1"><span className="w-2 h-1 bg-purple-500"></span> Efficient Frontier</div>
                              </div>
                         </div>
                     </div>
@@ -330,7 +358,7 @@ const PortfolioView: React.FC = () => {
                         <h4 className="text-sm font-bold text-slate-400 uppercase mb-4">AI Rebalancing Plan</h4>
                         <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                             {mptResult.suggestions.map((sug, idx) => (
-                                <div key={idx} className="bg-slate-800/30 p-3 rounded border border-slate-700 flex gap-3 items-start">
+                                <div key={idx} className="bg-slate-800/30 p-3 rounded border border-purple-500/20 flex gap-3 items-start">
                                     <div className={`mt-1 p-1 rounded-full ${sug.action === 'Buy' ? 'bg-green-500/20 text-green-400' : sug.action === 'Sell' ? 'bg-red-500/20 text-red-400' : 'bg-slate-500/20 text-slate-400'}`}>
                                         {sug.action === 'Buy' && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>}
                                         {sug.action === 'Sell' && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>}
@@ -358,7 +386,7 @@ const PortfolioView: React.FC = () => {
 
       {/* Stats / Allocation */}
       <div className="space-y-6">
-         <div className="bg-[#0f172a] rounded-xl border border-slate-800 p-6 shadow-lg">
+         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
             <h3 className="text-lg font-semibold text-white mb-4">Allocation</h3>
             <div className="space-y-4">
                 {holdings.length === 0 && <p className="text-sm text-slate-500">No assets to display.</p>}
@@ -370,7 +398,7 @@ const PortfolioView: React.FC = () => {
                         </div>
                         <div className="w-full bg-slate-800 rounded-full h-2">
                             <div 
-                                className="bg-cyan-600 h-2 rounded-full transition-all duration-500" 
+                                className="bg-purple-600 h-2 rounded-full transition-all duration-500" 
                                 style={{ width: `${totalValue > 0 ? (h.marketValue / totalValue) * 100 : 0}%` }}
                             ></div>
                         </div>
@@ -380,11 +408,11 @@ const PortfolioView: React.FC = () => {
          </div>
 
          {mptResult && mptResult.correlationMatrix.length > 0 && (
-             <div className="bg-[#0f172a] rounded-xl border border-slate-800 p-6 shadow-lg">
+             <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
                 <h3 className="text-lg font-semibold text-white mb-4">Asset Correlations</h3>
                 <div className="text-xs space-y-2">
                     {mptResult.correlationMatrix.slice(0, 5).map((corr, i) => (
-                        <div key={i} className="flex justify-between items-center border-b border-slate-800 pb-1">
+                        <div key={i} className="flex justify-between items-center border-b border-purple-500/20 pb-1">
                             <span className="text-slate-400">{corr.ticker1} / {corr.ticker2}</span>
                             <span className={`font-mono font-bold ${corr.value > 0.7 ? 'text-red-400' : corr.value < 0.3 ? 'text-green-400' : 'text-yellow-400'}`}>
                                 {corr.value.toFixed(2)}
@@ -395,10 +423,10 @@ const PortfolioView: React.FC = () => {
              </div>
          )}
 
-         <div className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 rounded-xl border border-cyan-500/30 p-6">
-            <h3 className="text-lg font-semibold text-cyan-100 mb-2">Upgrade to Pro</h3>
-            <p className="text-cyan-200/70 text-sm mb-4">Get unlimited real-time data and advanced AI portfolio rebalancing suggestions.</p>
-            <button className="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-md font-medium text-sm transition-colors">
+         <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 rounded-xl border border-purple-500/30 p-6">
+            <h3 className="text-lg font-semibold text-purple-100 mb-2">Upgrade to Pro</h3>
+            <p className="text-purple-200/70 text-sm mb-4">Get unlimited real-time data and advanced AI portfolio rebalancing suggestions.</p>
+            <button className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-md font-medium text-sm transition-colors">
                 Learn More
             </button>
          </div>

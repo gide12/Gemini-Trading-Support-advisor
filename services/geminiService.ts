@@ -24,41 +24,16 @@ export const analyzeStock = async (
 ): Promise<AnalysisResult> => {
   
   try {
-    // 1. CHART DATA GENERATION (Mock/Simulation via AI)
+    // 1. CHART (TradingView Widget)
     if (analysisType === AnalysisType.Chart) {
-      const prompt = `Generate a JSON array representing a 30-day simulated price history for ${ticker} ending today. The trend should reflect current real-world market sentiment if known, otherwise random walk.
-      Schema: Array of objects with 'date' (YYYY-MM-DD) and 'price' (number).
-      Use a realistic price range for this stock.`;
-
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                date: { type: Type.STRING },
-                price: { type: Type.NUMBER },
-              },
-            },
-          },
-        },
-      });
-
-      const chartData = JSON.parse(response.text || "[]") as ChartDataPoint[];
-      
       return {
         ticker,
         type: analysisType,
-        content: `Simulated 30-day price action for ${ticker}.`,
-        chartData,
+        content: "Interactive TradingView Chart",
       };
     }
 
-    // 2. NEWS ANALYSIS (Uses Google Search Grounding)
+    // 2. NEWS ANALYSIS
     if (analysisType === AnalysisType.News) {
       const prompt = `Find the latest news for ${ticker} stock. 
       
@@ -84,9 +59,8 @@ export const analyzeStock = async (
         }))
         .filter((s: any) => s.url !== "#") || [];
 
-      // Basic sentiment extraction heuristic from text if not explicit
-      let sentiment: "Bullish" | "Neutral" | "Bearish" = "Neutral";
       const text = response.text || "";
+      let sentiment: "Bullish" | "Neutral" | "Bearish" = "Neutral";
       if (text.toLowerCase().includes("bullish") || text.toLowerCase().includes("positive")) sentiment = "Bullish";
       if (text.toLowerCase().includes("bearish") || text.toLowerCase().includes("negative")) sentiment = "Bearish";
 
@@ -99,54 +73,36 @@ export const analyzeStock = async (
       };
     }
 
-    // 3. YAHOO FINANCE DATA (Uses Google Search Grounding to simulate API access)
+    // 3. YAHOO FINANCE
     if (analysisType === AnalysisType.YahooFinance) {
       const prompt = `Retrieve the latest financial data for ${ticker} using Yahoo Finance as the primary source.
       
       Get these specific metrics:
       - Current Price
-      - Market Cap (Intraday)
+      - Market Cap
       - Trailing P/E
       - Forward P/E
-      - PEG Ratio (5 yr expected)
+      - PEG Ratio
       - Price/Sales
       - Price/Book
-      - Enterprise Value/Revenue
-      - Enterprise Value/EBITDA
+      - EV/Revenue
+      - EV/EBITDA
       
-      Also provide a summary of the "Company Profile".
-      
-      IMPORTANT: Return ONLY a raw JSON object (no markdown) with this structure:
+      IMPORTANT: Return ONLY a raw JSON object with this structure:
       {
         "summary": "string (company profile)",
-        "metrics": {
-           "Current Price": "string",
-           "Market Cap": "string",
-           "Trailing P/E": "string",
-           "Forward P/E": "string",
-           "PEG Ratio": "string",
-           "Price/Sales": "string",
-           "Price/Book": "string",
-           "EV/Revenue": "string",
-           "EV/EBITDA": "string"
-        }
+        "metrics": { "Current Price": "string", "Market Cap": "string", ... }
       }`;
 
       const response = await ai.models.generateContent({
         model: modelName,
         contents: prompt,
-        config: {
-          tools: [{ googleSearch: {} }],
-        },
+        config: { tools: [{ googleSearch: {} }] },
       });
 
       const json = cleanAndParseJSON(response.text || "{}");
-      
       const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
-        ?.map((chunk: any) => ({
-            title: chunk.web?.title || "Source",
-            url: chunk.web?.uri || "#"
-        }))
+        ?.map((chunk: any) => ({ title: chunk.web?.title || "Source", url: chunk.web?.uri || "#" }))
         .filter((s: any) => s.url !== "#") || [];
 
       return {
@@ -158,124 +114,152 @@ export const analyzeStock = async (
       };
     }
 
-    // 4. TRADE IDEAS (Structured Output)
+    // 4. TRADE IDEAS
     if (analysisType === AnalysisType.Ideas) {
       const prompt = `Based on current market conditions for ${ticker}, suggest a potential trade setup.
-      Provide an Entry Price, Stop Loss, and Take Profit.
-      Also provide a brief reasoning.
-      
-      IMPORTANT: Return ONLY a raw JSON object (no markdown formatting) with this structure:
-      {
-        "reasoning": "string",
-        "entry": "string",
-        "stopLoss": "string",
-        "takeProfit": "string",
-        "sentiment": "Bullish" | "Bearish" | "Neutral"
-      }`;
+      Return JSON: { "reasoning": "string", "entry": "string", "stopLoss": "string", "takeProfit": "string", "sentiment": "Bullish" | "Bearish" | "Neutral" }`;
 
       const response = await ai.models.generateContent({
         model: modelName,
         contents: prompt,
-        config: {
-          tools: [{ googleSearch: {} }], // Use search to get current price context
-        },
+        config: { tools: [{ googleSearch: {} }] },
       });
 
       const json = cleanAndParseJSON(response.text || "{}");
-      
       const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
-        ?.map((chunk: any) => ({
-            title: chunk.web?.title || "Source",
-            url: chunk.web?.uri || "#"
-        }))
+        ?.map((chunk: any) => ({ title: chunk.web?.title || "Source", url: chunk.web?.uri || "#" }))
         .filter((s: any) => s.url !== "#");
 
       return {
         ticker,
         type: analysisType,
         content: json.reasoning,
-        tradeSetup: {
-          entry: json.entry,
-          stopLoss: json.stopLoss,
-          takeProfit: json.takeProfit,
-        },
+        tradeSetup: { entry: json.entry, stopLoss: json.stopLoss, takeProfit: json.takeProfit },
         sentiment: json.sentiment,
         sources
       };
     }
 
-    // 5. TECHNICAL / FORECASTS / FUNDAMENTAL (General Text with Search)
+    // 5. TECHNICAL ANALYSIS (NEW STRUCTURED)
+    if (analysisType === AnalysisType.Technical) {
+        const prompt = `Act as a technical analyst. Analyze ${ticker} using indicators like RSI, MACD, and Moving Averages based on recent data found via search.
+        
+        IMPORTANT: Return ONLY a raw JSON object (no markdown) with this structure:
+        {
+          "currentPrice": number (raw number of current price),
+          "trend": "Bullish" | "Bearish" | "Neutral",
+          "signalStrength": "Strong" | "Moderate" | "Weak",
+          "indicators": {
+            "rsi": "string (e.g. '45 - Neutral')",
+            "macd": "string (e.g. 'Bullish Crossover')",
+            "movingAverages": "string (e.g. 'Price above 200 MA')",
+            "bollingerBands": "string (e.g. 'Squeeze')"
+          },
+          "supportResistance": {
+            "support": [number, number] (Array of 2-3 numbers for support levels),
+            "resistance": [number, number] (Array of 2-3 numbers for resistance levels)
+          },
+          "summary": "string (brief analysis text)"
+        }`;
+
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: { tools: [{ googleSearch: {} }] },
+        });
+
+        const json = cleanAndParseJSON(response.text || "{}");
+        const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
+            ?.map((chunk: any) => ({ title: chunk.web?.title || "Source", url: chunk.web?.uri || "#" }))
+            .filter((s: any) => s.url !== "#");
+
+        return {
+            ticker,
+            type: analysisType,
+            content: json.summary,
+            sentiment: json.trend,
+            technicalAnalysis: json,
+            sources
+        };
+    }
+
+    // 6. CLUSTERING (Structured JSON)
+    if (analysisType === AnalysisType.Clustering) {
+      const prompt = `Act as a Quantitative Analyst. Perform a market simulation using **${ticker}**.
+      
+      Task: Group major US stocks into clusters based on **Correlation + Hierarchical** logic (identifying structural market regimes).
+      
+      Requirements:
+      1. Generate 4 to 6 distinct clusters.
+      2. For each cluster, provide a short 2-3 word Name (e.g. "Semiconductor Momentum", "Defensive Value").
+      3. Provide a concise description (max 15 words) explaining the common factor.
+      4. List exactly 6-8 representative stock tickers per cluster.
+
+      Return ONLY raw JSON matching this structure:
+      {
+        "algorithm": "${ticker}",
+        "clusters": [
+          { "name": "string", "description": "string", "stocks": ["AAPL", "MSFT"] }
+        ]
+      }`;
+
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+             type: Type.OBJECT,
+             properties: {
+                 algorithm: { type: Type.STRING },
+                 clusters: {
+                     type: Type.ARRAY,
+                     items: {
+                         type: Type.OBJECT,
+                         properties: {
+                             name: { type: Type.STRING },
+                             description: { type: Type.STRING },
+                             stocks: { type: Type.ARRAY, items: { type: Type.STRING } }
+                         }
+                     }
+                 }
+             }
+          }
+        },
+      });
+
+      const json = JSON.parse(response.text || "{}");
+      return {
+        ticker,
+        type: analysisType,
+        content: "Market Clustering Complete",
+        clusteringData: json,
+      };
+    }
+
+    // 7. FUNDAMENTAL / QUANTUM (General Text)
     const promptMap: Record<string, string> = {
-      [AnalysisType.Fundamental]: `Act as a professional equity research analyst. Perform a deep-dive fundamental analysis on ${ticker}.
+      [AnalysisType.Fundamental]: `Act as a professional equity research analyst. Perform a deep-dive fundamental analysis on ${ticker}. Structure nicely with markdown headers.`,
       
-      Structure your response using the following Markdown headers. Use bullet points for clarity and keep paragraphs concise.
+      [AnalysisType.Quantum]: `Perform a theoretical Quantum Financial Forecast for ${ticker} using advanced quantum computing algorithms.
       
-      ### Business Overview & Economic Moat
-      * [Summary of business model]
-      * [Competitive advantages]
-      
-      ### Financial Performance
-      * [Revenue trends]
-      * [Profit Margins]
-      * [Cash Flow status]
-      
-      ### Valuation Analysis
-      * [P/E, P/S vs Peers]
-      * [Historical valuation comparison]
-      
-      ### Growth Drivers
-      * [Key future catalysts]
-      
-      ### Key Risks
-      * [Main downside risks]
-      
-      Use the latest available financial data and news found via search.`,
+      Analyze the asset using these three specific methodologies:
 
-      [AnalysisType.Technical]: `Act as a technical analyst. Analyze ${ticker} using indicators like RSI, MACD, and Moving Averages based on recent data found via search.
-      
-      Structure the response:
-      ### Trend Analysis
-      * [Current Trend Direction]
-      
-      ### Key Indicators
-      * **RSI**: [Value & Interpretation]
-      * **MACD**: [Signal]
-      * **Moving Averages**: [50-day vs 200-day status]
-      
-      ### Support & Resistance
-      * **Support Levels**: [Price 1, Price 2]
-      * **Resistance Levels**: [Price 1, Price 2]`,
+      ### 1. VARIATIONAL QUANTUM EIGENSOLVER analysis
+      - **Concept**: Use VQE to simulate the ground state energy of a Hamiltonian representing the asset's volatility surface.
+      - **Application**: Determine the "Ground State" price stability of ${ticker}. Is the asset currently in a high-energy (unstable) or low-energy (stable) state?
 
-      [AnalysisType.LSTM]: `Explain how an LSTM (Long Short-Term Memory) model might forecast ${ticker} based on its recent volatility and volume. 
-      
-      Structure the response:
-      ### Model Logic
-      [Explain the LSTM approach for this specific stock]
-      
-      ### Simulated Forecast Scenario
-      * **Predicted Trend**: [Up/Down/Flat]
-      * **Key Factors**: [Volume, Volatility, etc.]`,
+      ### 2. CONDITIONAL VALUE AT RISK—VARIATIONAL QUANTUM EIGENSOLVER (CVARVQE) analysis
+      - **Concept**: An adaptation of VQE that focuses on the tail of the loss distribution (Conditional Value at Risk).
+      - **Application**: Assess the specific tail risks (worst 5% outcomes) for ${ticker}. Provide a theoretical downside protection level.
 
-      [AnalysisType.LEP]: `Generate a Logical Event Probability (LEP) forecast for ${ticker}.
-      
-      Structure the response:
-      ### Upcoming Events
-      * [Event 1]: [Probability of Impact]
-      * [Event 2]: [Probability of Impact]
-      
-      ### Scenario Analysis
-      * **Bull Case**: [Description]
-      * **Bear Case**: [Description]`,
+      ### 3. QUANTUM APPROXIMATE OPTIMIZATION ALGORITHM
+      - **Concept**: A quantum algorithm for combinatorial optimization problems.
+      - **Application**: Model the optimal trading trajectory for ${ticker} as a max-cut problem on a graph of market correlations. What is the optimal action sequence?
 
-      [AnalysisType.Quantum]: `Simulate a 'Quantum Forecast' for ${ticker}. This is a theoretical exercise.
+      **Conclusion**: Synthesize these quantum indicators into a final theoretical forecast.
       
-      Structure the response:
-      ### Probabilistic Superposition
-      * [Outcome A]: [Probability %]
-      * [Outcome B]: [Probability %]
-      
-      ### Wave Function Collapse Trigger
-      [What event might crystallize the price action?]`,
+      Use Markdown formatting.`,
     };
 
     const prompt = promptMap[analysisType] || `Analyze ${ticker}`;
@@ -311,18 +295,22 @@ export const runBacktest = async (
   ticker: string,
   strategy: string,
   startDate: string,
-  endDate: string
+  endDate: string,
+  timeframe: string,
+  riskReward: string
 ): Promise<BacktestResult> => {
   const prompt = `Simulate a trading backtest for ${ticker} using the following strategy: "${strategy}".
   Date Range: ${startDate} to ${endDate}.
+  Timeframe: ${timeframe}.
+  Risk/Reward Ratio: ${riskReward}.
   
   Assume a starting capital of $10,000.
   
   Return a JSON object with:
-  1. metrics: { totalReturn (percentage string), maxDrawdown (percentage string), winRate (percentage string), tradesCount (number) }
-  2. equityCurve: Array of objects { date: 'YYYY-MM-DD', value: number } (at least 10 points spread across the range)
-  3. trades: Array of objects { date, type ('Buy' or 'Sell'), price, result (string like '+5%') } (limit to 5-10 key trades)
-  4. summary: A brief text summary of why the strategy performed this way.
+  1. metrics: { totalReturn, maxDrawdown, winRate, tradesCount }
+  2. equityCurve: Array of { date, value }
+  3. trades: Array of { date, type, price, result }
+  4. summary: Text summary.
   `;
 
   try {
@@ -382,25 +370,37 @@ export const runBacktest = async (
 export const runMLSimulation = async (
   ticker: string,
   modelType: string,
-  features: string[]
+  features: string[],
+  trainingPeriod: string,
+  predictionHorizon: string,
+  trainingEndDate: string
 ): Promise<MLPredictionResult> => {
+  let specificInstructions = "";
+  
+  if (modelType === "Reinforcement Learning (DCRL)") {
+    specificInstructions = `
+    Specific Architecture Instructions:
+    - Utilize Reinforcement Learning (RL) considering the price time-series as the environment.
+    - Represent environment states using the Directional Change (DC) event approach.
+    - Implement a dynamic DC threshold to optimize dynamic algorithmic trading decisions.
+    `;
+  }
+
   const prompt = `Act as an advanced AI Trading Model (${modelType}). 
+  ${specificInstructions}
   Analyze ${ticker} based on these features: ${features.join(', ')}.
   
-  Simulate a prediction for the next 7 days based on your internal knowledge of the asset's behavior.
+  Configuration Parameters:
+  - Training Dataset Period: ${trainingPeriod}
+  - Training End Date: ${trainingEndDate} (Do NOT assume data extends to present day unless this is today)
+  - Prediction Horizon: ${predictionHorizon}
   
-  Return JSON with:
-  1. currentPrice: number (estimate based on knowledge)
-  2. predictedPrice: number (target for 7 days from now)
-  3. confidenceScore: number (0-100)
-  4. volatility: string (e.g., "High", "Low")
-  5. featureImportance: Array of {feature: string, score: number} (sum to 100)
-  6. predictionPath: Array of 7 objects { date: 'YYYY-MM-DD', price: number, upper: number, lower: number } (confidence intervals)
-  7. explanation: Technical explanation of why the model predicts this.
+  Simulate a prediction for the specified horizon (${predictionHorizon}) starting AFTER the training end date.
+  
+  Return JSON matching the schema.
   `;
 
   try {
-    // NOTE: Removed googleSearch here to allow strict responseSchema usage for complex chart data
     const response = await ai.models.generateContent({
       model: modelName,
       contents: prompt,
@@ -458,19 +458,10 @@ export const getCommunityInsights = async (ticker: string): Promise<CommunityIns
     Analyze the community and institutional sentiment for ${ticker}.
     Simulate data sources including Reddit, Twitter, Professional Forums, and Institutional Filings (13F).
     
-    IMPORTANT: Return ONLY a raw JSON object (no markdown) with this structure:
-    {
-        "retailSentiment": number (0-100),
-        "institutionalSentiment": number (0-100),
-        "summary": "string",
-        "forumTopics": [{ "topic": "string", "sentiment": "Bullish"|"Bearish"|"Neutral", "mentions": number, "platform": "Reddit"|"Twitter"|"Discord" }],
-        "hedgeFundActivity": [{ "fundName": "string", "action": "Bought"|"Sold"|"Held", "shares": "string", "date": "YYYY-MM-DD" }],
-        "analystRatings": { "buy": number, "hold": number, "sell": number, "consensus": "string" }
-    }
+    Return raw JSON object with: retailSentiment, institutionalSentiment, summary, forumTopics, hedgeFundActivity, analystRatings.
   `;
 
   try {
-    // NOTE: Using googleSearch requires removing responseSchema/responseMimeType
     const response = await ai.models.generateContent({
       model: modelName,
       contents: prompt,
@@ -490,25 +481,16 @@ export const getCommunityInsights = async (ticker: string): Promise<CommunityIns
 };
 
 export const runMPTAnalysis = async (holdings: Holding[]): Promise<MPTAnalysisResult> => {
-  const portfolioSummary = holdings.map(h => `${h.ticker}: ${h.quantity} shares (~$${h.marketValue})`).join(", ");
+  const portfolioSummary = holdings.map(h => `${h.ticker}: ${h.quantity} shares`).join(", ");
   
   const prompt = `
-    Perform a Modern Portfolio Theory (MPT) analysis on the following portfolio:
-    ${portfolioSummary}
+    Perform a Modern Portfolio Theory (MPT) analysis on: ${portfolioSummary}.
+    1. Estimate current metrics.
+    2. Calculate Optimal portfolio.
+    3. Generate Efficient Frontier points.
+    4. Provide suggestions.
     
-    1. Estimate the current portfolio's expected annual return and volatility based on historical asset data.
-    2. Calculate an "Optimal" portfolio configuration (Maximize Sharpe Ratio) using these assets.
-    3. Generate 20 data points representing the "Efficient Frontier" curve (Risk on X, Return on Y).
-    4. Provide specific rebalancing suggestions to move from Current to Optimal.
-    
-    Return JSON matching this schema:
-    {
-      "currentMetrics": { "expectedReturn": number (%), "volatility": number (%), "sharpeRatio": number },
-      "optimalMetrics": { "expectedReturn": number (%), "volatility": number (%), "sharpeRatio": number },
-      "efficientFrontier": [{ "risk": number, "return": number }],
-      "suggestions": [{ "ticker": "string", "action": "Buy"|"Sell"|"Hold", "amount": "string", "reason": "string" }],
-      "correlationMatrix": [{ "ticker1": "string", "ticker2": "string", "value": number }]
-    }
+    Return JSON matching schema.
   `;
 
   try {

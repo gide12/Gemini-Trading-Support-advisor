@@ -24,7 +24,7 @@ const CommunityView: React.FC = () => {
 
   return (
     <div className="fade-in space-y-8">
-      <div className="bg-[#0f172a] rounded-xl border border-slate-800 p-6 shadow-lg">
+      <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-pink-500">
@@ -42,7 +42,7 @@ const CommunityView: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Sentiment Gauges */}
-          <div className="lg:col-span-3 bg-[#0f172a] rounded-xl border border-slate-800 p-6 flex flex-col md:flex-row gap-8 justify-around items-center">
+          <div className="lg:col-span-3 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 flex flex-col md:flex-row gap-8 justify-around items-center">
             <div className="text-center w-full">
                <h3 className="text-slate-400 uppercase text-xs font-bold mb-4">Retail Sentiment</h3>
                <div className="relative h-4 bg-slate-800 rounded-full w-full overflow-hidden">
@@ -77,11 +77,11 @@ const CommunityView: React.FC = () => {
           </div>
 
           {/* Discussion Feed */}
-          <div className="lg:col-span-2 bg-[#0f172a] rounded-xl border border-slate-800 p-6">
+          <div className="lg:col-span-2 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6">
              <h3 className="text-lg font-bold text-white mb-4">Trending Community Topics</h3>
              <div className="space-y-4">
                 {data.forumTopics.map((topic, i) => (
-                    <div key={i} className="bg-[#1e293b] p-4 rounded-lg border border-slate-700 flex justify-between items-center">
+                    <div key={i} className="bg-[#1e293b] p-4 rounded-lg border border-purple-500/20 flex justify-between items-center hover:border-purple-500/40 transition-colors">
                         <div className="flex items-start gap-3">
                              <div className={`p-2 rounded-full ${
                                 topic.platform === 'Reddit' ? 'bg-orange-900/30 text-orange-500' :
@@ -108,9 +108,9 @@ const CommunityView: React.FC = () => {
                 ))}
              </div>
              
-             <div className="mt-6 pt-4 border-t border-slate-800">
+             <div className="mt-6 pt-4 border-t border-purple-500/20">
                 <h3 className="text-sm font-bold text-slate-400 mb-2">Insight Summary</h3>
-                <p className="text-slate-300 text-sm leading-relaxed bg-slate-800/30 p-3 rounded italic">
+                <p className="text-slate-300 text-sm leading-relaxed bg-slate-800/30 p-3 rounded italic border border-purple-500/10">
                     {data.summary}
                 </p>
              </div>
@@ -119,14 +119,14 @@ const CommunityView: React.FC = () => {
           {/* Institutional Data */}
           <div className="space-y-6">
              {/* Hedge Fund Activity */}
-             <div className="bg-[#0f172a] rounded-xl border border-slate-800 p-6">
+             <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6">
                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                     <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
                     Hedge Fund Flows
                 </h3>
                 <div className="space-y-3">
                     {data.hedgeFundActivity.map((act, i) => (
-                        <div key={i} className="flex justify-between items-center text-sm border-b border-slate-800 pb-2 last:border-0">
+                        <div key={i} className="flex justify-between items-center text-sm border-b border-purple-500/10 pb-2 last:border-0">
                             <div>
                                 <div className="text-slate-200 font-medium">{act.fundName}</div>
                                 <div className="text-xs text-slate-500">{act.date}</div>
@@ -143,7 +143,7 @@ const CommunityView: React.FC = () => {
              </div>
 
             {/* Analyst Consensus */}
-            <div className="bg-[#0f172a] rounded-xl border border-slate-800 p-6">
+            <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6">
                 <h3 className="text-lg font-bold text-white mb-4">Wall St. Consensus</h3>
                 <div className="flex items-center justify-center mb-4">
                     <div className={`text-3xl font-bold ${

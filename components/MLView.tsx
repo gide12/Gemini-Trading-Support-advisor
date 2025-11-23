@@ -18,12 +18,19 @@ import {
 const MODEL_TYPES = [
   "Transformer (Time-Series)",
   "LSTM-Attention Network",
+  "Autoregressive Integrated Moving Average (ARIMA)",
+  "Recurrent Neural Network (RNN)",
+  "Convolutional Neural Network (CNN)",
   "Back Propagation Neural Network (BPNN)",
   "Extreme Learning Machine (ELM)",
   "Radial Basis Function Network (RBFNN)",
   "Fuzzy Logic System",
   "XGBoost Ensemble",
   "Random Forest Regressor",
+  "Logistic Regression",
+  "Reinforcement Learning (DCRL)",
+  "Rectified Linear Unit (ReLU)",
+  "Gaussian Naive Bayes",
 ];
 
 const FEATURE_OPTIONS = [
@@ -34,11 +41,36 @@ const FEATURE_OPTIONS = [
   "Macro Indicators (Interest Rates)",
   "Volatility Index (VIX)",
   "Fibonacci Retracement",
+  "ATR (Average True Range)",
+  "SMA (Simple Moving Average)",
+  "EMA (Exponential Moving Average)",
+  "Stochastic Oscillator",
+  "Bollinger Bands",
+  "ADX (Average Directional Index)",
+  "Money Flow Index (MFI)",
+  "On-Balance Volume (OBV)"
+];
+
+const TRAINING_PERIODS = [
+    "3 Months",
+    "6 Months",
+    "1 Year",
+    "3 Years",
+    "5 Years"
+];
+
+const PREDICTION_HORIZONS = [
+    "7 Days",
+    "2 Weeks",
+    "1 Month"
 ];
 
 const MLView: React.FC = () => {
   const [ticker, setTicker] = useState("NVDA");
   const [modelType, setModelType] = useState(MODEL_TYPES[0]);
+  const [trainingPeriod, setTrainingPeriod] = useState("1 Year");
+  const [trainingEndDate, setTrainingEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [predictionHorizon, setPredictionHorizon] = useState("7 Days");
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([
     "Price History (OHLC)",
     "Volume Profile",
@@ -54,6 +86,14 @@ const MLView: React.FC = () => {
     );
   };
 
+  const setAllFeatures = (select: boolean) => {
+      if (select) {
+          setSelectedFeatures(FEATURE_OPTIONS);
+      } else {
+          setSelectedFeatures([]);
+      }
+  };
+
   const startSimulation = async () => {
     if (!ticker.trim()) return;
     
@@ -64,8 +104,9 @@ const MLView: React.FC = () => {
     // Simulate Training Log Sequence
     const logMessages = [
       `Initializing ${modelType} architecture...`,
-      `Loading historical data for ${ticker}...`,
+      `Loading historical data for ${ticker} (${trainingPeriod} dataset ending ${trainingEndDate})...`,
       `Normalizing input vectors [${selectedFeatures.length} features]...`,
+      `Setting prediction horizon to ${predictionHorizon}...`,
       "Epoch 1/50: Loss 0.4322 - Val_Loss 0.4501",
       "Epoch 10/50: Loss 0.2105 - Val_Loss 0.2210",
       "Epoch 25/50: Loss 0.1502 - Val_Loss 0.1550",
@@ -80,7 +121,7 @@ const MLView: React.FC = () => {
     }
 
     try {
-      const data = await runMLSimulation(ticker, modelType, selectedFeatures);
+      const data = await runMLSimulation(ticker, modelType, selectedFeatures, trainingPeriod, predictionHorizon, trainingEndDate);
       setResult(data);
       setStatus('complete');
     } catch (error) {
@@ -93,7 +134,7 @@ const MLView: React.FC = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
       {/* CONFIG PANEL */}
-      <div className="lg:col-span-4 bg-[#0f172a] rounded-xl border border-slate-800 p-6 shadow-lg flex flex-col">
+      <div className="lg:col-span-4 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg flex flex-col">
         <div className="mb-6">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-purple-400">
@@ -118,7 +159,7 @@ const MLView: React.FC = () => {
 
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Architecture</label>
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-[140px] overflow-y-auto custom-scrollbar pr-2">
               {MODEL_TYPES.map((model) => (
                 <div
                   key={model}
@@ -126,7 +167,7 @@ const MLView: React.FC = () => {
                   className={`cursor-pointer px-3 py-2 rounded text-sm border transition-all ${
                     modelType === model
                       ? "bg-purple-900/30 border-purple-500 text-white"
-                      : "bg-[#1e293b] border-transparent text-slate-400 hover:border-slate-600"
+                      : "bg-[#1e293b] border-transparent text-slate-400 hover:border-purple-500/30"
                   }`}
                 >
                   {model}
@@ -135,17 +176,84 @@ const MLView: React.FC = () => {
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Training Dataset</label>
+                <div className="space-y-1">
+                    {TRAINING_PERIODS.map(period => (
+                        <button
+                            key={period}
+                            onClick={() => setTrainingPeriod(period)}
+                            className={`w-full text-left px-3 py-1.5 rounded text-xs border transition-all ${
+                                trainingPeriod === period
+                                ? "bg-purple-900/30 border-purple-500 text-white"
+                                : "bg-[#1e293b] border-transparent text-slate-400 hover:border-purple-500/20"
+                            }`}
+                        >
+                            {period}
+                        </button>
+                    ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Prediction Horizon</label>
+                <div className="space-y-1">
+                    {PREDICTION_HORIZONS.map(horizon => (
+                        <button
+                            key={horizon}
+                            onClick={() => setPredictionHorizon(horizon)}
+                            className={`w-full text-left px-3 py-1.5 rounded text-xs border transition-all ${
+                                predictionHorizon === horizon
+                                ? "bg-blue-900/30 border-blue-500 text-white"
+                                : "bg-[#1e293b] border-transparent text-slate-400 hover:border-blue-500/20"
+                            }`}
+                        >
+                            {horizon}
+                        </button>
+                    ))}
+                </div>
+              </div>
+          </div>
+          
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Input Features</label>
-            <div className="grid grid-cols-2 gap-2">
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Training End Date</label>
+            <input 
+                type="date"
+                value={trainingEndDate}
+                onChange={(e) => setTrainingEndDate(e.target.value)}
+                className="w-full bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-purple-500 outline-none text-sm"
+            />
+            <p className="text-[10px] text-slate-600 mt-1">Leave as today for latest data, or select past date for validation.</p>
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-2">
+                <label className="block text-xs font-bold text-slate-500 uppercase">Input Features</label>
+                <div className="flex gap-2">
+                    <button 
+                        onClick={() => setAllFeatures(true)}
+                        className="text-[10px] text-purple-400 hover:text-purple-300 transition-colors"
+                    >
+                        Select All
+                    </button>
+                    <span className="text-slate-600 text-[10px]">|</span>
+                    <button 
+                        onClick={() => setAllFeatures(false)}
+                        className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                        Deselect All
+                    </button>
+                </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 max-h-[140px] overflow-y-auto custom-scrollbar pr-2">
               {FEATURE_OPTIONS.map((feat) => (
                 <div
                   key={feat}
                   onClick={() => toggleFeature(feat)}
                   className={`cursor-pointer px-2 py-2 rounded text-xs border text-center transition-all ${
                     selectedFeatures.includes(feat)
-                      ? "bg-cyan-900/30 border-cyan-500 text-cyan-200"
-                      : "bg-[#1e293b] border-transparent text-slate-500 hover:text-slate-300"
+                      ? "bg-purple-900/20 border-purple-400 text-purple-200"
+                      : "bg-[#1e293b] border-transparent text-slate-500 hover:text-slate-300 hover:border-purple-500/20"
                   }`}
                 >
                   {feat}
@@ -161,7 +269,7 @@ const MLView: React.FC = () => {
           className={`w-full py-3 mt-6 rounded font-bold text-white transition-all flex justify-center items-center gap-2 ${
             status === 'training'
               ? "bg-slate-700 cursor-wait"
-              : "bg-gradient-to-r from-purple-600 to-cyan-600 hover:opacity-90 shadow-lg shadow-purple-900/20"
+              : "bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-90 shadow-lg shadow-purple-900/20"
           }`}
         >
           {status === 'training' ? "Training..." : "Train Model & Predict"}
@@ -172,7 +280,7 @@ const MLView: React.FC = () => {
       <div className="lg:col-span-8 flex flex-col gap-6">
         
         {/* Console / Status */}
-        <div className="bg-[#0f172a] rounded-xl border border-slate-800 p-4 min-h-[160px] font-mono text-xs overflow-y-auto flex flex-col-reverse">
+        <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-4 min-h-[160px] font-mono text-xs overflow-y-auto flex flex-col-reverse custom-scrollbar">
             {status === 'idle' && <div className="text-slate-500 italic">Ready to initialize model training...</div>}
             {logs.map((log, i) => (
                 <div key={i} className="text-green-400 border-l-2 border-green-900 pl-2 mb-1">
@@ -185,16 +293,16 @@ const MLView: React.FC = () => {
         {status === 'complete' && result && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 fade-in">
                 {/* Prediction Card */}
-                <div className="md:col-span-2 bg-[#131B2E] rounded-xl border border-slate-700 p-6 relative overflow-hidden">
+                <div className="md:col-span-2 bg-[#131B2E] rounded-xl border border-purple-500/30 p-6 relative overflow-hidden">
                      <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-48 h-48">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-48 h-48 text-purple-500">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
                         </svg>
                      </div>
                      
                      <div className="relative z-10 flex justify-between items-end">
                         <div>
-                            <div className="text-slate-400 text-sm uppercase tracking-widest mb-1">7-Day Forecast</div>
+                            <div className="text-slate-400 text-sm uppercase tracking-widest mb-1">{predictionHorizon} Forecast</div>
                             <div className="text-5xl font-bold text-white mb-2">${result.predictedPrice.toFixed(2)}</div>
                             <div className={`flex items-center gap-2 text-sm ${result.predictedPrice > result.currentPrice ? 'text-green-400' : 'text-red-400'}`}>
                                 <span>Current: ${result.currentPrice.toFixed(2)}</span>
@@ -229,7 +337,7 @@ const MLView: React.FC = () => {
                 </div>
 
                 {/* Feature Importance */}
-                <div className="bg-[#0f172a] rounded-xl border border-slate-800 p-6">
+                <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6">
                     <h3 className="text-sm font-bold text-slate-400 uppercase mb-4">Feature Importance</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
@@ -245,7 +353,7 @@ const MLView: React.FC = () => {
                 </div>
 
                 {/* Explanation */}
-                <div className="bg-[#0f172a] rounded-xl border border-slate-800 p-6">
+                <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6">
                     <h3 className="text-sm font-bold text-slate-400 uppercase mb-4">Model Logic</h3>
                     <p className="text-slate-300 text-sm leading-relaxed">
                         {result.explanation}
