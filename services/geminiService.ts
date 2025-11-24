@@ -183,7 +183,43 @@ export const analyzeStock = async (
         };
     }
 
-    // 6. CLUSTERING (Structured JSON)
+    // 6. FUNDAMENTAL ANALYSIS (Structured)
+    if (analysisType === AnalysisType.Fundamental) {
+        const prompt = `Act as a professional equity research analyst. Perform a deep-dive fundamental analysis on ${ticker} using the latest data.
+        
+        Determine if the stock is Overvalued, Undervalued, or Fair Value based on DCF models, P/E ratios, and growth prospects.
+        
+        IMPORTANT: Return ONLY a raw JSON object (no markdown code blocks) with this structure:
+        {
+          "valuationStatus": "Overvalued" | "Undervalued" | "Fair Value",
+          "intrinsicValue": "string (estimated fair price, e.g. '$150.00')",
+          "summary": "string (Comprehensive analysis using markdown headers ### and bullet points *)",
+          "sentiment": "Bullish" | "Bearish" | "Neutral"
+        }`;
+
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: { tools: [{ googleSearch: {} }] },
+        });
+
+        const json = cleanAndParseJSON(response.text || "{}");
+        const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
+            ?.map((chunk: any) => ({ title: chunk.web?.title || "Source", url: chunk.web?.uri || "#" }))
+            .filter((s: any) => s.url !== "#");
+
+        return {
+            ticker,
+            type: analysisType,
+            content: json.summary,
+            sentiment: json.sentiment,
+            valuationStatus: json.valuationStatus,
+            intrinsicValue: json.intrinsicValue,
+            sources
+        };
+    }
+
+    // 7. CLUSTERING (Structured JSON)
     if (analysisType === AnalysisType.Clustering) {
       const prompt = `Act as a Quantitative Analyst. Perform a market simulation using **${ticker}**.
       
@@ -237,10 +273,8 @@ export const analyzeStock = async (
       };
     }
 
-    // 7. FUNDAMENTAL / QUANTUM (General Text)
+    // 8. QUANTUM (General Text)
     const promptMap: Record<string, string> = {
-      [AnalysisType.Fundamental]: `Act as a professional equity research analyst. Perform a deep-dive fundamental analysis on ${ticker}. Structure nicely with markdown headers.`,
-      
       [AnalysisType.Quantum]: `Perform a theoretical Quantum Financial Forecast for ${ticker} using advanced quantum computing algorithms.
       
       Analyze the asset using these three specific methodologies:

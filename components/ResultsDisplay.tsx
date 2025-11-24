@@ -192,6 +192,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   const isYahoo = activeTab === AnalysisType.YahooFinance;
   const isTechnical = activeTab === AnalysisType.Technical;
   const isClustering = activeTab === AnalysisType.Clustering;
+  const isFundamental = activeTab === AnalysisType.Fundamental;
 
   return (
     <div className="bg-[#131B2E] rounded-lg border border-purple-500/30 p-6 shadow-xl min-h-[400px]">
@@ -229,6 +230,45 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
                       <div className="text-white font-mono font-medium">{value}</div>
                   </div>
               ))}
+          </div>
+      )}
+      
+      {/* FUNDAMENTAL ANALYSIS - VALUATION BADGE */}
+      {isFundamental && result.valuationStatus && (
+          <div className="mb-6 bg-slate-800/50 p-6 rounded-xl border border-purple-500/20 flex flex-col md:flex-row justify-between items-center gap-4 animate-fade-in">
+               <div>
+                   <h3 className="text-sm font-bold text-slate-400 uppercase mb-1">Valuation Verdict</h3>
+                   <div className="flex items-center gap-3">
+                       <span className={`text-3xl font-bold ${
+                           result.valuationStatus === 'Undervalued' ? 'text-green-400' : 
+                           result.valuationStatus === 'Overvalued' ? 'text-red-400' : 'text-yellow-400'
+                       }`}>
+                           {result.valuationStatus.toUpperCase()}
+                       </span>
+                       {result.intrinsicValue && (
+                           <span className="text-sm text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-700 font-mono">
+                               Intrinsic Value: {result.intrinsicValue}
+                           </span>
+                       )}
+                   </div>
+               </div>
+               
+               <div className="h-12 w-px bg-slate-700 hidden md:block"></div>
+               
+               <div className="flex gap-2">
+                   {/* Visual Gauge representation */}
+                    <div className="flex flex-col items-center">
+                        <div className="flex gap-1 mb-1">
+                            <div className={`w-12 h-3 rounded-l ${result.valuationStatus === 'Undervalued' ? 'bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.6)]' : 'bg-slate-700/50'}`}></div>
+                            <div className={`w-12 h-3 ${result.valuationStatus === 'Fair Value' ? 'bg-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.6)]' : 'bg-slate-700/50'}`}></div>
+                            <div className={`w-12 h-3 rounded-r ${result.valuationStatus === 'Overvalued' ? 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)]' : 'bg-slate-700/50'}`}></div>
+                        </div>
+                        <div className="flex justify-between w-full px-1">
+                            <span className={`text-[9px] uppercase font-bold ${result.valuationStatus === 'Undervalued' ? 'text-green-500' : 'text-slate-600'}`}>Cheap</span>
+                            <span className={`text-[9px] uppercase font-bold ${result.valuationStatus === 'Overvalued' ? 'text-red-500' : 'text-slate-600'}`}>Expensive</span>
+                        </div>
+                    </div>
+               </div>
           </div>
       )}
 

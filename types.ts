@@ -66,6 +66,8 @@ export interface AnalysisResult {
   financials?: Record<string, string>;
   technicalAnalysis?: TechnicalAnalysisData;
   clusteringData?: ClusteringData;
+  valuationStatus?: "Overvalued" | "Undervalued" | "Fair Value";
+  intrinsicValue?: string;
 }
 
 export interface TabItem {
