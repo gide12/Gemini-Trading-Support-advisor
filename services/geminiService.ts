@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult } from "../types";
+import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, InstitutionalDeepDiveResult } from "../types";
 
 // Initialize the client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -490,9 +490,15 @@ export const runMLSimulation = async (
 export const getCommunityInsights = async (ticker: string): Promise<CommunityInsightResult> => {
   const prompt = `
     Analyze the community and institutional sentiment for ${ticker}.
-    Simulate data sources including Reddit, Twitter, Professional Forums, and Institutional Filings (13F).
     
-    Return raw JSON object with: retailSentiment, institutionalSentiment, summary, forumTopics, hedgeFundActivity, analystRatings.
+    1. Simulate data sources including Reddit, Twitter, Professional Forums, and Institutional Filings (13F).
+    2. Identify major **University Endowments** (e.g. Harvard, Yale, Stanford) or **Academic Research Institutes** that hold this stock or have published research relevant to it (or its sector).
+    3. **MANDATORY**: For every single Institution, Hedge Fund, or University listed, you MUST provide a valid URL to their website (e.g., "https://www.harvard.edu" or "https://www.bridgewater.com"). If you cannot find a deep link, provide the main homepage.
+    
+    Return raw JSON object with: 
+    - retailSentiment (number 0-100), institutionalSentiment (number 0-100), summary, forumTopics, analystRatings
+    - hedgeFundActivity: [{fundName, action, shares, date, url}] (Ensure url is filled)
+    - academicMentions: [{institution, type, relevance, url}] (Ensure url is filled, create realistic entries if needed)
   `;
 
   try {
@@ -505,13 +511,75 @@ export const getCommunityInsights = async (ticker: string): Promise<CommunityIns
     });
 
     const data = cleanAndParseJSON(response.text || "{}");
-    return { ...data, ticker } as CommunityInsightResult;
+    
+    // Polyfill to prevent React Error #31 (Objects are not valid as a React child)
+    // Sometimes AI returns detailed objects (breakdowns) instead of flat numbers.
+    let rSentiment = data.retailSentiment;
+    if (typeof rSentiment === 'object' && rSentiment !== null) {
+        // Extract the overall value if it comes as an object
+        rSentiment = rSentiment.overall || rSentiment.score || rSentiment.value || 50;
+    }
+    
+    let iSentiment = data.institutionalSentiment;
+    if (typeof iSentiment === 'object' && iSentiment !== null) {
+        iSentiment = iSentiment.overall || iSentiment.score || iSentiment.value || 50;
+    }
+
+    return { 
+        ...data, 
+        retailSentiment: Number(rSentiment) || 0,
+        institutionalSentiment: Number(iSentiment) || 0,
+        ticker 
+    } as CommunityInsightResult;
 
   } catch (error: any) {
     console.error("Community Insight Error:", error);
     const msg = error.message || error.toString();
     throw new Error(`Community Insight Failed: ${msg}`);
   }
+};
+
+export const runInstitutionalDeepDive = async (ticker: string, institution: string): Promise<InstitutionalDeepDiveResult> => {
+    const prompt = `
+    Conduct a deep dive investigation into **${institution}**'s relationship with the stock **${ticker}**.
+    
+    Find out:
+    1. Do they currently hold shares? (Check recent 13F filings or news).
+    2. Have they released any specific research reports, notes, or public comments on ${ticker}?
+    3. What is their general sentiment? (Bullish/Bearish/Neutral).
+    4. Find the MOST RELEVANT URL for this institution's research page or specific report.
+    
+    Return JSON matching schema.
+    `;
+    
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: {
+                tools: [{ googleSearch: {} }],
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        institution: { type: Type.STRING },
+                        ticker: { type: Type.STRING },
+                        relationship: { type: Type.STRING, enum: ["Holder", "Observer", "Bearish", "Unknown"] },
+                        summary: { type: Type.STRING },
+                        sourceUrl: { type: Type.STRING },
+                        lastFilingDate: { type: Type.STRING }
+                    }
+                }
+            }
+        });
+
+        const data = JSON.parse(response.text || "{}");
+        return data as InstitutionalDeepDiveResult;
+
+    } catch (error: any) {
+        console.error("Institutional Deep Dive Error:", error);
+        throw new Error(`Deep Dive Failed: ${error.message}`);
+    }
 };
 
 export const runMPTAnalysis = async (holdings: Holding[]): Promise<MPTAnalysisResult> => {

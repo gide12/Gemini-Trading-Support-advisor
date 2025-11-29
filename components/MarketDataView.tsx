@@ -50,6 +50,7 @@ const MarketDataView: React.FC = () => {
   };
 
   const formatVolume = (vol: number) => {
+    if (!vol) return "0";
     if (vol >= 1_000_000_000) return `${(vol / 1_000_000_000).toFixed(2)}B`;
     if (vol >= 1_000_000) return `${(vol / 1_000_000).toFixed(1)}M`;
     return (vol / 1000).toFixed(1) + 'K';
@@ -114,30 +115,30 @@ const MarketDataView: React.FC = () => {
                         </div>
                         <div className={`text-right ${ticker.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                              <div className="text-lg font-mono font-semibold">
-                                {ticker.change >= 0 ? '+' : ''}{ticker.changePercent.toFixed(2)}%
+                                {ticker.change >= 0 ? '+' : ''}{(ticker.changePercent || 0).toFixed(2)}%
                              </div>
                              <div className="text-xs">
-                                {ticker.change >= 0 ? '+' : ''}{ticker.change.toFixed(2)}
+                                {ticker.change >= 0 ? '+' : ''}{(ticker.change || 0).toFixed(2)}
                              </div>
                         </div>
                     </div>
                     
                     <div className="text-2xl font-bold text-white mb-4">
-                        ${ticker.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ${(ticker.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-xs text-slate-400 border-t border-purple-500/20 pt-3">
                         <div>
                             <div className="uppercase text-[10px] mb-1 text-slate-500">Bid</div>
-                            <div className="font-mono text-slate-200">{ticker.bid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                            <div className="font-mono text-slate-200">{(ticker.bid || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                         </div>
                         <div className="text-right">
                             <div className="uppercase text-[10px] mb-1 text-slate-500">Ask</div>
-                            <div className="font-mono text-slate-200">{ticker.ask.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                            <div className="font-mono text-slate-200">{(ticker.ask || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                         </div>
                          <div className="col-span-2 mt-2 pt-2 border-t border-purple-500/10 flex justify-between items-center">
                             <div className="uppercase text-[10px] text-slate-500">Volume</div>
-                            <div className="font-mono text-slate-200">{formatVolume(ticker.volume)}</div>
+                            <div className="font-mono text-slate-200">{formatVolume(ticker.volume || 0)}</div>
                         </div>
                     </div>
                 </div>

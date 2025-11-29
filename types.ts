@@ -142,6 +142,13 @@ export interface CommunityInsightResult {
     action: "Bought" | "Sold" | "Held";
     shares: string;
     date: string;
+    url?: string; // URL to fund site or 13F
+  }[];
+  academicMentions: {
+    institution: string; // University Name
+    type: "University" | "Research Lab" | "Campus";
+    relevance: string; // e.g. "Endowment Holder", "Published Research"
+    url: string;
   }[];
   analystRatings: {
     buy: number;
@@ -149,6 +156,15 @@ export interface CommunityInsightResult {
     sell: number;
     consensus: string;
   };
+}
+
+export interface InstitutionalDeepDiveResult {
+    institution: string;
+    ticker: string;
+    relationship: "Holder" | "Observer" | "Bearish" | "Unknown";
+    summary: string;
+    sourceUrl: string;
+    lastFilingDate?: string;
 }
 
 // --- Modern Portfolio Theory Types ---

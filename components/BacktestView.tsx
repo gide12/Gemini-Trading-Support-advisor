@@ -156,7 +156,7 @@ const BacktestView: React.FC = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="bg-slate-800/50 p-4 rounded border border-purple-500/20">
                             <div className="text-slate-400 text-xs uppercase">Total Return</div>
-                            <div className={`text-2xl font-mono font-bold ${result.metrics.totalReturn.includes('-') ? 'text-red-400' : 'text-green-400'}`}>{result.metrics.totalReturn}</div>
+                            <div className={`text-2xl font-mono font-bold ${(result.metrics.totalReturn || "").includes('-') ? 'text-red-400' : 'text-green-400'}`}>{result.metrics.totalReturn}</div>
                         </div>
                         <div className="bg-slate-800/50 p-4 rounded border border-purple-500/20">
                             <div className="text-slate-400 text-xs uppercase">Win Rate</div>

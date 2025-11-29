@@ -53,7 +53,7 @@ const PortfolioView: React.FC = () => {
 
   // Recalculate totals whenever holdings change
   useEffect(() => {
-    const val = holdings.reduce((acc, curr) => acc + curr.marketValue, 0);
+    const val = holdings.reduce((acc, curr) => acc + (curr.marketValue || 0), 0);
     const cost = holdings.reduce((acc, curr) => acc + (curr.quantity * curr.avgBuyPrice), 0);
     setTotalValue(val);
     setTotalPL(val - cost);
@@ -130,12 +130,12 @@ const PortfolioView: React.FC = () => {
              <div>
                 <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-1">Total Portfolio Value</h2>
                 <div className="text-4xl font-bold text-white">
-                    ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ${(totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
              </div>
              <div className={`text-right ${totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                 <div className="text-2xl font-semibold">
-                    {totalPL >= 0 ? '+' : ''}{totalPL.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    {totalPL >= 0 ? '+' : ''}{(totalPL || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </div>
                 <div className="text-sm font-medium opacity-80">All Time P/L</div>
              </div>
@@ -257,7 +257,7 @@ const PortfolioView: React.FC = () => {
                                     <td className="p-4 text-right text-slate-300">{holding.quantity}</td>
                                     <td className="p-4 text-right text-slate-300">${holding.avgBuyPrice.toFixed(2)}</td>
                                     <td className="p-4 text-right text-slate-300">${holding.currentPrice.toFixed(2)}</td>
-                                    <td className="p-4 text-right font-medium text-white">${holding.marketValue.toLocaleString()}</td>
+                                    <td className="p-4 text-right font-medium text-white">${(holding.marketValue || 0).toLocaleString()}</td>
                                     <td className={`p-4 text-right font-medium ${holding.pl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                         {holding.pl >= 0 ? '+' : ''}{holding.pl.toFixed(2)} <br/>
                                         <span className="text-xs opacity-75">({holding.plPercent.toFixed(2)}%)</span>
