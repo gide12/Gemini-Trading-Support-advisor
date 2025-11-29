@@ -6,6 +6,7 @@ import MarketDataView from "./components/MarketDataView";
 import BacktestView from "./components/BacktestView";
 import MLView from "./components/MLView";
 import CommunityView from "./components/CommunityView";
+import FuzzyLogicView from "./components/FuzzyLogicView";
 import { View } from "./types";
 
 const App: React.FC = () => {
@@ -22,6 +23,7 @@ const App: React.FC = () => {
         {currentView === 'ml' && <MLView />}
         {currentView === 'backtest' && <BacktestView />}
         {currentView === 'community' && <CommunityView />}
+        {currentView === 'fuzzy' && <FuzzyLogicView />}
       </main>
       
       <footer className="py-6 text-center text-slate-600 text-sm border-t border-slate-900 mt-auto">

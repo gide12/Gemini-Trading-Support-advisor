@@ -104,11 +104,43 @@ const AnalysisView: React.FC = () => {
             )}
 
             {error && (
-                <div className="bg-red-900/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg mb-6 flex items-center gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                    </svg>
-                    {error}
+                <div className="bg-red-900/10 border border-red-500/30 rounded-xl p-4 mb-6 animate-fade-in relative shadow-lg shadow-red-900/5">
+                    <button 
+                        onClick={() => setError(null)}
+                        className="absolute top-4 right-4 text-red-400 hover:text-red-200 transition-colors p-1 hover:bg-red-900/20 rounded-full"
+                        aria-label="Dismiss error"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                    <div className="flex items-start gap-4">
+                        <div className="p-3 bg-red-500/10 rounded-full shrink-0 border border-red-500/20">
+                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-red-400">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                            </svg>
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-red-400 font-bold mb-1 flex items-center gap-2">
+                                Analysis Failed
+                                <span className="text-[10px] bg-red-900/40 text-red-300 px-2 py-0.5 rounded border border-red-500/20 font-mono">CODE: {activeTab.toUpperCase().replace(/\s/g, '_')}</span>
+                            </h3>
+                            <p className="text-red-200/90 text-sm mb-4 leading-relaxed font-medium">
+                                {error}
+                            </p>
+                            
+                            <div className="bg-red-950/20 rounded-lg p-3 border border-red-500/10">
+                                <h4 className="text-red-400/80 text-[10px] font-bold uppercase mb-2 tracking-wide">Troubleshooting Steps</h4>
+                                <ul className="list-disc pl-4 text-xs text-red-200/60 space-y-1.5">
+                                    <li>Verify the ticker symbol <strong>{currentTicker || "you entered"}</strong> is correct and listed on major exchanges.</li>
+                                    <li>The AI model may be temporarily overloaded or the API quota exceeded. Please wait 10-15 seconds and try again.</li>
+                                    <li>Check your internet connection. Data fetching requires an active network.</li>
+                                    {activeTab === AnalysisType.Fundamental && <li>Fundamental data might be missing for smaller cap stocks or crypto assets.</li>}
+                                    {activeTab === AnalysisType.Clustering && <li>Market clustering requires broad market data access which might fail intermittently.</li>}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 

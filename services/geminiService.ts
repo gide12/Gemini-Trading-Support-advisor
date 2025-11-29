@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding } from "../types";
+import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult } from "../types";
 
 // Initialize the client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -595,5 +595,105 @@ export const runMPTAnalysis = async (holdings: Holding[]): Promise<MPTAnalysisRe
     console.error("MPT Analysis Error:", error);
     const msg = error.message || error.toString();
     throw new Error(`MPT Analysis Failed: ${msg}`);
+  }
+};
+
+export const runFuzzyAnalysis = async (ticker: string): Promise<FuzzyAnalysisResult> => {
+  const prompt = `
+  Act as a Quantitative Analyst using a Fuzzy-Logic Correlation Engine. Analyze ${ticker}.
+  
+  Evaluate the following inputs to determine fuzzy membership levels:
+  
+  1. Market Maker (MM) Behavior:
+     - Spread Compression Level (MMs narrow spread -> stabilizing/bullish)
+     - Order Book Imbalance (MM replenishing bid side)
+     - Iceberg Order Probability
+     - Quoted Depth Volatility
+     
+  2. Whale Activity:
+     - Block Trade Frequency
+     - Sweep Orders
+     - Flow Toxicity (VPIN)
+     - Large-Ticket Hidden Orders
+     
+  3. Accumulation / Institutional:
+     - Persistent Net Buying Pressure
+     - Dark Pool Volume Ratio
+     - Volume/Volatility Divergence
+     - SAR Clusters
+     
+  Return JSON matching the schema with specific fuzzy scores (e.g., "Weak", "Strong", "Extreme") and metric descriptions.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+             marketMakerBehavior: {
+                 type: Type.OBJECT,
+                 properties: {
+                     score: { type: Type.STRING, enum: ["Weak", "Moderate", "Strong"] },
+                     value: { type: Type.NUMBER },
+                     metrics: {
+                         type: Type.OBJECT,
+                         properties: {
+                             spreadCompression: { type: Type.STRING },
+                             orderBookImbalance: { type: Type.STRING },
+                             icebergProbability: { type: Type.STRING },
+                             depthVolatility: { type: Type.STRING }
+                         }
+                     }
+                 }
+             },
+             whaleActivity: {
+                 type: Type.OBJECT,
+                 properties: {
+                     score: { type: Type.STRING, enum: ["None", "Low", "Elevated", "Extreme"] },
+                     value: { type: Type.NUMBER },
+                     metrics: {
+                         type: Type.OBJECT,
+                         properties: {
+                             blockTradeFreq: { type: Type.STRING },
+                             sweepOrders: { type: Type.STRING },
+                             flowToxicity: { type: Type.STRING },
+                             hiddenOrders: { type: Type.STRING }
+                         }
+                     }
+                 }
+             },
+             accumulation: {
+                 type: Type.OBJECT,
+                 properties: {
+                     score: { type: Type.STRING, enum: ["Low", "Medium", "High", "Very High"] },
+                     value: { type: Type.NUMBER },
+                     metrics: {
+                         type: Type.OBJECT,
+                         properties: {
+                             netBuyingPressure: { type: Type.STRING },
+                             darkPoolRatio: { type: Type.STRING },
+                             volVolatilityDiv: { type: Type.STRING },
+                             sarClusters: { type: Type.STRING }
+                         }
+                     }
+                 }
+             },
+             summary: { type: Type.STRING }
+          }
+        }
+      }
+    });
+
+    const data = JSON.parse(response.text || "{}");
+    return { ...data, ticker } as FuzzyAnalysisResult;
+
+  } catch (error: any) {
+    console.error("Fuzzy Analysis Error:", error);
+    const msg = error.message || error.toString();
+    throw new Error(`Fuzzy Analysis Failed: ${msg}`);
   }
 };

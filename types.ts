@@ -11,7 +11,7 @@ export enum AnalysisType {
   Ideas = "Trade Ideas"
 }
 
-export type View = 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community';
+export type View = 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy';
 
 export interface ChartDataPoint {
   date: string;
@@ -172,4 +172,41 @@ export interface MPTAnalysisResult {
     reason: string;
   }[];
   correlationMatrix: { ticker1: string; ticker2: string; value: number }[];
+}
+
+// --- Fuzzy Logic Types ---
+
+export interface FuzzyAnalysisResult {
+  ticker: string;
+  marketMakerBehavior: {
+    score: string; // Weak, Moderate, Strong
+    value: number; // 0-100
+    metrics: {
+        spreadCompression: string;
+        orderBookImbalance: string;
+        icebergProbability: string;
+        depthVolatility: string;
+    };
+  };
+  whaleActivity: {
+    score: string; // None, Low, Elevated, Extreme
+    value: number; // 0-100
+    metrics: {
+        blockTradeFreq: string;
+        sweepOrders: string;
+        flowToxicity: string;
+        hiddenOrders: string;
+    };
+  };
+  accumulation: {
+    score: string; // Low, Medium, High, Very High
+    value: number; // 0-100
+    metrics: {
+        netBuyingPressure: string;
+        darkPoolRatio: string;
+        volVolatilityDiv: string;
+        sarClusters: string;
+    };
+  };
+  summary: string;
 }

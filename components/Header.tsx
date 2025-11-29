@@ -14,6 +14,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange }) => {
     { id: 'ml', label: 'ML Models' },
     { id: 'backtest', label: 'Backtester' },
     { id: 'community', label: 'Community' },
+    { id: 'fuzzy', label: 'Fuzzy Engine' },
   ];
 
   return (
