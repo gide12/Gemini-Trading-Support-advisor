@@ -7,6 +7,7 @@ import BacktestView from "./components/BacktestView";
 import MLView from "./components/MLView";
 import CommunityView from "./components/CommunityView";
 import FuzzyLogicView from "./components/FuzzyLogicView";
+import ChartView from "./components/ChartView";
 import { View } from "./types";
 
 const App: React.FC = () => {
@@ -20,6 +21,7 @@ const App: React.FC = () => {
         {currentView === 'analysis' && <AnalysisView />}
         {currentView === 'portfolio' && <PortfolioView />}
         {currentView === 'market' && <MarketDataView />}
+        {currentView === 'chart' && <ChartView />}
         {currentView === 'ml' && <MLView />}
         {currentView === 'backtest' && <BacktestView />}
         {currentView === 'community' && <CommunityView />}

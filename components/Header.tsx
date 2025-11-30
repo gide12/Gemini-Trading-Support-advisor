@@ -8,9 +8,10 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ currentView, onViewChange }) => {
   const navItems: { id: View; label: string }[] = [
-    { id: 'analysis', label: 'AI Analysis' },
+    { id: 'analysis', label: 'Advanced Analysis' },
     { id: 'portfolio', label: 'Portfolio' },
     { id: 'market', label: 'Live Market' },
+    { id: 'chart', label: 'Technical Chart' },
     { id: 'ml', label: 'ML Models' },
     { id: 'backtest', label: 'Backtester' },
     { id: 'community', label: 'Community' },

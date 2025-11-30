@@ -83,7 +83,17 @@ const AnalysisView: React.FC = () => {
         >
             <div className="relative z-10">
                 <div className="mb-6">
-                    <h2 className="text-2xl font-bold text-white drop-shadow-md">AI Market Analysis</h2>
+                    <h2 className="text-2xl font-bold text-white drop-shadow-md flex items-center gap-3">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-purple-500 blur-lg opacity-20 rounded-full"></div>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-9 h-9 text-purple-400 bg-slate-900/80 rounded-lg p-1.5 border border-purple-500/50 backdrop-blur-sm shadow-[0_0_15px_rgba(168,85,247,0.3)] relative z-10">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12h1.5m-1.5 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25z" />
+                                <circle cx="12" cy="12" r="3" className="fill-purple-500/20 stroke-none" />
+                                <circle cx="12" cy="12" r="1" className="fill-purple-300 stroke-none" />
+                            </svg>
+                        </div>
+                        Advanced Market Analysis
+                    </h2>
                     <p className="text-slate-300 text-sm drop-shadow-md">Deep dive into any asset with Gemini 2.5 Flash models.</p>
                 </div>
 

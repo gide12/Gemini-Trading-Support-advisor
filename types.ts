@@ -11,7 +11,7 @@ export enum AnalysisType {
   Ideas = "Trade Ideas"
 }
 
-export type View = 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy';
+export type View = 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart';
 
 export interface ChartDataPoint {
   date: string;
@@ -68,6 +68,11 @@ export interface AnalysisResult {
   clusteringData?: ClusteringData;
   valuationStatus?: "Overvalued" | "Undervalued" | "Fair Value";
   intrinsicValue?: string;
+  mpidData?: {
+    code: string;
+    name: string;
+    type: string; // e.g. "Market Maker", "ECN"
+  }[];
 }
 
 export interface TabItem {
@@ -225,6 +230,62 @@ export interface FuzzyAnalysisResult {
     };
   };
   summary: string;
+}
+
+export interface FFFCMGNNResult {
+    ticker: string;
+    famaFrenchFactors: {
+        marketRisk: { value: number; description: string }; // MKT
+        sizeFactorSMB: { value: number; description: string }; // SMB
+        valueFactorHML: { value: number; description: string }; // HML
+    };
+    fuzzyCognitiveMap: {
+        nodes: {
+            id: string;
+            name: string;
+            activationLevel: number; // 0-1
+            influenceType: "Positive" | "Negative" | "Neutral";
+        }[];
+        primaryCausalLink: string; // Text description of main link
+    };
+    gnnPrediction: {
+        signal: "Strong Buy" | "Buy" | "Hold" | "Sell" | "Strong Sell";
+        confidence: number;
+        graphEmbedding: number[]; // Array for visualization
+        predictedTrend: string;
+    };
+    summary: string;
+}
+
+export interface OptimalFuzzyDesignResult {
+    ticker: string;
+    gfsAnalysis: { 
+        score: number; // 0-100 (Optimization Level)
+        optimizationStatus: string; 
+        description: string;
+    };
+    nfsAnalysis: { 
+        networkDepth: number; 
+        learningRate: number; 
+        description: string;
+    };
+    hfsAnalysis: { 
+        layers: number; 
+        reducedRules: number; 
+        description: string;
+    };
+    efsAnalysis: { 
+        evolvingStatus: "Expanding" | "Pruning" | "Stable"; 
+        adaptationSpeed: number; // 0-100
+        description: string;
+    };
+    mfsAnalysis: { 
+        accuracy: number; // 0-100
+        interpretability: number; // 0-100
+        paretoOptimal: boolean; 
+        description: string;
+    };
+    summary: string;
 }
 
 // --- ETF Types ---

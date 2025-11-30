@@ -195,7 +195,13 @@ const PortfolioView: React.FC = () => {
         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
           <div className="flex justify-between items-end mb-6">
              <div>
-                <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-1">Total Portfolio Value</h2>
+                <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-2">
+                    {/* Euro Icon */}
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-green-400">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 7.756a4.5 4.5 0 100 8.488M7.5 10.5h5.25m-5.25 3h5.25M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Total Portfolio Value
+                </h2>
                 <div className="text-4xl font-bold text-white">
                     ${(totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
@@ -490,7 +496,7 @@ const PortfolioView: React.FC = () => {
                         onClick={() => fetchEtfProfile(t)}
                         className="group flex items-center gap-1 cursor-pointer text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-2 py-1 rounded transition-colors"
                     >
-                        {t}
+                        <span className="font-mono font-bold">{t}</span>
                         <button 
                             onClick={(e) => {
                                 e.stopPropagation();

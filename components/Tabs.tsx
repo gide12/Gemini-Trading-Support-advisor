@@ -12,7 +12,6 @@ const tabs: AnalysisType[] = [
   AnalysisType.Fundamental,
   AnalysisType.Technical,
   AnalysisType.Clustering,
-  AnalysisType.Chart,
   AnalysisType.Quantum,
   AnalysisType.Ideas,
 ];

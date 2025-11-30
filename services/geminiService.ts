@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, InstitutionalDeepDiveResult, ETFProfile } from "../types";
+import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, InstitutionalDeepDiveResult, ETFProfile, OptimalFuzzyDesignResult } from "../types";
 
 // Initialize the client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -9,7 +9,21 @@ const modelName = "gemini-2.5-flash";
 // Helper to clean markdown JSON
 const cleanAndParseJSON = (text: string) => {
   try {
-    // Remove markdown code blocks if present
+    // 1. Try to extract JSON between ```json and ``` markers using Regex
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (jsonMatch && jsonMatch[1]) {
+      return JSON.parse(jsonMatch[1]);
+    }
+
+    // 2. Try to extract JSON between first { and last } (ignores preamble/postscript text)
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        const candidate = text.substring(firstBrace, lastBrace + 1);
+        return JSON.parse(candidate);
+    }
+
+    // 3. Fallback: standard cleanup (remove markdown code blocks if regex didn't catch them)
     const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleaned);
   } catch (e) {
@@ -187,14 +201,21 @@ export const analyzeStock = async (
     if (analysisType === AnalysisType.Fundamental) {
         const prompt = `Act as a professional equity research analyst. Perform a deep-dive fundamental analysis on ${ticker} using the latest data.
         
-        Determine if the stock is Overvalued, Undervalued, or Fair Value based on DCF models, P/E ratios, and growth prospects.
+        1. Determine if the stock is Overvalued, Undervalued, or Fair Value based on DCF models, P/E ratios, and growth prospects.
+        2. Identify the major **Market Participants (MPIDs)** typical for this stock (e.g., Major Market Makers like CDEL, NITE, or ECNs like ARCA, NSDQ). Simulate a Level 2 perspective.
         
         IMPORTANT: Return ONLY a raw JSON object (no markdown code blocks) with this structure:
         {
           "valuationStatus": "Overvalued" | "Undervalued" | "Fair Value",
           "intrinsicValue": "string (estimated fair price, e.g. '$150.00')",
           "summary": "string (Comprehensive analysis using markdown headers ### and bullet points *)",
-          "sentiment": "Bullish" | "Bearish" | "Neutral"
+          "sentiment": "Bullish" | "Bearish" | "Neutral",
+          "mpidData": [
+             { "code": "CDEL", "name": "Citadel Securities", "type": "Market Maker" },
+             { "code": "NITE", "name": "Virtu Financial", "type": "Market Maker" },
+             { "code": "ARCA", "name": "NYSE Arca", "type": "ECN" }
+             // Include 4-6 major relevant participants
+          ]
         }`;
 
         const response = await ai.models.generateContent({
@@ -215,6 +236,7 @@ export const analyzeStock = async (
             sentiment: json.sentiment,
             valuationStatus: json.valuationStatus,
             intrinsicValue: json.intrinsicValue,
+            mpidData: json.mpidData,
             sources
         };
     }
@@ -424,6 +446,45 @@ export const runMLSimulation = async (
     - Employ a sparsified cross-attention mechanism to identify dynamic lead-lag relationships between assets.
     - Detect pair-specific lag values to align features from leading stocks to predict the lagger stock.
     - Focus on extracting predictive signals from systematic price movement precedence.
+    `;
+  } else if (modelType === "Hybrid ES-DRNN (Exp. Smoothing + Dilated RNN)") {
+    specificInstructions = `
+    Specific Architecture Instructions:
+    - Utilize a Hybrid Exponential Smoothing and Dilated Recurrent Neural Network Model (ES-DRNN).
+    - Use Exponential Smoothing to capture the main trend and seasonality of the time series.
+    - Use the Dilated RNN to capture the non-linear dependencies and long-term residual patterns.
+    - Combine both outputs for a robust short-term load/price forecast.
+    `;
+  } else if (modelType === "Multivariate Time Series Forecasting (GRU)") {
+    specificInstructions = `
+    Specific Architecture Instructions:
+    - Implement Gated Recurrent Unit (GRU) neural networks.
+    - Process multiple input variables simultaneously (multivariate) to capture interdependencies.
+    - Focus on efficient learning of temporal dependencies in financial time series data.
+    `;
+  } else if (modelType === "Multi-Granularity Spatio-Temporal Correlation Networks") {
+    specificInstructions = `
+    Specific Architecture Instructions:
+    - Implement Multi-Granularity Spatio-Temporal Correlation Networks.
+    - Capture temporal dependencies across multiple time scales (e.g., short-term vs long-term).
+    - Model spatial correlations between the target asset and related market entities (sector peers, indices) using graph-based or attention mechanisms.
+    - Focus on extracting diverse feature representations from different granularities to improve trend prediction accuracy.
+    `;
+  } else if (modelType === "Twin Delayed Deep Deterministic Policy Gradient (TD3)") {
+    specificInstructions = `
+    Specific Architecture Instructions:
+    - Implement Twin Delayed Deep Deterministic Policy Gradient (TD3), an advanced reinforcement learning algorithm.
+    - Utilize double Q-learning and delayed policy updates to reduce overestimation bias common in DDPG.
+    - Treat the trading problem as a continuous control task (e.g. determining optimal portfolio weights or trade sizing).
+    - Focus on learning a robust policy for continuous action spaces in the market environment.
+    `;
+  } else if (modelType === "Multi-Granularity Deep Spatio-Temporal Correlation Framework (MDSTCF)") {
+    specificInstructions = `
+    Specific Architecture Instructions:
+    - Implement the Multi-Granularity Deep Spatio-Temporal Correlation Framework (MDSTCF).
+    - Capture complex spatio-temporal dependencies at multiple granularities (e.g., fine-grained and coarse-grained time intervals).
+    - Utilize deep learning layers to model the correlation between spatial (inter-asset) and temporal (historical) features.
+    - Focus on hierarchical feature extraction to improve long-term trend prediction.
     `;
   }
 
@@ -768,6 +829,158 @@ export const runFuzzyAnalysis = async (ticker: string): Promise<FuzzyAnalysisRes
     const msg = error.message || error.toString();
     throw new Error(`Fuzzy Analysis Failed: ${msg}`);
   }
+};
+
+export const runFFFCMGNNAnalysis = async (ticker: string): Promise<FFFCMGNNResult> => {
+    const prompt = `
+    Analyze ${ticker} using the "A Fama-French Inspired Fuzzy Cognitive Map Combined with Graph Neural Network for Stock Prediction" model.
+
+    Tasks:
+    1. Evaluate Fama-French 3 Factors: Market Risk (MKT), Size Factor (SMB), Value Factor (HML) relative to this stock.
+    2. Construct a simulated Fuzzy Cognitive Map (FCM) showing causal links between macro/micro concepts and the stock price.
+    3. Simulate a Graph Neural Network (GNN) forward pass on this map to predict the trend.
+
+    Return JSON:
+    - famaFrenchFactors: { marketRisk: {value (0-1), description}, sizeFactorSMB: {value, description}, valueFactorHML: {value, description} }
+    - fuzzyCognitiveMap: { nodes: [{id, name, activationLevel (0-1), influenceType ("Positive"|"Negative")}], primaryCausalLink }
+    - gnnPrediction: { signal ("Buy"|"Sell" etc), confidence (0-100), graphEmbedding (array of 5 numbers for visualization), predictedTrend }
+    - summary
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        famaFrenchFactors: {
+                            type: Type.OBJECT,
+                            properties: {
+                                marketRisk: { type: Type.OBJECT, properties: { value: {type: Type.NUMBER}, description: {type: Type.STRING} } },
+                                sizeFactorSMB: { type: Type.OBJECT, properties: { value: {type: Type.NUMBER}, description: {type: Type.STRING} } },
+                                valueFactorHML: { type: Type.OBJECT, properties: { value: {type: Type.NUMBER}, description: {type: Type.STRING} } }
+                            }
+                        },
+                        fuzzyCognitiveMap: {
+                            type: Type.OBJECT,
+                            properties: {
+                                nodes: {
+                                    type: Type.ARRAY,
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            id: { type: Type.STRING },
+                                            name: { type: Type.STRING },
+                                            activationLevel: { type: Type.NUMBER },
+                                            influenceType: { type: Type.STRING, enum: ["Positive", "Negative", "Neutral"] }
+                                        }
+                                    }
+                                },
+                                primaryCausalLink: { type: Type.STRING }
+                            }
+                        },
+                        gnnPrediction: {
+                            type: Type.OBJECT,
+                            properties: {
+                                signal: { type: Type.STRING, enum: ["Strong Buy", "Buy", "Hold", "Sell", "Strong Sell"] },
+                                confidence: { type: Type.NUMBER },
+                                graphEmbedding: { type: Type.ARRAY, items: { type: Type.NUMBER } },
+                                predictedTrend: { type: Type.STRING }
+                            }
+                        },
+                        summary: { type: Type.STRING }
+                    }
+                }
+            }
+        });
+
+        const data = JSON.parse(response.text || "{}");
+        return { ...data, ticker } as FFFCMGNNResult;
+    } catch (error: any) {
+        console.error("FF-FCM-GNN Analysis Error:", error);
+        throw new Error(`Advanced Model Analysis Failed: ${error.message}`);
+    }
+};
+
+export const runOptimalFuzzyDesignAnalysis = async (ticker: string): Promise<OptimalFuzzyDesignResult> => {
+    const prompt = `
+    Analyze ${ticker} using the "Optimal Design of Type-1 and Type-2 Fuzzy Inference Systems (FIS)" framework.
+    
+    Evaluate the stock using these 5 computational frameworks:
+    1. Genetic-Fuzzy Systems (GFS): Optimize rule bases using genetic algorithms.
+    2. Neuro-Fuzzy Systems (NFS): Hybrid learning using neural networks to tune membership functions.
+    3. Hierarchical Fuzzy Systems (HFS): Reduce dimensionality by arranging logic in hierarchical layers.
+    4. Evolving Fuzzy Systems (EFS): Adapt rule structures online in real-time.
+    5. Multiobjective Fuzzy Systems (MFS): Trade-off between accuracy and interpretability (Pareto optimization).
+    
+    Return JSON matching the schema with specific optimization metrics for each.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        gfsAnalysis: {
+                            type: Type.OBJECT,
+                            properties: {
+                                score: { type: Type.NUMBER },
+                                optimizationStatus: { type: Type.STRING },
+                                description: { type: Type.STRING }
+                            }
+                        },
+                        nfsAnalysis: {
+                            type: Type.OBJECT,
+                            properties: {
+                                networkDepth: { type: Type.NUMBER },
+                                learningRate: { type: Type.NUMBER },
+                                description: { type: Type.STRING }
+                            }
+                        },
+                        hfsAnalysis: {
+                            type: Type.OBJECT,
+                            properties: {
+                                layers: { type: Type.NUMBER },
+                                reducedRules: { type: Type.NUMBER },
+                                description: { type: Type.STRING }
+                            }
+                        },
+                        efsAnalysis: {
+                            type: Type.OBJECT,
+                            properties: {
+                                evolvingStatus: { type: Type.STRING, enum: ["Expanding", "Pruning", "Stable"] },
+                                adaptationSpeed: { type: Type.NUMBER },
+                                description: { type: Type.STRING }
+                            }
+                        },
+                        mfsAnalysis: {
+                            type: Type.OBJECT,
+                            properties: {
+                                accuracy: { type: Type.NUMBER },
+                                interpretability: { type: Type.NUMBER },
+                                paretoOptimal: { type: Type.BOOLEAN },
+                                description: { type: Type.STRING }
+                            }
+                        },
+                        summary: { type: Type.STRING }
+                    }
+                }
+            }
+        });
+
+        const data = JSON.parse(response.text || "{}");
+        return { ...data, ticker } as OptimalFuzzyDesignResult;
+    } catch (error: any) {
+        console.error("Optimal FIS Analysis Error:", error);
+        throw new Error(`Optimal FIS Analysis Failed: ${error.message}`);
+    }
 };
 
 export const getETFProfile = async (ticker: string): Promise<ETFProfile> => {

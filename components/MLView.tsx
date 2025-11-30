@@ -19,7 +19,9 @@ const MODEL_TYPES = [
   "Transformer (Time-Series)",
   "LSTM-Attention Network",
   "Autoregressive Integrated Moving Average (ARIMA)",
+  "Hybrid ES-DRNN (Exp. Smoothing + Dilated RNN)",
   "Linear-Exponential-Polynomial model",
+  "Multivariate Time Series Forecasting (GRU)",
   "Recurrent Neural Network (RNN)",
   "Convolutional Neural Network (CNN)",
   "Back Propagation Neural Network (BPNN)",
@@ -30,7 +32,10 @@ const MODEL_TYPES = [
   "Random Forest Regressor",
   "Logistic Regression",
   "Reinforcement Learning (DCRL)",
+  "Twin Delayed Deep Deterministic Policy Gradient (TD3)",
   "DeltaLag (Deep Learning)",
+  "Multi-Granularity Spatio-Temporal Correlation Networks",
+  "Multi-Granularity Deep Spatio-Temporal Correlation Framework (MDSTCF)",
   "Rectified Linear Unit (ReLU)",
   "Gaussian Naive Bayes",
 ];
@@ -50,7 +55,8 @@ const FEATURE_OPTIONS = [
   "Bollinger Bands",
   "ADX (Average Directional Index)",
   "Money Flow Index (MFI)",
-  "On-Balance Volume (OBV)"
+  "On-Balance Volume (OBV)",
+  "Momentum"
 ];
 
 const TRAINING_PERIODS = [

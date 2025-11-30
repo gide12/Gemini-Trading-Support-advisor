@@ -5,70 +5,11 @@ import {
     ComposedChart, ReferenceLine, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar, Line, Cell, Area, AreaChart, CartesianGrid
 } from "recharts";
 
-declare global {
-  interface Window {
-    TradingView: any;
-  }
-}
-
 interface ResultsDisplayProps {
   result: AnalysisResult | null;
   isLoading: boolean;
   activeTab: AnalysisType;
 }
-
-// Internal component for the TradingView Widget
-const TradingViewWidget = ({ ticker }: { ticker: string }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const scriptId = 'tradingview-widget-loading-script';
-    const widgetContainerId = `tradingview_widget_${ticker.replace(/[^a-zA-Z0-9]/g, '')}_${Math.random().toString(36).substring(7)}`;
-
-    if (containerRef.current) {
-        containerRef.current.id = widgetContainerId;
-    }
-
-    const initWidget = () => {
-      if (window.TradingView) {
-        try {
-            new window.TradingView.widget({
-              autosize: true,
-              symbol: ticker,
-              interval: "D",
-              timezone: "Etc/UTC",
-              theme: "dark",
-              style: "1",
-              locale: "en",
-              enable_publishing: false,
-              allow_symbol_change: true,
-              container_id: widgetContainerId,
-              hide_side_toolbar: false,
-            });
-        } catch(e) {
-            console.error("Error initializing TradingView widget", e);
-        }
-      }
-    };
-
-    if (!document.getElementById(scriptId)) {
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.src = 'https://s3.tradingview.com/tv.js';
-      script.async = true;
-      script.onload = initWidget;
-      document.head.appendChild(script);
-    } else {
-      initWidget();
-    }
-  }, [ticker]);
-
-  return (
-    <div className="tradingview-widget-container h-full w-full min-h-[500px] bg-[#131722] rounded-lg overflow-hidden border border-purple-500/30">
-      <div ref={containerRef} className="h-full w-full" />
-    </div>
-  );
-};
 
 // Helper to generate mock OHLC data for visualization
 const generateMockHistoricalData = (currentPrice: number, trend: string) => {
@@ -165,8 +106,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       <div className="flex flex-col items-center justify-center h-96 text-slate-500">
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
+          fill="none" viewBox="0 0 24 24"
           strokeWidth={1}
           stroke="currentColor"
           className="w-20 h-20 mb-4 opacity-50 text-purple-500/50"
@@ -187,7 +127,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     );
   }
 
-  const isChart = activeTab === AnalysisType.Chart;
   const isIdea = activeTab === AnalysisType.Ideas;
   const isYahoo = activeTab === AnalysisType.YahooFinance;
   const isTechnical = activeTab === AnalysisType.Technical;
@@ -214,13 +153,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         )}
       </div>
 
-      {/* Chart View - Using TradingView Widget */}
-      {isChart && (
-        <div className="w-full h-[600px] mb-4">
-            <TradingViewWidget ticker={result.ticker} />
-        </div>
-      )}
-
       {/* Yahoo Finance / Financials View */}
       {isYahoo && result.financials && (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
@@ -233,42 +165,92 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
           </div>
       )}
       
-      {/* FUNDAMENTAL ANALYSIS - VALUATION BADGE */}
-      {isFundamental && result.valuationStatus && (
-          <div className="mb-6 bg-slate-800/50 p-6 rounded-xl border border-purple-500/20 flex flex-col md:flex-row justify-between items-center gap-4 animate-fade-in">
-               <div>
-                   <h3 className="text-sm font-bold text-slate-400 uppercase mb-1">Valuation Verdict</h3>
-                   <div className="flex items-center gap-3">
-                       <span className={`text-3xl font-bold ${
-                           result.valuationStatus === 'Undervalued' ? 'text-green-400' : 
-                           result.valuationStatus === 'Overvalued' ? 'text-red-400' : 'text-yellow-400'
-                       }`}>
-                           {result.valuationStatus.toUpperCase()}
-                       </span>
-                       {result.intrinsicValue && (
-                           <span className="text-sm text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-700 font-mono">
-                               Intrinsic Value: {result.intrinsicValue}
-                           </span>
-                       )}
-                   </div>
-               </div>
-               
-               <div className="h-12 w-px bg-slate-700 hidden md:block"></div>
-               
-               <div className="flex gap-2">
-                   {/* Visual Gauge representation */}
-                    <div className="flex flex-col items-center">
-                        <div className="flex gap-1 mb-1">
-                            <div className={`w-12 h-3 rounded-l ${result.valuationStatus === 'Undervalued' ? 'bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.6)]' : 'bg-slate-700/50'}`}></div>
-                            <div className={`w-12 h-3 ${result.valuationStatus === 'Fair Value' ? 'bg-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.6)]' : 'bg-slate-700/50'}`}></div>
-                            <div className={`w-12 h-3 rounded-r ${result.valuationStatus === 'Overvalued' ? 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)]' : 'bg-slate-700/50'}`}></div>
-                        </div>
-                        <div className="flex justify-between w-full px-1">
-                            <span className={`text-[9px] uppercase font-bold ${result.valuationStatus === 'Undervalued' ? 'text-green-500' : 'text-slate-600'}`}>Cheap</span>
-                            <span className={`text-[9px] uppercase font-bold ${result.valuationStatus === 'Overvalued' ? 'text-red-500' : 'text-slate-600'}`}>Expensive</span>
-                        </div>
-                    </div>
-               </div>
+      {/* FUNDAMENTAL ANALYSIS - VALUATION & MPID */}
+      {isFundamental && (
+          <div className="space-y-6 mb-6">
+              {/* Valuation Badge */}
+              {result.valuationStatus && (
+                  <div className="bg-slate-800/50 p-6 rounded-xl border border-purple-500/20 flex flex-col md:flex-row justify-between items-center gap-4 animate-fade-in">
+                       <div>
+                           <h3 className="text-sm font-bold text-slate-400 uppercase mb-1">Valuation Verdict</h3>
+                           <div className="flex items-center gap-3">
+                               <span className={`text-3xl font-bold ${
+                                   result.valuationStatus === 'Undervalued' ? 'text-green-400' : 
+                                   result.valuationStatus === 'Overvalued' ? 'text-red-400' : 'text-yellow-400'
+                               }`}>
+                                   {result.valuationStatus.toUpperCase()}
+                               </span>
+                               {result.intrinsicValue && (
+                                   <span className="text-sm text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-700 font-mono">
+                                       Intrinsic Value: {result.intrinsicValue}
+                                   </span>
+                               )}
+                           </div>
+                       </div>
+                       
+                       <div className="h-12 w-px bg-slate-700 hidden md:block"></div>
+                       
+                       <div className="flex gap-2">
+                           {/* Visual Gauge representation */}
+                            <div className="flex flex-col items-center">
+                                <div className="flex gap-1 mb-1">
+                                    <div className={`w-12 h-3 rounded-l ${result.valuationStatus === 'Undervalued' ? 'bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.6)]' : 'bg-slate-700/50'}`}></div>
+                                    <div className={`w-12 h-3 ${result.valuationStatus === 'Fair Value' ? 'bg-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.6)]' : 'bg-slate-700/50'}`}></div>
+                                    <div className={`w-12 h-3 rounded-r ${result.valuationStatus === 'Overvalued' ? 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)]' : 'bg-slate-700/50'}`}></div>
+                                </div>
+                                <div className="flex justify-between w-full px-1">
+                                    <span className={`text-[9px] uppercase font-bold ${result.valuationStatus === 'Undervalued' ? 'text-green-500' : 'text-slate-600'}`}>Cheap</span>
+                                    <span className={`text-[9px] uppercase font-bold ${result.valuationStatus === 'Overvalued' ? 'text-red-500' : 'text-slate-600'}`}>Expensive</span>
+                                </div>
+                            </div>
+                       </div>
+                  </div>
+              )}
+
+              {/* MPID / Market Depth Simulation */}
+              {result.mpidData && result.mpidData.length > 0 && (
+                  <div className="bg-slate-800/40 rounded-xl border border-purple-500/20 p-5 animate-fade-in">
+                       <h3 className="text-sm font-bold text-slate-300 uppercase mb-4 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-purple-400">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                            </svg>
+                            Market Depth / MPID Activity (Nasdaq TotalView Style)
+                       </h3>
+                       <div className="overflow-x-auto">
+                           <table className="w-full text-left border-collapse">
+                               <thead>
+                                   <tr className="bg-slate-900/50 text-slate-500 text-xs uppercase tracking-wider border-b border-purple-500/10">
+                                       <th className="p-3">MPID</th>
+                                       <th className="p-3">Participant Name</th>
+                                       <th className="p-3">Type</th>
+                                       <th className="p-3 text-right">Status</th>
+                                   </tr>
+                               </thead>
+                               <tbody className="divide-y divide-purple-500/5 text-sm">
+                                   {result.mpidData.map((mp, idx) => (
+                                       <tr key={idx} className="hover:bg-purple-900/10 transition-colors group">
+                                           <td className="p-3 font-mono font-bold text-yellow-400 group-hover:text-yellow-300">{mp.code}</td>
+                                           <td className="p-3 text-slate-300">{mp.name}</td>
+                                           <td className="p-3">
+                                               <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${
+                                                   mp.type.toLowerCase().includes('maker') ? 'bg-blue-900/30 text-blue-400' : 'bg-purple-900/30 text-purple-400'
+                                               }`}>
+                                                   {mp.type}
+                                               </span>
+                                           </td>
+                                           <td className="p-3 text-right">
+                                               <div className="flex items-center justify-end gap-1.5">
+                                                   <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                                                   <span className="text-xs text-green-400/80">Active</span>
+                                               </div>
+                                           </td>
+                                       </tr>
+                                   ))}
+                               </tbody>
+                           </table>
+                       </div>
+                  </div>
+              )}
           </div>
       )}
 
@@ -544,7 +526,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       )}
 
       {/* Text Content - for General Views, and Summary of Technical/Yahoo/Ideas */}
-      {!isChart && !isClustering && (
+      {!isClustering && (
           <div className="prose prose-invert max-w-none text-slate-300">
              <ReactMarkdown
                 components={{
