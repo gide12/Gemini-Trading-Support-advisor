@@ -226,3 +226,14 @@ export interface FuzzyAnalysisResult {
   };
   summary: string;
 }
+
+// --- ETF Types ---
+export interface ETFProfile {
+  ticker: string;
+  name: string;
+  topHoldings: {
+    ticker: string;
+    name: string;
+    weight: number; // percentage
+  }[];
+}

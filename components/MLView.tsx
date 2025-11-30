@@ -30,6 +30,7 @@ const MODEL_TYPES = [
   "Random Forest Regressor",
   "Logistic Regression",
   "Reinforcement Learning (DCRL)",
+  "DeltaLag (Deep Learning)",
   "Rectified Linear Unit (ReLU)",
   "Gaussian Naive Bayes",
 ];

@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, InstitutionalDeepDiveResult } from "../types";
+import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, InstitutionalDeepDiveResult, ETFProfile } from "../types";
 
 // Initialize the client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -418,6 +418,13 @@ export const runMLSimulation = async (
     - Represent environment states using the Directional Change (DC) event approach.
     - Implement a dynamic DC threshold to optimize dynamic algorithmic trading decisions.
     `;
+  } else if (modelType === "DeltaLag (Deep Learning)") {
+    specificInstructions = `
+    Specific Architecture Instructions:
+    - Employ a sparsified cross-attention mechanism to identify dynamic lead-lag relationships between assets.
+    - Detect pair-specific lag values to align features from leading stocks to predict the lagger stock.
+    - Focus on extracting predictive signals from systematic price movement precedence.
+    `;
   }
 
   const prompt = `Act as an advanced AI Trading Model (${modelType}). 
@@ -549,7 +556,15 @@ export const runInstitutionalDeepDive = async (ticker: string, institution: stri
     3. What is their general sentiment? (Bullish/Bearish/Neutral).
     4. Find the MOST RELEVANT URL for this institution's research page or specific report.
     
-    Return JSON matching schema.
+    IMPORTANT: Return ONLY a raw JSON object (no markdown) matching this structure:
+    {
+      "institution": "${institution}",
+      "ticker": "${ticker}",
+      "relationship": "Holder" | "Observer" | "Bearish" | "Unknown",
+      "summary": "string",
+      "sourceUrl": "string",
+      "lastFilingDate": "string"
+    }
     `;
     
     try {
@@ -558,22 +573,11 @@ export const runInstitutionalDeepDive = async (ticker: string, institution: stri
             contents: prompt,
             config: {
                 tools: [{ googleSearch: {} }],
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        institution: { type: Type.STRING },
-                        ticker: { type: Type.STRING },
-                        relationship: { type: Type.STRING, enum: ["Holder", "Observer", "Bearish", "Unknown"] },
-                        summary: { type: Type.STRING },
-                        sourceUrl: { type: Type.STRING },
-                        lastFilingDate: { type: Type.STRING }
-                    }
-                }
+                // Removed responseSchema to prevent conflict with tools
             }
         });
 
-        const data = JSON.parse(response.text || "{}");
+        const data = cleanAndParseJSON(response.text || "{}");
         return data as InstitutionalDeepDiveResult;
 
     } catch (error: any) {
@@ -763,5 +767,38 @@ export const runFuzzyAnalysis = async (ticker: string): Promise<FuzzyAnalysisRes
     console.error("Fuzzy Analysis Error:", error);
     const msg = error.message || error.toString();
     throw new Error(`Fuzzy Analysis Failed: ${msg}`);
+  }
+};
+
+export const getETFProfile = async (ticker: string): Promise<ETFProfile> => {
+  const prompt = `
+    Analyze the ETF ${ticker}. 
+    Find its name and its top 5-10 holdings with their current portfolio weights.
+    
+    IMPORTANT: Return ONLY a raw JSON object (no markdown, no code blocks) matching this structure:
+    {
+      "ticker": "${ticker}",
+      "name": "string",
+      "topHoldings": [
+        { "ticker": "string", "name": "string", "weight": number (percentage 0-100) }
+      ]
+    }
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+        // Removed responseSchema to prevent conflict with tools
+      }
+    });
+
+    const data = cleanAndParseJSON(response.text || "{}");
+    return data as ETFProfile;
+  } catch (error: any) {
+    console.error("ETF Profile Error:", error);
+    throw new Error(`ETF Analysis Failed: ${error.message}`);
   }
 };

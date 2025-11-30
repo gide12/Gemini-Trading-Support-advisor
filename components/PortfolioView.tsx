@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Holding, MPTAnalysisResult } from "../types";
+import { Holding, MPTAnalysisResult, ETFProfile } from "../types";
 import { getInitialHoldings, getPortfolioHistory } from "../services/marketDataService";
-import { runMPTAnalysis } from "../services/geminiService";
+import { runMPTAnalysis, getETFProfile } from "../services/geminiService";
 import { 
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     ComposedChart, Line, Scatter, ScatterChart, ZAxis, Cell
@@ -45,6 +45,13 @@ const PortfolioView: React.FC = () => {
   const [mptLoading, setMptLoading] = useState(false);
   const [mptResult, setMptResult] = useState<MPTAnalysisResult | null>(null);
 
+  // ETF State
+  const [etfTicker, setEtfTicker] = useState("");
+  const [etfCapital, setEtfCapital] = useState("10000");
+  const [etfLoading, setEtfLoading] = useState(false);
+  const [etfResult, setEtfResult] = useState<ETFProfile | null>(null);
+  const [etfWatchlist, setEtfWatchlist] = useState<string[]>(['SPY', 'QQQ', 'ARKK', 'VOO', 'SMH']);
+
   useEffect(() => {
     const initial = getInitialHoldings();
     setHoldings(initial);
@@ -63,15 +70,20 @@ const PortfolioView: React.FC = () => {
     e.preventDefault();
     if (!tickerInput || !sharesInput || !costInput) return;
 
-    const ticker = tickerInput.toUpperCase();
-    const quantity = parseFloat(sharesInput);
-    const avgBuyPrice = parseFloat(costInput);
+    addOrUpdateAsset(tickerInput, parseFloat(sharesInput), parseFloat(costInput));
+    
+    // Reset form
+    setTickerInput("");
+    setSharesInput("");
+    setCostInput("");
+  };
 
-    // Simulate current price for demo purposes if we don't have a live feed
-    // In a real app, this would fetch the latest price
-    const volatility = (Math.random() - 0.4) * 0.1; // Random move -4% to +6%
+  const addOrUpdateAsset = (tickerStr: string, quantity: number, avgBuyPrice: number) => {
+    const ticker = tickerStr.toUpperCase();
+    
+    // Simulate current price
+    const volatility = (Math.random() - 0.4) * 0.1; 
     const currentPrice = avgBuyPrice * (1 + volatility);
-
     const marketValue = quantity * currentPrice;
     const pl = marketValue - (quantity * avgBuyPrice);
     const plPercent = (pl / (quantity * avgBuyPrice)) * 100;
@@ -96,11 +108,6 @@ const PortfolioView: React.FC = () => {
         }
         return next;
     });
-
-    // Reset form
-    setTickerInput("");
-    setSharesInput("");
-    setCostInput("");
   };
 
   const handleRemove = (ticker: string) => {
@@ -119,6 +126,66 @@ const PortfolioView: React.FC = () => {
     } finally {
         setMptLoading(false);
     }
+  };
+
+  const fetchEtfProfile = async (ticker: string) => {
+    if (!ticker) return;
+    setEtfLoading(true);
+    setEtfResult(null);
+    setEtfTicker(ticker);
+    try {
+        const profile = await getETFProfile(ticker.toUpperCase());
+        setEtfResult(profile);
+    } catch (e) {
+        console.error(e);
+    } finally {
+        setEtfLoading(false);
+    }
+  };
+
+  const handleScanETF = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchEtfProfile(etfTicker.toUpperCase());
+  };
+
+  const handleAdoptETF = () => {
+    if (!etfResult || !etfCapital) return;
+    const totalCap = parseFloat(etfCapital);
+    if (isNaN(totalCap)) return;
+
+    // We will replace current holdings with ETF allocation
+    const newHoldings: Holding[] = [];
+
+    etfResult.topHoldings.forEach(holding => {
+        const allocationAmount = totalCap * (holding.weight / 100);
+        // Simulate a "Buy Price" (roughly around $100-$300 for generic mock)
+        const mockPrice = Math.random() * 200 + 50; 
+        const qty = allocationAmount / mockPrice;
+
+        const newHolding: Holding = {
+            ticker: holding.ticker,
+            quantity: qty,
+            avgBuyPrice: mockPrice,
+            currentPrice: mockPrice, // Assume bought just now
+            marketValue: allocationAmount,
+            pl: 0,
+            plPercent: 0
+        };
+        newHoldings.push(newHolding);
+    });
+
+    setHoldings(newHoldings);
+    setEtfResult(null); // Close the panel/reset
+    setEtfTicker("");
+  };
+  
+  const toggleWatchlist = (ticker: string) => {
+      const t = ticker.toUpperCase();
+      if (etfWatchlist.includes(t)) {
+          setEtfWatchlist(prev => prev.filter(item => item !== t));
+      } else {
+          setEtfWatchlist(prev => [...prev, t]);
+      }
   };
 
   return (
@@ -254,7 +321,7 @@ const PortfolioView: React.FC = () => {
                                             <span>{holding.ticker}</span>
                                         </div>
                                     </td>
-                                    <td className="p-4 text-right text-slate-300">{holding.quantity}</td>
+                                    <td className="p-4 text-right text-slate-300">{holding.quantity.toFixed(2)}</td>
                                     <td className="p-4 text-right text-slate-300">${holding.avgBuyPrice.toFixed(2)}</td>
                                     <td className="p-4 text-right text-slate-300">${holding.currentPrice.toFixed(2)}</td>
                                     <td className="p-4 text-right font-medium text-white">${(holding.marketValue || 0).toLocaleString()}</td>
@@ -384,8 +451,105 @@ const PortfolioView: React.FC = () => {
         )}
       </div>
 
-      {/* Stats / Allocation */}
+      {/* Stats / Allocation / ETF Engine */}
       <div className="space-y-6">
+         {/* ETF Replication Engine */}
+         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
+             <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-400">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3 3l-3 3" />
+                 </svg>
+                 ETF Replication Engine
+             </h3>
+             <p className="text-xs text-slate-400 mb-4">Adopt institutional allocations from major ETFs (e.g. QQQ, ARKK) into your portfolio.</p>
+             
+             <form onSubmit={handleScanETF} className="mb-2">
+                 <div className="flex gap-2">
+                     <input 
+                         type="text" 
+                         value={etfTicker}
+                         onChange={(e) => setEtfTicker(e.target.value.toUpperCase())}
+                         placeholder="ETF Ticker (e.g. QQQ)"
+                         className="flex-1 bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-purple-500 outline-none text-sm uppercase"
+                     />
+                     <button 
+                         type="submit"
+                         disabled={!etfTicker || etfLoading}
+                         className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-3 rounded text-sm disabled:opacity-50"
+                     >
+                         {etfLoading ? 'Scanning...' : 'Scan'}
+                     </button>
+                 </div>
+             </form>
+             
+             {/* ETF Watchlist */}
+             <div className="flex flex-wrap gap-2 mb-4">
+                 {etfWatchlist.map(t => (
+                    <div 
+                        key={t}
+                        onClick={() => fetchEtfProfile(t)}
+                        className="group flex items-center gap-1 cursor-pointer text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-2 py-1 rounded transition-colors"
+                    >
+                        {t}
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                toggleWatchlist(t);
+                            }}
+                            className="text-slate-500 hover:text-red-400 hidden group-hover:block"
+                        >
+                            ×
+                        </button>
+                    </div>
+                 ))}
+             </div>
+
+             {etfResult && (
+                 <div className="bg-slate-800/40 rounded border border-blue-500/20 p-3 animate-fade-in">
+                     <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-blue-300">{etfResult.name}</span>
+                            <button 
+                                onClick={() => toggleWatchlist(etfResult.ticker)}
+                                className={`text-xs ${etfWatchlist.includes(etfResult.ticker) ? 'text-yellow-400' : 'text-slate-500 hover:text-yellow-400'}`}
+                                title={etfWatchlist.includes(etfResult.ticker) ? "Remove from Watchlist" : "Add to Watchlist"}
+                            >
+                                ★
+                            </button>
+                        </div>
+                        <span className="text-[10px] bg-blue-900/30 text-blue-200 px-1.5 py-0.5 rounded">{etfResult.topHoldings.length} Assets</span>
+                     </div>
+                     
+                     <div className="space-y-1 mb-4 max-h-[150px] overflow-y-auto custom-scrollbar">
+                         {etfResult.topHoldings.map(h => (
+                             <div key={h.ticker} className="flex justify-between text-xs">
+                                 <span className="text-slate-300 font-mono font-bold">{h.ticker}</span>
+                                 <span className="text-slate-400 font-mono">{h.weight}%</span>
+                             </div>
+                         ))}
+                     </div>
+
+                     <div className="pt-3 border-t border-slate-700">
+                         <label className="block text-[10px] text-slate-400 mb-1 uppercase font-bold">Capital to Deploy ($)</label>
+                         <div className="flex gap-2">
+                             <input 
+                                 type="number"
+                                 value={etfCapital}
+                                 onChange={(e) => setEtfCapital(e.target.value)}
+                                 className="flex-1 bg-[#0f172a] border border-slate-600 rounded px-2 py-1 text-white text-xs"
+                             />
+                             <button 
+                                 onClick={handleAdoptETF}
+                                 className="bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-3 py-1 rounded"
+                             >
+                                 Adopt
+                             </button>
+                         </div>
+                     </div>
+                 </div>
+             )}
+         </div>
+
          <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
             <h3 className="text-lg font-semibold text-white mb-4">Allocation</h3>
             <div className="space-y-4">
@@ -422,14 +586,6 @@ const PortfolioView: React.FC = () => {
                 </div>
              </div>
          )}
-
-         <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 rounded-xl border border-purple-500/30 p-6">
-            <h3 className="text-lg font-semibold text-purple-100 mb-2">Upgrade to Pro</h3>
-            <p className="text-purple-200/70 text-sm mb-4">Get unlimited real-time data and advanced AI portfolio rebalancing suggestions.</p>
-            <button className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-md font-medium text-sm transition-colors">
-                Learn More
-            </button>
-         </div>
       </div>
     </div>
   );
