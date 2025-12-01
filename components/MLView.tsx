@@ -36,6 +36,7 @@ const MODEL_TYPES = [
   "DeltaLag (Deep Learning)",
   "Multi-Granularity Spatio-Temporal Correlation Networks",
   "Multi-Granularity Deep Spatio-Temporal Correlation Framework (MDSTCF)",
+  "HA-NARX (Hybrid Associative NARX)",
   "Rectified Linear Unit (ReLU)",
   "Gaussian Naive Bayes",
 ];

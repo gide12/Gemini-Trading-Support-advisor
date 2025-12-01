@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, InstitutionalDeepDiveResult, ETFProfile, OptimalFuzzyDesignResult } from "../types";
+import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, InstitutionalDeepDiveResult, ETFProfile, OptimalFuzzyDesignResult, FFTSPLPRResult } from "../types";
 
 // Initialize the client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -353,12 +353,18 @@ export const runBacktest = async (
   startDate: string,
   endDate: string,
   timeframe: string,
-  riskReward: string
+  riskReward: string,
+  stopLoss: string,
+  takeProfit: string,
+  trailingStop: string
 ): Promise<BacktestResult> => {
   const prompt = `Simulate a trading backtest for ${ticker} using the following strategy: "${strategy}".
   Date Range: ${startDate} to ${endDate}.
   Timeframe: ${timeframe}.
   Risk/Reward Ratio: ${riskReward}.
+  Stop Loss: ${stopLoss}.
+  Take Profit: ${takeProfit}.
+  Trailing Stop: ${trailingStop}.
   
   Assume a starting capital of $10,000.
   
@@ -485,6 +491,14 @@ export const runMLSimulation = async (
     - Capture complex spatio-temporal dependencies at multiple granularities (e.g., fine-grained and coarse-grained time intervals).
     - Utilize deep learning layers to model the correlation between spatial (inter-asset) and temporal (historical) features.
     - Focus on hierarchical feature extraction to improve long-term trend prediction.
+    `;
+  } else if (modelType === "HA-NARX (Hybrid Associative NARX)") {
+    specificInstructions = `
+    Specific Architecture Instructions:
+    - Implement the Hybrid Associative Nonlinear AutoRegressive with eXogenous inputs (HA-NARX) model.
+    - Utilize NARX logic to relate the current value of the time series to past values of the same series and current/past values of exogenous inputs (e.g., macro indicators, market sentiment).
+    - Incorporate associative memory or hybrid mechanisms to enhance pattern recognition capabilities in the nonlinear dynamic system.
+    - Focus on capturing complex, nonlinear relationships between the target asset and external market drivers.
     `;
   }
 
@@ -980,6 +994,81 @@ export const runOptimalFuzzyDesignAnalysis = async (ticker: string): Promise<Opt
     } catch (error: any) {
         console.error("Optimal FIS Analysis Error:", error);
         throw new Error(`Optimal FIS Analysis Failed: ${error.message}`);
+    }
+};
+
+export const runFFTSPLPRAnalysis = async (ticker: string): Promise<FFTSPLPRResult> => {
+    const prompt = `
+    Analyze ${ticker} using the "Two-Factor Fuzzy-Fluctuation Time Series (FFTS) model based on Probabilistic Linguistic Preference Relationship (PLPR)".
+    
+    Methodology:
+    1. Incorporate external factors affecting disturbance (External Shock) with internal potential trends (Internal Trend).
+    2. Employ Probabilistic Linguistic Preference Logical Relationship (PLPLR) to express fluctuation behavior rules and preference attributes.
+    3. Use Euclidean or Hamming distance as a similarity comparison method to identify appropriate rules from history.
+    
+    Return JSON matching schema:
+    - twoFactors: { internalTrend: {description, strength 0-1}, externalDisturbance: {description, impact 0-1} }
+    - plprRules: List of {ruleId, condition, preferenceBehavior, probability}
+    - similarityAnalysis: {methodUsed ("Euclidean Distance"|"Hamming Distance"), distanceValue, closestHistoricalRuleId}
+    - forecast: {direction, confidence, priceTarget}
+    - summary
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        twoFactors: {
+                            type: Type.OBJECT,
+                            properties: {
+                                internalTrend: { type: Type.OBJECT, properties: { description: {type: Type.STRING}, strength: {type: Type.NUMBER} } },
+                                externalDisturbance: { type: Type.OBJECT, properties: { description: {type: Type.STRING}, impact: {type: Type.NUMBER} } }
+                            }
+                        },
+                        plprRules: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    ruleId: { type: Type.STRING },
+                                    condition: { type: Type.STRING },
+                                    preferenceBehavior: { type: Type.STRING },
+                                    probability: { type: Type.NUMBER }
+                                }
+                            }
+                        },
+                        similarityAnalysis: {
+                            type: Type.OBJECT,
+                            properties: {
+                                methodUsed: { type: Type.STRING, enum: ["Euclidean Distance", "Hamming Distance"] },
+                                distanceValue: { type: Type.NUMBER },
+                                closestHistoricalRuleId: { type: Type.STRING }
+                            }
+                        },
+                        forecast: {
+                            type: Type.OBJECT,
+                            properties: {
+                                direction: { type: Type.STRING, enum: ["Bullish", "Bearish", "Neutral"] },
+                                confidence: { type: Type.NUMBER },
+                                priceTarget: { type: Type.NUMBER }
+                            }
+                        },
+                        summary: { type: Type.STRING }
+                    }
+                }
+            }
+        });
+
+        const data = JSON.parse(response.text || "{}");
+        return { ...data, ticker } as FFTSPLPRResult;
+    } catch (error: any) {
+        console.error("FFTS-PLPR Analysis Error:", error);
+        throw new Error(`FFTS-PLPR Analysis Failed: ${error.message}`);
     }
 };
 

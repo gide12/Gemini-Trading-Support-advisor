@@ -1,10 +1,11 @@
+
 import React, { useState } from "react";
-import { runFuzzyAnalysis, runFFFCMGNNAnalysis, runOptimalFuzzyDesignAnalysis } from "../services/geminiService";
-import { FuzzyAnalysisResult, FFFCMGNNResult, OptimalFuzzyDesignResult } from "../types";
+import { runFuzzyAnalysis, runFFFCMGNNAnalysis, runOptimalFuzzyDesignAnalysis, runFFTSPLPRAnalysis } from "../services/geminiService";
+import { FuzzyAnalysisResult, FFFCMGNNResult, OptimalFuzzyDesignResult, FFTSPLPRResult } from "../types";
 import SearchBar from "./SearchBar";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
 
-type FuzzyModelType = 'standard' | 'ff-fcm-gnn' | 'optimal-fis';
+type FuzzyModelType = 'standard' | 'ff-fcm-gnn' | 'optimal-fis' | 'ffts-plpr';
 
 const FuzzyLogicView: React.FC = () => {
   const [ticker, setTicker] = useState("");
@@ -15,6 +16,7 @@ const FuzzyLogicView: React.FC = () => {
   const [standardData, setStandardData] = useState<FuzzyAnalysisResult | null>(null);
   const [advancedData, setAdvancedData] = useState<FFFCMGNNResult | null>(null);
   const [optimalFisData, setOptimalFisData] = useState<OptimalFuzzyDesignResult | null>(null);
+  const [fftsData, setFftsData] = useState<FFTSPLPRResult | null>(null);
 
   const handleSearch = async (searchTerm: string) => {
     setTicker(searchTerm);
@@ -22,6 +24,7 @@ const FuzzyLogicView: React.FC = () => {
     setStandardData(null);
     setAdvancedData(null);
     setOptimalFisData(null);
+    setFftsData(null);
 
     try {
       if (activeModel === 'standard') {
@@ -30,9 +33,12 @@ const FuzzyLogicView: React.FC = () => {
       } else if (activeModel === 'ff-fcm-gnn') {
           const result = await runFFFCMGNNAnalysis(searchTerm);
           setAdvancedData(result);
-      } else {
+      } else if (activeModel === 'optimal-fis') {
           const result = await runOptimalFuzzyDesignAnalysis(searchTerm);
           setOptimalFisData(result);
+      } else if (activeModel === 'ffts-plpr') {
+          const result = await runFFTSPLPRAnalysis(searchTerm);
+          setFftsData(result);
       }
     } catch (error) {
       console.error(error);
@@ -62,9 +68,9 @@ const FuzzyLogicView: React.FC = () => {
         </div>
         
         {/* Model Architecture Selector */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6 border-b border-purple-500/20 pb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 border-b border-purple-500/20 pb-6">
             <button
-                onClick={() => { setActiveModel('standard'); setStandardData(null); setAdvancedData(null); setOptimalFisData(null); }}
+                onClick={() => { setActiveModel('standard'); setStandardData(null); setAdvancedData(null); setOptimalFisData(null); setFftsData(null); }}
                 className={`flex-1 p-4 rounded-xl border transition-all text-left group ${activeModel === 'standard' ? 'bg-purple-900/20 border-purple-500 ring-1 ring-purple-500/50' : 'bg-[#1e293b]/50 border-purple-500/10 hover:border-purple-500/40'}`}
             >
                 <div className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors mb-1">Microstructure Fuzzy Engine</div>
@@ -72,7 +78,7 @@ const FuzzyLogicView: React.FC = () => {
             </button>
 
             <button
-                onClick={() => { setActiveModel('ff-fcm-gnn'); setStandardData(null); setAdvancedData(null); setOptimalFisData(null); }}
+                onClick={() => { setActiveModel('ff-fcm-gnn'); setStandardData(null); setAdvancedData(null); setOptimalFisData(null); setFftsData(null); }}
                 className={`flex-1 p-4 rounded-xl border transition-all text-left group ${activeModel === 'ff-fcm-gnn' ? 'bg-purple-900/20 border-purple-500 ring-1 ring-purple-500/50' : 'bg-[#1e293b]/50 border-purple-500/10 hover:border-purple-500/40'}`}
             >
                 <div className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors mb-1">FF-FCM-GNN Model</div>
@@ -80,11 +86,19 @@ const FuzzyLogicView: React.FC = () => {
             </button>
 
             <button
-                onClick={() => { setActiveModel('optimal-fis'); setStandardData(null); setAdvancedData(null); setOptimalFisData(null); }}
+                onClick={() => { setActiveModel('optimal-fis'); setStandardData(null); setAdvancedData(null); setOptimalFisData(null); setFftsData(null); }}
                 className={`flex-1 p-4 rounded-xl border transition-all text-left group ${activeModel === 'optimal-fis' ? 'bg-purple-900/20 border-purple-500 ring-1 ring-purple-500/50' : 'bg-[#1e293b]/50 border-purple-500/10 hover:border-purple-500/40'}`}
             >
                 <div className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors mb-1">Optimal FIS Design</div>
                 <div className="text-xs text-slate-400">Type-1/Type-2 System Optimization (GFS, NFS, HFS, EFS, MFS).</div>
+            </button>
+            
+            <button
+                onClick={() => { setActiveModel('ffts-plpr'); setStandardData(null); setAdvancedData(null); setOptimalFisData(null); setFftsData(null); }}
+                className={`flex-1 p-4 rounded-xl border transition-all text-left group ${activeModel === 'ffts-plpr' ? 'bg-purple-900/20 border-purple-500 ring-1 ring-purple-500/50' : 'bg-[#1e293b]/50 border-purple-500/10 hover:border-purple-500/40'}`}
+            >
+                <div className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors mb-1">FFTS-PLPR Model</div>
+                <div className="text-xs text-slate-400">Two-Factor Fuzzy-Fluctuation w/ Probabilistic Linguistic Preferences.</div>
             </button>
         </div>
 
@@ -427,6 +441,98 @@ const FuzzyLogicView: React.FC = () => {
                       "{optimalFisData.summary}"
                   </p>
               </div>
+          </div>
+      )}
+
+      {/* FFTS-PLPR VIEW */}
+      {activeModel === 'ffts-plpr' && fftsData && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
+             {/* Factor Split */}
+             <div className="lg:col-span-1 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
+                <h3 className="text-lg font-bold text-white mb-4 border-b border-purple-500/20 pb-2">Two-Factor Analysis</h3>
+                
+                <div className="mb-6">
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs font-bold text-cyan-400 uppercase">Internal Trend (Potential)</span>
+                        <span className="text-sm font-mono text-white">{(fftsData.twoFactors.internalTrend.strength * 100).toFixed(0)}%</span>
+                    </div>
+                    <div className="w-full bg-slate-800 h-2 rounded-full mb-2">
+                        <div className="bg-cyan-500 h-2 rounded-full" style={{width: `${fftsData.twoFactors.internalTrend.strength * 100}%`}}></div>
+                    </div>
+                    <p className="text-[10px] text-slate-400">{fftsData.twoFactors.internalTrend.description}</p>
+                </div>
+
+                <div>
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs font-bold text-pink-400 uppercase">External Shock (Disturbance)</span>
+                        <span className="text-sm font-mono text-white">{(fftsData.twoFactors.externalDisturbance.impact * 100).toFixed(0)}%</span>
+                    </div>
+                    <div className="w-full bg-slate-800 h-2 rounded-full mb-2">
+                        <div className="bg-pink-500 h-2 rounded-full" style={{width: `${fftsData.twoFactors.externalDisturbance.impact * 100}%`}}></div>
+                    </div>
+                    <p className="text-[10px] text-slate-400">{fftsData.twoFactors.externalDisturbance.description}</p>
+                </div>
+             </div>
+
+             {/* PLPLR Rules */}
+             <div className="lg:col-span-1 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg flex flex-col">
+                 <h3 className="text-lg font-bold text-white mb-4 border-b border-purple-500/20 pb-2">Probabilistic Linguistic Preferences</h3>
+                 <div className="space-y-3 flex-1 overflow-y-auto max-h-[250px] custom-scrollbar pr-2">
+                     {fftsData.plprRules.map(rule => (
+                         <div key={rule.ruleId} className="bg-[#1e293b]/50 border border-purple-500/10 p-3 rounded">
+                             <div className="flex justify-between text-[10px] uppercase font-bold text-slate-500 mb-1">
+                                 <span>{rule.ruleId}</span>
+                                 <span>Prob: {rule.probability}</span>
+                             </div>
+                             <div className="text-sm text-slate-200 mb-1 font-medium">"{rule.condition}"</div>
+                             <div className="flex items-center gap-2">
+                                 <span className="text-xs text-purple-400">Preference:</span>
+                                 <span className="text-xs bg-purple-900/30 text-purple-300 px-2 py-0.5 rounded">{rule.preferenceBehavior}</span>
+                             </div>
+                         </div>
+                     ))}
+                 </div>
+             </div>
+
+             {/* Similarity & Forecast */}
+             <div className="lg:col-span-1 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg relative overflow-hidden flex flex-col justify-between">
+                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-32 h-32 text-cyan-500">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                 </div>
+
+                 <div>
+                     <h3 className="text-lg font-bold text-white mb-4 border-b border-purple-500/20 pb-2">Similarity Forecast</h3>
+                     <div className="bg-[#1e293b] p-3 rounded mb-4">
+                         <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Method: {fftsData.similarityAnalysis.methodUsed}</div>
+                         <div className="flex justify-between items-center">
+                             <span className="text-xs text-slate-300">Distance from History</span>
+                             <span className="font-mono text-cyan-400 font-bold">{fftsData.similarityAnalysis.distanceValue.toFixed(4)}</span>
+                         </div>
+                         <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2">
+                             {/* Inverse representation: shorter distance = fuller bar (better match) */}
+                             <div className="bg-cyan-500 h-1.5 rounded-full" style={{width: `${Math.max(0, 1 - fftsData.similarityAnalysis.distanceValue) * 100}%`}}></div>
+                         </div>
+                         <div className="text-[10px] text-slate-500 mt-1 text-right">Matches Rule: {fftsData.similarityAnalysis.closestHistoricalRuleId}</div>
+                     </div>
+                 </div>
+
+                 <div className="text-center">
+                     <div className="text-xs text-slate-400 uppercase tracking-widest mb-1">Predicted Direction</div>
+                     <div className={`text-3xl font-bold ${fftsData.forecast.direction === 'Bullish' ? 'text-green-400' : fftsData.forecast.direction === 'Bearish' ? 'text-red-400' : 'text-yellow-400'}`}>
+                         {fftsData.forecast.direction}
+                     </div>
+                     <div className="text-sm font-mono text-white mt-1">Target: ${fftsData.forecast.priceTarget.toFixed(2)}</div>
+                     <div className="text-xs text-slate-500 mt-1">Confidence: {fftsData.forecast.confidence}%</div>
+                 </div>
+             </div>
+             
+             {/* Summary */}
+             <div className="lg:col-span-3 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6">
+                 <h3 className="text-sm font-bold text-slate-400 uppercase mb-2">FFTS-PLPR Synthesis</h3>
+                 <p className="text-slate-200 text-sm leading-relaxed">{fftsData.summary}</p>
+             </div>
           </div>
       )}
     </div>

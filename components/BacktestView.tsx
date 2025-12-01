@@ -14,6 +14,11 @@ const BacktestView: React.FC = () => {
   // Risk Management State
   const [riskUnit, setRiskUnit] = useState("1");
   const [rewardUnit, setRewardUnit] = useState("2");
+  
+  // New Exit Parameters
+  const [stopLoss, setStopLoss] = useState("2%");
+  const [takeProfit, setTakeProfit] = useState("5%");
+  const [trailingStop, setTrailingStop] = useState("1.5%");
 
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<BacktestResult | null>(null);
@@ -23,7 +28,7 @@ const BacktestView: React.FC = () => {
     setResult(null);
     try {
         const riskRewardString = `${riskUnit}:${rewardUnit}`;
-        const data = await runBacktest(ticker, strategy, startDate, endDate, timeframe, riskRewardString);
+        const data = await runBacktest(ticker, strategy, startDate, endDate, timeframe, riskRewardString, stopLoss, takeProfit, trailingStop);
         setResult(data);
     } catch (e) {
         console.error(e);
@@ -83,26 +88,62 @@ const BacktestView: React.FC = () => {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-2">Risk : Reward Ratio</label>
-                    <div className="flex items-center gap-3">
-                        <div className="flex-1 relative">
-                            <span className="absolute left-3 top-2 text-slate-500 text-xs">Risk</span>
-                            <input 
-                                type="number" 
-                                value={riskUnit}
-                                onChange={(e) => setRiskUnit(e.target.value)}
-                                className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 pl-10 text-white focus:border-purple-500 outline-none text-sm transition-colors text-center"
-                            />
+                    <label className="block text-sm font-medium text-slate-400 mb-2">Risk & Exit Parameters</label>
+                    <div className="space-y-3 bg-[#1e293b]/50 p-3 rounded border border-purple-500/10">
+                        {/* Risk : Reward Ratio */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Risk Unit (R)</label>
+                                <input 
+                                    type="number" 
+                                    value={riskUnit}
+                                    onChange={(e) => setRiskUnit(e.target.value)}
+                                    className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white focus:border-purple-500 outline-none text-sm transition-colors"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Reward Unit (R)</label>
+                                 <input 
+                                    type="number" 
+                                    value={rewardUnit}
+                                    onChange={(e) => setRewardUnit(e.target.value)}
+                                    className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white focus:border-purple-500 outline-none text-sm transition-colors"
+                                />
+                            </div>
                         </div>
-                        <span className="text-purple-400 font-bold">:</span>
-                        <div className="flex-1 relative">
-                             <span className="absolute left-3 top-2 text-slate-500 text-xs">Reward</span>
-                             <input 
-                                type="number" 
-                                value={rewardUnit}
-                                onChange={(e) => setRewardUnit(e.target.value)}
-                                className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 pl-10 text-white focus:border-purple-500 outline-none text-sm transition-colors text-center"
-                            />
+
+                        {/* SL / TP / Trailing */}
+                        <div className="grid grid-cols-3 gap-3 pt-2 border-t border-purple-500/10">
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Stop Loss</label>
+                                <input 
+                                    type="text" 
+                                    value={stopLoss}
+                                    onChange={(e) => setStopLoss(e.target.value)}
+                                    placeholder="2%"
+                                    className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white focus:border-purple-500 outline-none text-sm transition-colors"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Take Profit</label>
+                                <input 
+                                    type="text" 
+                                    value={takeProfit}
+                                    onChange={(e) => setTakeProfit(e.target.value)}
+                                    placeholder="5%"
+                                    className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white focus:border-purple-500 outline-none text-sm transition-colors"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Trailing Stop</label>
+                                <input 
+                                    type="text" 
+                                    value={trailingStop}
+                                    onChange={(e) => setTrailingStop(e.target.value)}
+                                    placeholder="1.5%"
+                                    className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white focus:border-purple-500 outline-none text-sm transition-colors"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -161,7 +202,7 @@ const BacktestView: React.FC = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="bg-slate-800/50 p-4 rounded border border-purple-500/20">
                             <div className="text-slate-400 text-xs uppercase">Total Return</div>
-                            <div className={`text-2xl font-mono font-bold ${(result.metrics.totalReturn || "").includes('-') ? 'text-red-400' : 'text-green-400'}`}>{result.metrics.totalReturn}</div>
+                            <div className={`text-2xl font-mono font-bold ${(result.metrics.totalReturn || "").includes('-') ? 'text-red-400' : 'text-green-400'}`}>{(result.metrics.totalReturn || "0%")}</div>
                         </div>
                         <div className="bg-slate-800/50 p-4 rounded border border-purple-500/20">
                             <div className="text-slate-400 text-xs uppercase">Win Rate</div>

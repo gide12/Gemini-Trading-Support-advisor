@@ -1,3 +1,4 @@
+
 import { Type } from "@google/genai";
 
 export enum AnalysisType {
@@ -284,6 +285,37 @@ export interface OptimalFuzzyDesignResult {
         interpretability: number; // 0-100
         paretoOptimal: boolean; 
         description: string;
+    };
+    summary: string;
+}
+
+export interface FFTSPLPRResult {
+    ticker: string;
+    twoFactors: {
+        internalTrend: {
+            description: string;
+            strength: number; // 0-1
+        };
+        externalDisturbance: {
+            description: string;
+            impact: number; // 0-1
+        };
+    };
+    plprRules: {
+        ruleId: string;
+        condition: string;
+        preferenceBehavior: string; // e.g. "Risk Averse", "Trend Following"
+        probability: number;
+    }[];
+    similarityAnalysis: {
+        methodUsed: "Euclidean Distance" | "Hamming Distance";
+        distanceValue: number; // Lower is better match
+        closestHistoricalRuleId: string;
+    };
+    forecast: {
+        direction: "Bullish" | "Bearish" | "Neutral";
+        confidence: number;
+        priceTarget: number;
     };
     summary: string;
 }
