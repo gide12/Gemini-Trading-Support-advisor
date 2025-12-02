@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 
 declare global {
@@ -65,7 +66,7 @@ const TradingViewWidget = ({ ticker }: { ticker: string }) => {
   }, [ticker]);
 
   return (
-    <div ref={containerRef} className="tradingview-widget-container h-full w-full min-h-[600px] bg-[#131722] rounded-lg overflow-hidden border border-purple-500/30" />
+    <div ref={containerRef} className="tradingview-widget-container h-full w-full bg-[#131722] rounded-lg overflow-hidden border border-purple-500/30" />
   );
 };
 
@@ -81,17 +82,16 @@ const ChartView: React.FC = () => {
     };
 
     return (
-        <div className="fade-in space-y-6 h-full flex flex-col">
-            <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg flex-shrink-0">
+        <div className="fade-in space-y-4 h-full flex flex-col">
+            <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-4 shadow-lg flex-shrink-0">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <div>
-                        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-blue-400">
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-blue-400">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
                             </svg>
                             Interactive Technical Chart
                         </h2>
-                        <p className="text-slate-400 text-sm">Advanced charting powered by TradingView.</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="flex gap-2 w-full md:w-auto">
@@ -106,13 +106,13 @@ const ChartView: React.FC = () => {
                             type="submit"
                             className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded transition-colors"
                         >
-                            Load Chart
+                            Load
                         </button>
                     </form>
                 </div>
             </div>
 
-            <div className="flex-1 min-h-[700px] bg-[#0f172a] rounded-xl border border-purple-500/30 p-4 shadow-lg">
+            <div className="flex-1 bg-[#0f172a] rounded-xl border border-purple-500/30 p-1 shadow-lg overflow-hidden min-h-[500px]">
                 <TradingViewWidget ticker={ticker} />
             </div>
         </div>

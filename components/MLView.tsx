@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { runMLSimulation } from "../services/geminiService";
 import { MLPredictionResult } from "../types";
@@ -33,6 +34,7 @@ const MODEL_TYPES = [
   "Logistic Regression",
   "Reinforcement Learning (DCRL)",
   "Twin Delayed Deep Deterministic Policy Gradient (TD3)",
+  "Deep Recurrent Q-Network (DRQN)",
   "DeltaLag (Deep Learning)",
   "Multi-Granularity Spatio-Temporal Correlation Networks",
   "Multi-Granularity Deep Spatio-Temporal Correlation Framework (MDSTCF)",
@@ -344,6 +346,71 @@ const MLView: React.FC = () => {
                         </ResponsiveContainer>
                      </div>
                 </div>
+
+                {/* Performance Evaluation Dashboard */}
+                {result.evaluationMetrics && result.tradingMetrics && (
+                    <div className="md:col-span-2 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
+                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-cyan-400">
+                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                             </svg>
+                             Performance Evaluation Dashboard
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {/* Classification Metrics */}
+                            <div>
+                                <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 border-b border-purple-500/20 pb-1">Model Classification Metrics</h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                        <div className="text-[10px] text-slate-400 uppercase">Accuracy Rate (AR)</div>
+                                        <div className="text-xl font-mono text-white font-bold">{(result.evaluationMetrics.accuracy * 100).toFixed(1)}%</div>
+                                    </div>
+                                    <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                        <div className="text-[10px] text-slate-400 uppercase">Precision (PR)</div>
+                                        <div className="text-xl font-mono text-cyan-300 font-bold">{(result.evaluationMetrics.precision * 100).toFixed(1)}%</div>
+                                    </div>
+                                    <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                        <div className="text-[10px] text-slate-400 uppercase">Recall (RR)</div>
+                                        <div className="text-xl font-mono text-cyan-300 font-bold">{(result.evaluationMetrics.recall * 100).toFixed(1)}%</div>
+                                    </div>
+                                    <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                        <div className="text-[10px] text-slate-400 uppercase">F1-Score / AUC</div>
+                                        <div className="text-lg font-mono text-slate-200 font-bold">
+                                            {result.evaluationMetrics.f1Score.toFixed(2)} <span className="text-slate-500 text-sm font-normal mx-1">/</span> {result.evaluationMetrics.auc.toFixed(2)}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Trading Performance Metrics */}
+                            <div>
+                                <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 border-b border-purple-500/20 pb-1">Simulated Trading Performance</h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                        <div className="text-[10px] text-slate-400 uppercase">Winning Rate (WR)</div>
+                                        <div className={`text-xl font-mono font-bold ${result.tradingMetrics.winningRate > 0.5 ? 'text-green-400' : 'text-yellow-400'}`}>
+                                            {(result.tradingMetrics.winningRate * 100).toFixed(1)}%
+                                        </div>
+                                    </div>
+                                    <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                        <div className="text-[10px] text-slate-400 uppercase">Annual Return (ARR)</div>
+                                        <div className={`text-xl font-mono font-bold ${result.tradingMetrics.annualizedReturn > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                            {(result.tradingMetrics.annualizedReturn * 100).toFixed(1)}%
+                                        </div>
+                                    </div>
+                                    <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                        <div className="text-[10px] text-slate-400 uppercase">Sharpe Ratio (ASR)</div>
+                                        <div className="text-xl font-mono text-purple-300 font-bold">{result.tradingMetrics.sharpeRatio.toFixed(2)}</div>
+                                    </div>
+                                    <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                        <div className="text-[10px] text-slate-400 uppercase">Max Drawdown (MDD)</div>
+                                        <div className="text-xl font-mono text-red-400 font-bold">{(result.tradingMetrics.maxDrawdown * 100).toFixed(1)}%</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Feature Importance */}
                 <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6">

@@ -172,7 +172,7 @@ const BacktestView: React.FC = () => {
                 <button 
                     onClick={handleRun}
                     disabled={isLoading}
-                    className={`w-full py-3 rounded font-bold text-white transition-all mt-4 ${isLoading ? 'bg-slate-700 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-500 shadow-lg shadow-purple-900/30'}`}
+                    className={`w-full py-3 rounded font-bold text-white transition-all mt-4 ${isLoading ? 'bg-slate-700 cursor-not-allowed' : 'bg-cyan-600 hover:bg-cyan-500 shadow-lg shadow-cyan-900/30'}`}
                 >
                     {isLoading ? "Running Simulation..." : "Run Backtest"}
                 </button>
@@ -192,7 +192,7 @@ const BacktestView: React.FC = () => {
             
             {isLoading && (
                 <div className="h-full flex items-center justify-center">
-                     <div className="w-12 h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+                     <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
                 </div>
             )}
 
@@ -227,7 +227,7 @@ const BacktestView: React.FC = () => {
                               <XAxis dataKey="date" stroke="#64748b" tick={{fontSize: 10}} />
                               <YAxis stroke="#64748b" tick={{fontSize: 10}} domain={['auto', 'auto']} />
                               <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155' }} />
-                              <Line type="monotone" dataKey="value" stroke="#a855f7" strokeWidth={2} dot={false} />
+                              <Line type="monotone" dataKey="value" stroke="#06b6d4" strokeWidth={2} dot={false} />
                             </LineChart>
                          </ResponsiveContainer>
                     </div>

@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, InstitutionalDeepDiveResult, ETFProfile, OptimalFuzzyDesignResult, FFTSPLPRResult } from "../types";
 
@@ -500,6 +501,13 @@ export const runMLSimulation = async (
     - Incorporate associative memory or hybrid mechanisms to enhance pattern recognition capabilities in the nonlinear dynamic system.
     - Focus on capturing complex, nonlinear relationships between the target asset and external market drivers.
     `;
+  } else if (modelType === "Deep Recurrent Q-Network (DRQN)") {
+    specificInstructions = `
+    Specific Architecture Instructions:
+    - Implement Deep Recurrent Q-Network (DRQN), combining LSTM (Long Short-Term Memory) with Deep Q-Network (DQN).
+    - Address the "Partially Observable Markov Decision Process" (POMDP) nature of financial markets by maintaining an internal state (memory) of past observations.
+    - Integrate temporal dependencies directly into the state representation to improve policy learning in non-stationary market conditions.
+    `;
   }
 
   const prompt = `Act as an advanced AI Trading Model (${modelType}). 
@@ -513,6 +521,10 @@ export const runMLSimulation = async (
   
   Simulate a prediction for the specified horizon (${predictionHorizon}) starting AFTER the training end date.
   
+  Also, calculate and include the following evaluation metrics for the simulated test set:
+  1. Model Accuracy (AR), Precision (PR), Recall (RR), F1-Score, and AUC.
+  2. Trading Performance: Winning Rate (WR), Annualized Return (ARR), Annualized Sharpe Ratio (ASR), and Maximum Drawdown (MDD).
+
   Return JSON matching the schema.
   `;
 
@@ -530,6 +542,25 @@ export const runMLSimulation = async (
             confidenceScore: { type: Type.NUMBER },
             volatility: { type: Type.STRING },
             modelUsed: { type: Type.STRING },
+            evaluationMetrics: {
+                type: Type.OBJECT,
+                properties: {
+                    accuracy: { type: Type.NUMBER },
+                    precision: { type: Type.NUMBER },
+                    recall: { type: Type.NUMBER },
+                    f1Score: { type: Type.NUMBER },
+                    auc: { type: Type.NUMBER }
+                }
+            },
+            tradingMetrics: {
+                type: Type.OBJECT,
+                properties: {
+                    winningRate: { type: Type.NUMBER },
+                    annualizedReturn: { type: Type.NUMBER },
+                    sharpeRatio: { type: Type.NUMBER },
+                    maxDrawdown: { type: Type.NUMBER }
+                }
+            },
             featureImportance: {
               type: Type.ARRAY,
               items: {

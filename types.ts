@@ -128,6 +128,21 @@ export interface MLPredictionResult {
   featureImportance: { feature: string; score: number }[];
   predictionPath: { date: string; price: number; upper: number; lower: number }[];
   explanation: string;
+  // Model Performance Indicators
+  evaluationMetrics: {
+      accuracy: number; // AR
+      precision: number; // PR
+      recall: number; // RR
+      f1Score: number; // F1
+      auc: number; // AUC
+  };
+  // Trading Performance Indicators
+  tradingMetrics: {
+      winningRate: number; // WR
+      annualizedReturn: number; // ARR
+      sharpeRatio: number; // ASR
+      maxDrawdown: number; // MDD
+  };
 }
 
 // --- Community & Institutional Types ---
