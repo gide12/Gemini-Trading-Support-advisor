@@ -7,6 +7,7 @@ export enum AnalysisType {
   Fundamental = "Fundamental Analysis",
   Technical = "Technical Analysis",
   Clustering = "Cluster Analysis",
+  TotalView = "Nasdaq TotalView",
   Chart = "Chart",
   Quantum = "Quantum Forecast",
   Ideas = "Trade Ideas"
@@ -51,6 +52,28 @@ export interface ClusteringData {
   }[];
 }
 
+export interface TotalViewData {
+    currentPrice: number;
+    imbalance: {
+        shares: number;
+        side: "Buy" | "Sell";
+        strength: string; // e.g. "Moderate Buy Side Imbalance"
+    };
+    bids: {
+        price: number;
+        shares: number;
+        venue: string; // MPID e.g. NSDQ, ARCA
+        orders: number;
+    }[];
+    asks: {
+        price: number;
+        shares: number;
+        venue: string;
+        orders: number;
+    }[];
+    summary: string;
+}
+
 export interface AnalysisResult {
   ticker: string;
   type: AnalysisType;
@@ -67,6 +90,7 @@ export interface AnalysisResult {
   financials?: Record<string, string>;
   technicalAnalysis?: TechnicalAnalysisData;
   clusteringData?: ClusteringData;
+  totalViewData?: TotalViewData;
   valuationStatus?: "Overvalued" | "Undervalued" | "Fair Value";
   intrinsicValue?: string;
   mpidData?: {

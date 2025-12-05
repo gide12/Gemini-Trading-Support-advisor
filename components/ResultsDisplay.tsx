@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { AnalysisResult, AnalysisType } from "../types";
 import ReactMarkdown from 'react-markdown';
@@ -74,12 +75,15 @@ const parseIndicatorValue = (str: string, defaultValue: number) => {
     return match ? parseFloat(match[0]) : defaultValue;
 };
 
-const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
-  result,
-  isLoading,
-  activeTab,
-}) => {
+const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isLoading, activeTab }) => {
   const [showTechChart, setShowTechChart] = useState(true);
+  const [timestamp, setTimestamp] = useState(new Date());
+
+  // Update timestamp every second to keep the "Live" feel in the UI
+  useEffect(() => {
+    const timer = setInterval(() => setTimestamp(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Memoize mock data generation to prevent regeneration on renders
   const chartData = useMemo(() => {
@@ -132,6 +136,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   const isTechnical = activeTab === AnalysisType.Technical;
   const isClustering = activeTab === AnalysisType.Clustering;
   const isFundamental = activeTab === AnalysisType.Fundamental;
+  const isTotalView = activeTab === AnalysisType.TotalView;
 
   return (
     <div className="bg-[#131B2E] rounded-lg border border-purple-500/30 p-6 shadow-xl min-h-[400px]">
@@ -165,6 +170,107 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
           </div>
       )}
       
+      {/* NASDAQ TOTALVIEW (Level 2) */}
+      {isTotalView && result.totalViewData && (
+          <div className="animate-fade-in space-y-6">
+              {/* Imbalance Meter */}
+              <div className="bg-slate-800/50 rounded-lg p-4 border border-purple-500/20">
+                  <div className="flex justify-between items-center mb-2">
+                       <div className="flex flex-col">
+                           <span className="text-sm font-bold text-slate-400 uppercase">Net Order Imbalance</span>
+                           <span className="text-[10px] text-slate-500 font-mono mt-0.5 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                                Updated: {timestamp.toLocaleDateString()} {timestamp.toLocaleTimeString()}.{timestamp.getMilliseconds().toString().padStart(3, '0')}
+                           </span>
+                       </div>
+                       <span className="text-sm font-bold" style={{ color: result.totalViewData.imbalance.side === 'Buy' ? '#089981' : '#F23645' }}>
+                           {result.totalViewData.imbalance.side} Side ({result.totalViewData.imbalance.shares.toLocaleString()} sh)
+                       </span>
+                  </div>
+                  <div className="w-full h-3 bg-slate-700 rounded-full overflow-hidden flex">
+                       <div 
+                           className="h-full transition-all" 
+                           style={{
+                               width: result.totalViewData.imbalance.side === 'Buy' ? '70%' : '30%',
+                               backgroundColor: '#089981'
+                           }}
+                       ></div>
+                       <div 
+                           className="h-full transition-all" 
+                           style={{
+                               width: result.totalViewData.imbalance.side === 'Sell' ? '70%' : '30%',
+                               backgroundColor: '#F23645'
+                           }}
+                       ></div>
+                  </div>
+                  <p className="text-xs text-center mt-2 text-slate-400 italic">{result.totalViewData.imbalance.strength}</p>
+              </div>
+
+              {/* Depth Chart Visualization (Basic Area) */}
+              <div className="h-48 w-full bg-[#131722] rounded-lg border border-purple-500/20 p-2 relative">
+                   <div className="absolute top-2 left-2 text-[10px] text-slate-500 uppercase font-bold z-10">Market Depth Visualization</div>
+                   <ResponsiveContainer width="100%" height="100%">
+                       <AreaChart data={[
+                           ...result.totalViewData.bids.slice(0, 10).reverse().map(b => ({ price: b.price, bidSize: b.shares, askSize: 0 })),
+                           ...result.totalViewData.asks.slice(0, 10).map(a => ({ price: a.price, bidSize: 0, askSize: a.shares }))
+                       ]}>
+                           <defs>
+                                <linearGradient id="colorBid" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#089981" stopOpacity={0.5}/>
+                                    <stop offset="95%" stopColor="#089981" stopOpacity={0}/>
+                                </linearGradient>
+                                <linearGradient id="colorAsk" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#F23645" stopOpacity={0.5}/>
+                                    <stop offset="95%" stopColor="#F23645" stopOpacity={0}/>
+                                </linearGradient>
+                           </defs>
+                           <XAxis dataKey="price" hide />
+                           <Tooltip contentStyle={{ backgroundColor: '#131722', borderColor: '#334155', color: '#fff' }} />
+                           <Area type="step" dataKey="bidSize" stroke="#089981" strokeWidth={2} fill="url(#colorBid)" />
+                           <Area type="step" dataKey="askSize" stroke="#F23645" strokeWidth={2} fill="url(#colorAsk)" />
+                       </AreaChart>
+                   </ResponsiveContainer>
+              </div>
+
+              {/* Order Book Tables */}
+              <div className="grid grid-cols-2 gap-px bg-slate-700 border border-slate-700 rounded overflow-hidden">
+                  {/* BIDS */}
+                  <div className="bg-[#131B2E]">
+                      <div className="p-2 text-center font-bold text-xs uppercase border-b" style={{ backgroundColor: 'rgba(8, 153, 129, 0.15)', borderColor: 'rgba(8, 153, 129, 0.3)', color: '#089981' }}>Bid Queue</div>
+                      <div className="text-[10px] text-slate-500 flex px-2 py-1 border-b border-slate-800">
+                          <span className="w-10">MPID</span>
+                          <span className="flex-1 text-right">Shares</span>
+                          <span className="w-16 text-right">Price</span>
+                      </div>
+                      {result.totalViewData.bids.map((bid, i) => (
+                          <div key={i} className="flex px-2 py-1 text-xs border-b border-slate-800/50 hover:bg-[#089981]/10 transition-colors">
+                              <span className="w-10 text-slate-400 font-mono">{bid.venue}</span>
+                              <span className="flex-1 text-right text-slate-300 font-mono">{bid.shares.toLocaleString()}</span>
+                              <span className="w-16 text-right font-mono font-bold" style={{ color: '#089981' }}>{bid.price.toFixed(2)}</span>
+                          </div>
+                      ))}
+                  </div>
+
+                  {/* ASKS */}
+                  <div className="bg-[#131B2E]">
+                      <div className="p-2 text-center font-bold text-xs uppercase border-b" style={{ backgroundColor: 'rgba(242, 54, 69, 0.15)', borderColor: 'rgba(242, 54, 69, 0.3)', color: '#F23645' }}>Ask Queue</div>
+                      <div className="text-[10px] text-slate-500 flex px-2 py-1 border-b border-slate-800">
+                           <span className="w-16 text-left">Price</span>
+                           <span className="flex-1 text-left">Shares</span>
+                           <span className="w-10 text-right">MPID</span>
+                      </div>
+                      {result.totalViewData.asks.map((ask, i) => (
+                          <div key={i} className="flex px-2 py-1 text-xs border-b border-slate-800/50 hover:bg-[#F23645]/10 transition-colors">
+                              <span className="w-16 text-left font-mono font-bold" style={{ color: '#F23645' }}>{ask.price.toFixed(2)}</span>
+                              <span className="flex-1 text-left text-slate-300 font-mono">{ask.shares.toLocaleString()}</span>
+                              <span className="w-10 text-right text-slate-400 font-mono">{ask.venue}</span>
+                          </div>
+                      ))}
+                  </div>
+              </div>
+          </div>
+      )}
+
       {/* FUNDAMENTAL ANALYSIS - VALUATION & MPID */}
       {isFundamental && (
           <div className="space-y-6 mb-6">
@@ -526,7 +632,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       )}
 
       {/* Text Content - for General Views, and Summary of Technical/Yahoo/Ideas */}
-      {!isClustering && (
+      {!isClustering && !isTotalView && (
           <div className="prose prose-invert max-w-none text-slate-300">
              <ReactMarkdown
                 components={{

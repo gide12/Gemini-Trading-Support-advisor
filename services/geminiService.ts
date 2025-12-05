@@ -1,5 +1,6 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, InstitutionalDeepDiveResult, ETFProfile, OptimalFuzzyDesignResult, FFTSPLPRResult } from "../types";
+import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, InstitutionalDeepDiveResult, ETFProfile, OptimalFuzzyDesignResult, FFTSPLPRResult, TotalViewData } from "../types";
 
 // Initialize the client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -241,7 +242,50 @@ export const analyzeStock = async (
         };
     }
 
-    // 7. CLUSTERING (Structured JSON)
+    // 7. NASDAQ TOTALVIEW (LEVEL 2)
+    if (analysisType === AnalysisType.TotalView) {
+        const prompt = `Act as a NASDAQ TotalView emulator. Simulate Level 2 market depth data for ${ticker}.
+        
+        Generate a realistic Order Book snapshot:
+        1. Get the current estimated price.
+        2. Create 10 Bid levels and 10 Ask levels around this price.
+        3. Use real MPIDs (NSDQ, ARCA, EDGX, BATS, CDEL, NITE).
+        4. Calculate Order Imbalance.
+
+        Return ONLY a raw JSON object with this structure:
+        {
+          "currentPrice": number,
+          "imbalance": {
+            "shares": number (e.g., 50000),
+            "side": "Buy" | "Sell",
+            "strength": "string (e.g. 'Heavy Sell Side Pressure')"
+          },
+          "bids": [
+             { "price": number, "shares": number, "venue": "string", "orders": number }
+          ],
+          "asks": [
+             { "price": number, "shares": number, "venue": "string", "orders": number }
+          ],
+          "summary": "string (brief interpretation of the order flow)"
+        }`;
+
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: { tools: [{ googleSearch: {} }] },
+        });
+
+        const json = cleanAndParseJSON(response.text || "{}");
+        
+        return {
+            ticker,
+            type: analysisType,
+            content: json.summary,
+            totalViewData: json
+        };
+    }
+
+    // 8. CLUSTERING (Structured JSON)
     if (analysisType === AnalysisType.Clustering) {
       let prompt = "";
       
@@ -322,7 +366,7 @@ export const analyzeStock = async (
       };
     }
 
-    // 8. QUANTUM (General Text)
+    // 9. QUANTUM (General Text)
     const promptMap: Record<string, string> = {
       [AnalysisType.Quantum]: `Perform a theoretical Quantum Financial Forecast for ${ticker} using advanced quantum computing algorithms.
       

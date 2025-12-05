@@ -1,3 +1,4 @@
+
 import React from "react";
 import { AnalysisType } from "../types";
 
@@ -11,6 +12,7 @@ const tabs: AnalysisType[] = [
   AnalysisType.YahooFinance,
   AnalysisType.Fundamental,
   AnalysisType.Technical,
+  AnalysisType.TotalView,
   AnalysisType.Clustering,
   AnalysisType.Quantum,
   AnalysisType.Ideas,
