@@ -244,23 +244,50 @@ export const analyzeStock = async (
 
     // 7. CLUSTERING (Structured JSON)
     if (analysisType === AnalysisType.Clustering) {
-      const prompt = `Act as a Quantitative Analyst. Perform a market simulation using **${ticker}**.
+      let prompt = "";
       
-      Task: Group major US stocks into clusters based on **Correlation + Hierarchical** logic (identifying structural market regimes).
-      
-      Requirements:
-      1. Generate 4 to 6 distinct clusters.
-      2. For each cluster, provide a short 2-3 word Name (e.g. "Semiconductor Momentum", "Defensive Value").
-      3. Provide a concise description (max 15 words) explaining the common factor.
-      4. List exactly 6-8 representative stock tickers per cluster.
+      if (ticker === "GBML-EMO CLUSTERING") {
+        prompt = `Act as a Quantitative Analyst. Perform a market simulation using **${ticker}**.
+        
+        Specific Methodology:
+        - Use a Multiobjective Fuzzy Genetics-Based Machine Learning (GBML) algorithm.
+        - Hybrid Michigan and Pittsburgh approach within Evolutionary Multiobjective Optimization (EMO).
+        - Objective 1: Maximize Accuracy (correctly classified trading patterns).
+        - Objective 2: Minimize Complexity (number of fuzzy rules/antecedents).
+        
+        Task: Group stocks based on their position on the Pareto Front of this Interpretability-Accuracy trade-off.
+        
+        Requirements:
+        1. Create clusters representing the trade-off (e.g., "High Accuracy/Low Complexity", "High Accuracy/High Complexity", "Low Accuracy (Noisy)").
+        2. Provide a concise description of the trade-off characteristics.
+        3. List exactly 6-8 representative stock tickers per cluster.
 
-      Return ONLY raw JSON matching this structure:
-      {
-        "algorithm": "${ticker}",
-        "clusters": [
-          { "name": "string", "description": "string", "stocks": ["AAPL", "MSFT"] }
-        ]
-      }`;
+        Return ONLY raw JSON matching this structure:
+        {
+          "algorithm": "${ticker}",
+          "clusters": [
+            { "name": "string (e.g. Pareto Optimal)", "description": "string", "stocks": ["AAPL", "MSFT"] }
+          ]
+        }`;
+      } else {
+        prompt = `Act as a Quantitative Analyst. Perform a market simulation using **${ticker}**.
+        
+        Task: Group major US stocks into clusters based on **${ticker}** logic (identifying structural market regimes).
+        
+        Requirements:
+        1. Generate 4 to 6 distinct clusters.
+        2. For each cluster, provide a short 2-3 word Name (e.g. "Semiconductor Momentum", "Defensive Value").
+        3. Provide a concise description (max 15 words) explaining the common factor.
+        4. List exactly 6-8 representative stock tickers per cluster.
+
+        Return ONLY raw JSON matching this structure:
+        {
+          "algorithm": "${ticker}",
+          "clusters": [
+            { "name": "string", "description": "string", "stocks": ["AAPL", "MSFT"] }
+          ]
+        }`;
+      }
 
       const response = await ai.models.generateContent({
         model: modelName,
@@ -508,6 +535,45 @@ export const runMLSimulation = async (
     - Address the "Partially Observable Markov Decision Process" (POMDP) nature of financial markets by maintaining an internal state (memory) of past observations.
     - Integrate temporal dependencies directly into the state representation to improve policy learning in non-stationary market conditions.
     `;
+  } else if (modelType === "Generative Adversarial Networks (GANs)") {
+    specificInstructions = `
+    Specific Architecture Instructions:
+    - Implement Generative Adversarial Networks (GANs) for financial time-series analysis.
+    - Use the Generator to create synthetic future price paths or identify potential market scenarios based on historical data distribution.
+    - Use the Discriminator to distinguish between real market movements and generated noise, refining the predictive accuracy.
+    - Focus on capturing the underlying probability distribution of asset returns to predict future price movements or volatility.
+    `;
+  } else if (modelType === "GRU (Gated Recurrent Unit)") {
+    specificInstructions = `
+    Specific Architecture Instructions:
+    - Implement Gated Recurrent Unit (GRU) networks.
+    - Leverage the simplified gating mechanism (update and reset gates) compared to LSTM for faster convergence on financial data.
+    - Focus on effectively capturing short-to-medium term temporal dependencies in the price action.
+    - Mitigate the vanishing gradient problem to learn sequences effectively.
+    `;
+  } else if (modelType === "Adaptive Neuro-Fuzzy Inference System (ANFIS)") {
+    specificInstructions = `
+    Specific Architecture Instructions:
+    - Implement Adaptive Neuro-Fuzzy Inference System (ANFIS).
+    - Combine the learning capabilities of neural networks with the reasoning capabilities of fuzzy logic.
+    - Use hybrid learning (backpropagation + least squares) to tune membership functions.
+    - Focus on modeling complex non-linear relationships with interpretable fuzzy rules to predict price movements.
+    `;
+  } else if (modelType === "Function-on-Function Direct Neural Networks (FFDNNs)") {
+    specificInstructions = `
+    Specific Architecture Instructions:
+    - Implement Function-on-Function Direct Neural Networks (FFDNNs) based on Functional Data Analysis (FDA) principles.
+    - Treat the financial time series as functional data objects (continuous curves) rather than discrete vectors.
+    - Map the functional input (historical price curve) directly to the functional output (future price curve) using functional weights and bias operators.
+    - Focus on capturing the continuous underlying dynamics and integral operators of the market process.
+    `;
+  } else if (modelType === "Function-on-Function Basis Neural Networks (FFBNNs)") {
+    specificInstructions = `
+    Specific Architecture Instructions:
+    - Implement Function-on-Function Basis Neural Networks (FFBNNs).
+    - Represent historical price curves and future price trajectories using basis expansions (e.g., B-splines or Fourier series).
+    - Learn the mapping between the basis coefficients of the input functions and the output functions to capture the continuous dynamics of the financial time series.
+    `;
   }
 
   const prompt = `Act as an advanced AI Trading Model (${modelType}). 
@@ -660,460 +726,93 @@ export const runInstitutionalDeepDive = async (ticker: string, institution: stri
     1. Do they currently hold shares? (Check recent 13F filings or news).
     2. Have they released any specific research reports, notes, or public comments on ${ticker}?
     3. What is their general sentiment? (Bullish/Bearish/Neutral).
-    4. Find the MOST RELEVANT URL for this institution's research page or specific report.
-    
-    IMPORTANT: Return ONLY a raw JSON object (no markdown) matching this structure:
+    4. Find a direct URL source for this info if possible.
+
+    Return ONLY a raw JSON object with this structure:
     {
       "institution": "${institution}",
       "ticker": "${ticker}",
       "relationship": "Holder" | "Observer" | "Bearish" | "Unknown",
-      "summary": "string",
-      "sourceUrl": "string",
-      "lastFilingDate": "string"
+      "summary": "string (brief summary of findings)",
+      "sourceUrl": "string (URL to 13F, news, or investor page)",
+      "lastFilingDate": "string (optional)"
     }
     `;
-    
+
     try {
         const response = await ai.models.generateContent({
             model: modelName,
             contents: prompt,
             config: {
                 tools: [{ googleSearch: {} }],
-                // Removed responseSchema to prevent conflict with tools
-            }
+            },
         });
 
-        const data = cleanAndParseJSON(response.text || "{}");
-        return data as InstitutionalDeepDiveResult;
+        const json = cleanAndParseJSON(response.text || "{}");
+        // Ensure sourceUrl exists
+        const groundingUrl = response.candidates?.[0]?.groundingMetadata?.groundingChunks?.[0]?.web?.uri;
 
+        return {
+            institution,
+            ticker,
+            relationship: json.relationship || "Unknown",
+            summary: json.summary || "No specific data found.",
+            sourceUrl: json.sourceUrl || groundingUrl || "#",
+            lastFilingDate: json.lastFilingDate
+        };
     } catch (error: any) {
-        console.error("Institutional Deep Dive Error:", error);
-        throw new Error(`Deep Dive Failed: ${error.message}`);
+        console.error("Deep Dive Error:", error);
+        throw new Error("Deep Dive Analysis Failed");
     }
 };
 
-export const runMPTAnalysis = async (holdings: Holding[]): Promise<MPTAnalysisResult> => {
-  const portfolioSummary = holdings.map(h => `${h.ticker}: ${h.quantity} shares`).join(", ");
-  
-  const prompt = `
-    Perform a Modern Portfolio Theory (MPT) analysis on: ${portfolioSummary}.
-    1. Estimate current metrics.
-    2. Calculate Optimal portfolio.
-    3. Generate Efficient Frontier points.
-    4. Provide suggestions.
-    
-    Return JSON matching schema.
-  `;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-                currentMetrics: {
-                    type: Type.OBJECT,
-                    properties: {
-                        expectedReturn: { type: Type.NUMBER },
-                        volatility: { type: Type.NUMBER },
-                        sharpeRatio: { type: Type.NUMBER }
-                    }
-                },
-                optimalMetrics: {
-                    type: Type.OBJECT,
-                    properties: {
-                        expectedReturn: { type: Type.NUMBER },
-                        volatility: { type: Type.NUMBER },
-                        sharpeRatio: { type: Type.NUMBER }
-                    }
-                },
-                efficientFrontier: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            risk: { type: Type.NUMBER },
-                            return: { type: Type.NUMBER }
-                        }
-                    }
-                },
-                suggestions: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            ticker: { type: Type.STRING },
-                            action: { type: Type.STRING, enum: ["Buy", "Sell", "Hold"] },
-                            amount: { type: Type.STRING },
-                            reason: { type: Type.STRING }
-                        }
-                    }
-                },
-                correlationMatrix: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            ticker1: { type: Type.STRING },
-                            ticker2: { type: Type.STRING },
-                            value: { type: Type.NUMBER }
-                        }
-                    }
-                }
-            }
-        }
+export const runMPTAnalysis = async (holdings: Holding[], rebalancingStrategy: string = "Standard MPT"): Promise<MPTAnalysisResult> => {
+    const holdingsStr = holdings.map(h => `${h.ticker}: $${h.marketValue}`).join(', ');
+    const prompt = `
+      Perform a Modern Portfolio Theory (MPT) optimization for this portfolio: ${holdingsStr}.
+      Calculate Efficient Frontier, Sharpe Ratios, and Rebalancing suggestions.
+      
+      Selected Rebalancing Strategy: "${rebalancingStrategy}".
+      
+      Instructions based on Strategy:
+      - If "Time-based (Monthly/Quarterly)": Focus rebalancing advice on calendar reset (e.g. adjust to optimal weights at end of month).
+      - If "Threshold-based (>5% Deviation)": Only suggest rebalancing if current weight deviates > 5% from optimal weight.
+      - If "Hybrid": Combine both approaches (Time-based triggers + Threshold breaches).
+      
+      Return ONLY a raw JSON object:
+      {
+        "currentMetrics": { "expectedReturn": number, "volatility": number, "sharpeRatio": number },
+        "optimalMetrics": { "expectedReturn": number, "volatility": number, "sharpeRatio": number },
+        "efficientFrontier": [{ "risk": number, "return": number }],
+        "suggestions": [{ "ticker": "string", "action": "Buy"|"Sell"|"Hold", "amount": "string", "reason": "string" }],
+        "rebalancingContext": { "strategyUsed": "string", "nextRebalanceDate": "string", "notes": "string" },
+        "correlationMatrix": [{ "ticker1": "string", "ticker2": "string", "value": number }]
       }
-    });
-
-    return JSON.parse(response.text || "{}") as MPTAnalysisResult;
-  } catch (error: any) {
-    console.error("MPT Analysis Error:", error);
-    const msg = error.message || error.toString();
-    throw new Error(`MPT Analysis Failed: ${msg}`);
-  }
-};
-
-export const runFuzzyAnalysis = async (ticker: string): Promise<FuzzyAnalysisResult> => {
-  const prompt = `
-  Act as a Quantitative Analyst using a Fuzzy-Logic Correlation Engine. Analyze ${ticker}.
-  
-  Evaluate the following inputs to determine fuzzy membership levels:
-  
-  1. Market Maker (MM) Behavior:
-     - Spread Compression Level (MMs narrow spread -> stabilizing/bullish)
-     - Order Book Imbalance (MM replenishing bid side)
-     - Iceberg Order Probability
-     - Quoted Depth Volatility
-     
-  2. Whale Activity:
-     - Block Trade Frequency
-     - Sweep Orders
-     - Flow Toxicity (VPIN)
-     - Large-Ticket Hidden Orders
-     
-  3. Accumulation / Institutional:
-     - Persistent Net Buying Pressure
-     - Dark Pool Volume Ratio
-     - Volume/Volatility Divergence
-     - SAR Clusters
-     
-  Return JSON matching the schema with specific fuzzy scores (e.g., "Weak", "Strong", "Extreme") and metric descriptions.
-  `;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-             marketMakerBehavior: {
-                 type: Type.OBJECT,
-                 properties: {
-                     score: { type: Type.STRING, enum: ["Weak", "Moderate", "Strong"] },
-                     value: { type: Type.NUMBER },
-                     metrics: {
-                         type: Type.OBJECT,
-                         properties: {
-                             spreadCompression: { type: Type.STRING },
-                             orderBookImbalance: { type: Type.STRING },
-                             icebergProbability: { type: Type.STRING },
-                             depthVolatility: { type: Type.STRING }
-                         }
-                     }
-                 }
-             },
-             whaleActivity: {
-                 type: Type.OBJECT,
-                 properties: {
-                     score: { type: Type.STRING, enum: ["None", "Low", "Elevated", "Extreme"] },
-                     value: { type: Type.NUMBER },
-                     metrics: {
-                         type: Type.OBJECT,
-                         properties: {
-                             blockTradeFreq: { type: Type.STRING },
-                             sweepOrders: { type: Type.STRING },
-                             flowToxicity: { type: Type.STRING },
-                             hiddenOrders: { type: Type.STRING }
-                         }
-                     }
-                 }
-             },
-             accumulation: {
-                 type: Type.OBJECT,
-                 properties: {
-                     score: { type: Type.STRING, enum: ["Low", "Medium", "High", "Very High"] },
-                     value: { type: Type.NUMBER },
-                     metrics: {
-                         type: Type.OBJECT,
-                         properties: {
-                             netBuyingPressure: { type: Type.STRING },
-                             darkPoolRatio: { type: Type.STRING },
-                             volVolatilityDiv: { type: Type.STRING },
-                             sarClusters: { type: Type.STRING }
-                         }
-                     }
-                 }
-             },
-             summary: { type: Type.STRING }
-          }
-        }
-      }
-    });
-
-    const data = JSON.parse(response.text || "{}");
-    return { ...data, ticker } as FuzzyAnalysisResult;
-
-  } catch (error: any) {
-    console.error("Fuzzy Analysis Error:", error);
-    const msg = error.message || error.toString();
-    throw new Error(`Fuzzy Analysis Failed: ${msg}`);
-  }
-};
-
-export const runFFFCMGNNAnalysis = async (ticker: string): Promise<FFFCMGNNResult> => {
-    const prompt = `
-    Analyze ${ticker} using the "A Fama-French Inspired Fuzzy Cognitive Map Combined with Graph Neural Network for Stock Prediction" model.
-
-    Tasks:
-    1. Evaluate Fama-French 3 Factors: Market Risk (MKT), Size Factor (SMB), Value Factor (HML) relative to this stock.
-    2. Construct a simulated Fuzzy Cognitive Map (FCM) showing causal links between macro/micro concepts and the stock price.
-    3. Simulate a Graph Neural Network (GNN) forward pass on this map to predict the trend.
-
-    Return JSON:
-    - famaFrenchFactors: { marketRisk: {value (0-1), description}, sizeFactorSMB: {value, description}, valueFactorHML: {value, description} }
-    - fuzzyCognitiveMap: { nodes: [{id, name, activationLevel (0-1), influenceType ("Positive"|"Negative")}], primaryCausalLink }
-    - gnnPrediction: { signal ("Buy"|"Sell" etc), confidence (0-100), graphEmbedding (array of 5 numbers for visualization), predictedTrend }
-    - summary
     `;
-
+    
     try {
         const response = await ai.models.generateContent({
             model: modelName,
             contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        famaFrenchFactors: {
-                            type: Type.OBJECT,
-                            properties: {
-                                marketRisk: { type: Type.OBJECT, properties: { value: {type: Type.NUMBER}, description: {type: Type.STRING} } },
-                                sizeFactorSMB: { type: Type.OBJECT, properties: { value: {type: Type.NUMBER}, description: {type: Type.STRING} } },
-                                valueFactorHML: { type: Type.OBJECT, properties: { value: {type: Type.NUMBER}, description: {type: Type.STRING} } }
-                            }
-                        },
-                        fuzzyCognitiveMap: {
-                            type: Type.OBJECT,
-                            properties: {
-                                nodes: {
-                                    type: Type.ARRAY,
-                                    items: {
-                                        type: Type.OBJECT,
-                                        properties: {
-                                            id: { type: Type.STRING },
-                                            name: { type: Type.STRING },
-                                            activationLevel: { type: Type.NUMBER },
-                                            influenceType: { type: Type.STRING, enum: ["Positive", "Negative", "Neutral"] }
-                                        }
-                                    }
-                                },
-                                primaryCausalLink: { type: Type.STRING }
-                            }
-                        },
-                        gnnPrediction: {
-                            type: Type.OBJECT,
-                            properties: {
-                                signal: { type: Type.STRING, enum: ["Strong Buy", "Buy", "Hold", "Sell", "Strong Sell"] },
-                                confidence: { type: Type.NUMBER },
-                                graphEmbedding: { type: Type.ARRAY, items: { type: Type.NUMBER } },
-                                predictedTrend: { type: Type.STRING }
-                            }
-                        },
-                        summary: { type: Type.STRING }
-                    }
-                }
-            }
+            config: { tools: [{ googleSearch: {} }] },
         });
-
-        const data = JSON.parse(response.text || "{}");
-        return { ...data, ticker } as FFFCMGNNResult;
-    } catch (error: any) {
-        console.error("FF-FCM-GNN Analysis Error:", error);
-        throw new Error(`Advanced Model Analysis Failed: ${error.message}`);
-    }
-};
-
-export const runOptimalFuzzyDesignAnalysis = async (ticker: string): Promise<OptimalFuzzyDesignResult> => {
-    const prompt = `
-    Analyze ${ticker} using the "Optimal Design of Type-1 and Type-2 Fuzzy Inference Systems (FIS)" framework.
-    
-    Evaluate the stock using these 5 computational frameworks:
-    1. Genetic-Fuzzy Systems (GFS): Optimize rule bases using genetic algorithms.
-    2. Neuro-Fuzzy Systems (NFS): Hybrid learning using neural networks to tune membership functions.
-    3. Hierarchical Fuzzy Systems (HFS): Reduce dimensionality by arranging logic in hierarchical layers.
-    4. Evolving Fuzzy Systems (EFS): Adapt rule structures online in real-time.
-    5. Multiobjective Fuzzy Systems (MFS): Trade-off between accuracy and interpretability (Pareto optimization).
-    
-    Return JSON matching the schema with specific optimization metrics for each.
-    `;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        gfsAnalysis: {
-                            type: Type.OBJECT,
-                            properties: {
-                                score: { type: Type.NUMBER },
-                                optimizationStatus: { type: Type.STRING },
-                                description: { type: Type.STRING }
-                            }
-                        },
-                        nfsAnalysis: {
-                            type: Type.OBJECT,
-                            properties: {
-                                networkDepth: { type: Type.NUMBER },
-                                learningRate: { type: Type.NUMBER },
-                                description: { type: Type.STRING }
-                            }
-                        },
-                        hfsAnalysis: {
-                            type: Type.OBJECT,
-                            properties: {
-                                layers: { type: Type.NUMBER },
-                                reducedRules: { type: Type.NUMBER },
-                                description: { type: Type.STRING }
-                            }
-                        },
-                        efsAnalysis: {
-                            type: Type.OBJECT,
-                            properties: {
-                                evolvingStatus: { type: Type.STRING, enum: ["Expanding", "Pruning", "Stable"] },
-                                adaptationSpeed: { type: Type.NUMBER },
-                                description: { type: Type.STRING }
-                            }
-                        },
-                        mfsAnalysis: {
-                            type: Type.OBJECT,
-                            properties: {
-                                accuracy: { type: Type.NUMBER },
-                                interpretability: { type: Type.NUMBER },
-                                paretoOptimal: { type: Type.BOOLEAN },
-                                description: { type: Type.STRING }
-                            }
-                        },
-                        summary: { type: Type.STRING }
-                    }
-                }
-            }
-        });
-
-        const data = JSON.parse(response.text || "{}");
-        return { ...data, ticker } as OptimalFuzzyDesignResult;
-    } catch (error: any) {
-        console.error("Optimal FIS Analysis Error:", error);
-        throw new Error(`Optimal FIS Analysis Failed: ${error.message}`);
-    }
-};
-
-export const runFFTSPLPRAnalysis = async (ticker: string): Promise<FFTSPLPRResult> => {
-    const prompt = `
-    Analyze ${ticker} using the "Two-Factor Fuzzy-Fluctuation Time Series (FFTS) model based on Probabilistic Linguistic Preference Relationship (PLPR)".
-    
-    Methodology:
-    1. Incorporate external factors affecting disturbance (External Shock) with internal potential trends (Internal Trend).
-    2. Employ Probabilistic Linguistic Preference Logical Relationship (PLPLR) to express fluctuation behavior rules and preference attributes.
-    3. Use Euclidean or Hamming distance as a similarity comparison method to identify appropriate rules from history.
-    
-    Return JSON matching schema:
-    - twoFactors: { internalTrend: {description, strength 0-1}, externalDisturbance: {description, impact 0-1} }
-    - plprRules: List of {ruleId, condition, preferenceBehavior, probability}
-    - similarityAnalysis: {methodUsed ("Euclidean Distance"|"Hamming Distance"), distanceValue, closestHistoricalRuleId}
-    - forecast: {direction, confidence, priceTarget}
-    - summary
-    `;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        twoFactors: {
-                            type: Type.OBJECT,
-                            properties: {
-                                internalTrend: { type: Type.OBJECT, properties: { description: {type: Type.STRING}, strength: {type: Type.NUMBER} } },
-                                externalDisturbance: { type: Type.OBJECT, properties: { description: {type: Type.STRING}, impact: {type: Type.NUMBER} } }
-                            }
-                        },
-                        plprRules: {
-                            type: Type.ARRAY,
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    ruleId: { type: Type.STRING },
-                                    condition: { type: Type.STRING },
-                                    preferenceBehavior: { type: Type.STRING },
-                                    probability: { type: Type.NUMBER }
-                                }
-                            }
-                        },
-                        similarityAnalysis: {
-                            type: Type.OBJECT,
-                            properties: {
-                                methodUsed: { type: Type.STRING, enum: ["Euclidean Distance", "Hamming Distance"] },
-                                distanceValue: { type: Type.NUMBER },
-                                closestHistoricalRuleId: { type: Type.STRING }
-                            }
-                        },
-                        forecast: {
-                            type: Type.OBJECT,
-                            properties: {
-                                direction: { type: Type.STRING, enum: ["Bullish", "Bearish", "Neutral"] },
-                                confidence: { type: Type.NUMBER },
-                                priceTarget: { type: Type.NUMBER }
-                            }
-                        },
-                        summary: { type: Type.STRING }
-                    }
-                }
-            }
-        });
-
-        const data = JSON.parse(response.text || "{}");
-        return { ...data, ticker } as FFTSPLPRResult;
-    } catch (error: any) {
-        console.error("FFTS-PLPR Analysis Error:", error);
-        throw new Error(`FFTS-PLPR Analysis Failed: ${error.message}`);
+        return cleanAndParseJSON(response.text || "{}") as MPTAnalysisResult;
+    } catch (e: any) {
+        throw new Error("MPT Analysis Failed");
     }
 };
 
 export const getETFProfile = async (ticker: string): Promise<ETFProfile> => {
   const prompt = `
-    Analyze the ETF ${ticker}. 
-    Find its name and its top 5-10 holdings with their current portfolio weights.
-    
-    IMPORTANT: Return ONLY a raw JSON object (no markdown, no code blocks) matching this structure:
+    Analyze the ETF **${ticker}**.
+    Retrieve its Name and Top 10 Holdings with their portfolio weights.
+
+    Return ONLY a raw JSON object with this structure:
     {
       "ticker": "${ticker}",
       "name": "string",
       "topHoldings": [
-        { "ticker": "string", "name": "string", "weight": number (percentage 0-100) }
+        { "ticker": "string", "name": "string", "weight": number }
       ]
     }
   `;
@@ -1124,14 +823,175 @@ export const getETFProfile = async (ticker: string): Promise<ETFProfile> => {
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
-        // Removed responseSchema to prevent conflict with tools
-      }
+      },
     });
 
-    const data = cleanAndParseJSON(response.text || "{}");
-    return data as ETFProfile;
+    const json = cleanAndParseJSON(response.text || "{}");
+    return json as ETFProfile;
   } catch (error: any) {
     console.error("ETF Profile Error:", error);
-    throw new Error(`ETF Analysis Failed: ${error.message}`);
+    throw new Error("Failed to fetch ETF Profile");
   }
+};
+
+export const runFuzzyAnalysis = async (ticker: string): Promise<FuzzyAnalysisResult> => {
+  const prompt = `
+    Act as a Fuzzy Logic Financial System. Analyze **${ticker}** to detect non-linear market phenomena.
+
+    1. **Market Maker Behavior**: Analyze spread compression, order book imbalance, iceberg probability.
+    2. **Whale Activity**: Analyze block trade frequency, sweep orders, flow toxicity.
+    3. **Accumulation**: Analyze net buying pressure, dark pool ratio, volatility divergence.
+
+    Return ONLY a raw JSON object with this structure:
+    {
+      "ticker": "${ticker}",
+      "marketMakerBehavior": {
+        "score": "Weak" | "Moderate" | "Strong",
+        "value": number (0-100),
+        "metrics": { "spreadCompression": "string", "orderBookImbalance": "string", "icebergProbability": "string", "depthVolatility": "string" }
+      },
+      "whaleActivity": {
+        "score": "None" | "Low" | "Elevated" | "Extreme",
+        "value": number (0-100),
+        "metrics": { "blockTradeFreq": "string", "sweepOrders": "string", "flowToxicity": "string", "hiddenOrders": "string" }
+      },
+      "accumulation": {
+        "score": "Low" | "Medium" | "High" | "Very High",
+        "value": number (0-100),
+        "metrics": { "netBuyingPressure": "string", "darkPoolRatio": "string", "volVolatilityDiv": "string", "sarClusters": "string" }
+      },
+      "summary": "string"
+    }
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+      },
+    });
+
+    return cleanAndParseJSON(response.text || "{}") as FuzzyAnalysisResult;
+  } catch (error: any) {
+    console.error("Fuzzy Analysis Error:", error);
+    throw new Error("Fuzzy Analysis Failed");
+  }
+};
+
+export const runFFFCMGNNAnalysis = async (ticker: string): Promise<FFFCMGNNResult> => {
+  const prompt = `
+    Perform a Hybrid FF-FCM-GNN Analysis for **${ticker}**.
+    
+    1. Calculate Fama-French 3-Factor inputs (MKT, SMB, HML).
+    2. Construct a Fuzzy Cognitive Map (FCM) of market causalities.
+    3. Simulate a Graph Neural Network (GNN) prediction based on these nodes.
+
+    Return ONLY a raw JSON object with this structure:
+    {
+      "ticker": "${ticker}",
+      "famaFrenchFactors": {
+         "marketRisk": { "value": number (0-1), "description": "string" },
+         "sizeFactorSMB": { "value": number (0-1), "description": "string" },
+         "valueFactorHML": { "value": number (0-1), "description": "string" }
+      },
+      "fuzzyCognitiveMap": {
+         "nodes": [
+            { "id": "string", "name": "string", "activationLevel": number (0-1), "influenceType": "Positive" | "Negative" | "Neutral" }
+         ],
+         "primaryCausalLink": "string"
+      },
+      "gnnPrediction": {
+         "signal": "Strong Buy" | "Buy" | "Hold" | "Sell" | "Strong Sell",
+         "confidence": number,
+         "graphEmbedding": [number, number, number, number, number],
+         "predictedTrend": "string"
+      },
+      "summary": "string"
+    }
+  `;
+
+  try {
+     const response = await ai.models.generateContent({
+      model: modelName,
+      contents: prompt,
+      config: { tools: [{ googleSearch: {} }] },
+    });
+    return cleanAndParseJSON(response.text || "{}") as FFFCMGNNResult;
+  } catch (e: any) {
+    console.error("FF-FCM-GNN Error", e);
+    throw new Error("FF-FCM-GNN Analysis Failed");
+  }
+};
+
+export const runOptimalFuzzyDesignAnalysis = async (ticker: string): Promise<OptimalFuzzyDesignResult> => {
+    const prompt = `
+      Perform an Optimal FIS Design Analysis for **${ticker}** using 5 computational frameworks:
+      GFS (Genetic), NFS (Neuro), HFS (Hierarchical), EFS (Evolving), and MFS (Multiobjective).
+
+      Return ONLY a raw JSON object:
+      {
+        "ticker": "${ticker}",
+        "gfsAnalysis": { "score": number, "optimizationStatus": "string", "description": "string" },
+        "nfsAnalysis": { "networkDepth": number, "learningRate": number, "description": "string" },
+        "hfsAnalysis": { "layers": number, "reducedRules": number, "description": "string" },
+        "efsAnalysis": { "evolvingStatus": "Expanding"|"Pruning"|"Stable", "adaptationSpeed": number, "description": "string" },
+        "mfsAnalysis": { "accuracy": number, "interpretability": number, "paretoOptimal": boolean, "description": "string" },
+        "summary": "string"
+      }
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: { tools: [{ googleSearch: {} }] },
+        });
+        return cleanAndParseJSON(response.text || "{}") as OptimalFuzzyDesignResult;
+    } catch (e: any) {
+        throw new Error("Optimal FIS Analysis Failed");
+    }
+};
+
+export const runFFTSPLPRAnalysis = async (ticker: string): Promise<FFTSPLPRResult> => {
+    const prompt = `
+      Perform a Two-Factor Fuzzy-Fluctuation (FFTS) Analysis based on Probabilistic Linguistic Preference Relationships (PLPR) for **${ticker}**.
+      
+      Compare Internal Trends vs External Disturbances.
+      Calculate Similarity using Euclidean or Hamming distance against historical rules.
+
+      Return ONLY a raw JSON object:
+      {
+        "ticker": "${ticker}",
+        "twoFactors": {
+            "internalTrend": { "description": "string", "strength": number },
+            "externalDisturbance": { "description": "string", "impact": number }
+        },
+        "plprRules": [
+            { "ruleId": "string", "condition": "string", "preferenceBehavior": "string", "probability": number }
+        ],
+        "similarityAnalysis": {
+            "methodUsed": "Euclidean Distance",
+            "distanceValue": number (0-1),
+            "closestHistoricalRuleId": "string"
+        },
+        "forecast": {
+            "direction": "Bullish" | "Bearish" | "Neutral",
+            "confidence": number,
+            "priceTarget": number
+        },
+        "summary": "string"
+    }
+    `;
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: { tools: [{ googleSearch: {} }] },
+        });
+        return cleanAndParseJSON(response.text || "{}") as FFTSPLPRResult;
+    } catch (e: any) {
+        throw new Error("FFTS-PLPR Analysis Failed");
+    }
 };

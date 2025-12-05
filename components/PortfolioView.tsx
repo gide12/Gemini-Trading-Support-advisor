@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Holding, MPTAnalysisResult, ETFProfile } from "../types";
 import { getInitialHoldings, getPortfolioHistory } from "../services/marketDataService";
@@ -44,6 +45,7 @@ const PortfolioView: React.FC = () => {
   // MPT State
   const [mptLoading, setMptLoading] = useState(false);
   const [mptResult, setMptResult] = useState<MPTAnalysisResult | null>(null);
+  const [rebalanceStrategy, setRebalanceStrategy] = useState("Threshold-based (>5%)");
 
   // ETF State
   const [etfTicker, setEtfTicker] = useState("");
@@ -119,7 +121,7 @@ const PortfolioView: React.FC = () => {
     setMptLoading(true);
     setMptResult(null);
     try {
-        const result = await runMPTAnalysis(holdings);
+        const result = await runMPTAnalysis(holdings, rebalanceStrategy);
         setMptResult(result);
     } catch (e) {
         console.error(e);
@@ -193,8 +195,8 @@ const PortfolioView: React.FC = () => {
       {/* Portfolio Overview Card */}
       <div className="lg:col-span-2 space-y-6">
         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
-          <div className="flex justify-between items-end mb-6">
-             <div>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+             <div className="flex-1">
                 <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-2">
                     {/* Euro Icon */}
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-green-400">
@@ -206,11 +208,22 @@ const PortfolioView: React.FC = () => {
                     ${(totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
              </div>
-             <div className={`text-right ${totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                <div className="text-2xl font-semibold">
+             
+             {/* Net Gain Card */}
+             <div className="bg-[#1e293b]/50 border border-purple-500/20 rounded-lg p-3 min-w-[200px]">
+                <h3 className="text-xs font-bold text-slate-400 uppercase mb-1">Portfolio Net Gain</h3>
+                <div className={`text-2xl font-bold font-mono ${totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {totalPL >= 0 ? '+' : ''}{(totalPL || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </div>
-                <div className="text-sm font-medium opacity-80">All Time P/L</div>
+                <div className="w-full bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div 
+                        className={`h-full ${totalPL >= 0 ? 'bg-green-500' : 'bg-red-500'}`} 
+                        style={{width: `${Math.min(Math.abs((totalPL/totalValue)*100) * 5, 100)}%`}}
+                    ></div>
+                </div>
+                <div className="text-[10px] text-slate-500 mt-1 text-right">
+                    Net Impact: {totalValue > 0 ? ((totalPL/totalValue)*100).toFixed(2) : 0}%
+                </div>
              </div>
           </div>
           
@@ -282,23 +295,38 @@ const PortfolioView: React.FC = () => {
 
         {/* Holdings Table */}
         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 overflow-hidden shadow-lg">
-            <div className="p-6 border-b border-purple-500/20 flex justify-between items-center">
+            <div className="p-6 border-b border-purple-500/20 flex flex-col md:flex-row justify-between items-center gap-4">
                 <h3 className="text-xl font-semibold text-white">Current Holdings</h3>
-                <button 
-                    onClick={handleRunMPT}
-                    disabled={mptLoading || holdings.length < 2}
-                    className={`
-                        text-xs font-bold uppercase tracking-wide px-4 py-2 rounded transition-all border
-                        ${(mptLoading || holdings.length < 2) ? 'bg-slate-800 text-slate-500 border-transparent cursor-not-allowed' : 'bg-purple-900/20 text-purple-400 border-purple-500/50 hover:bg-purple-900/40 hover:text-purple-200'}
-                    `}
-                >
-                    {mptLoading ? (
-                        <div className="flex items-center gap-2">
-                             <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                             Optimizing...
-                        </div>
-                    ) : "Run MPT Optimization"}
-                </button>
+                
+                <div className="flex gap-2 w-full md:w-auto">
+                    {/* Rebalancing Strategy Selector */}
+                    <select 
+                        value={rebalanceStrategy}
+                        onChange={(e) => setRebalanceStrategy(e.target.value)}
+                        className="bg-[#1e293b] border border-purple-500/30 text-xs text-white rounded px-3 py-2 outline-none focus:border-purple-500"
+                    >
+                        <option value="Time-based (Monthly)">Time-based (Monthly)</option>
+                        <option value="Time-based (Quarterly)">Time-based (Quarterly)</option>
+                        <option value="Threshold-based (>5%)">Threshold-based ({'>'}5%)</option>
+                        <option value="Hybrid">Hybrid</option>
+                    </select>
+
+                    <button 
+                        onClick={handleRunMPT}
+                        disabled={mptLoading || holdings.length < 2}
+                        className={`
+                            text-xs font-bold uppercase tracking-wide px-4 py-2 rounded transition-all border whitespace-nowrap
+                            ${(mptLoading || holdings.length < 2) ? 'bg-slate-800 text-slate-500 border-transparent cursor-not-allowed' : 'bg-purple-900/20 text-purple-400 border-purple-500/50 hover:bg-purple-900/40 hover:text-purple-200'}
+                        `}
+                    >
+                        {mptLoading ? (
+                            <div className="flex items-center gap-2">
+                                 <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                 Running Strategy...
+                            </div>
+                        ) : "Run MPT Rebalance"}
+                    </button>
+                </div>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -364,7 +392,11 @@ const PortfolioView: React.FC = () => {
                         </svg>
                         Modern Portfolio Theory (MPT) Analysis
                     </h3>
-                    <p className="text-purple-200/60 text-sm mt-1">Efficient Frontier Optimization & Sharpe Ratio Maximization</p>
+                    <div className="flex gap-4 mt-2 text-xs text-purple-200/60">
+                        <span>Optimization: Sharpe Ratio Max</span>
+                        <span>•</span>
+                        <span>Strategy: {mptResult.rebalancingContext?.strategyUsed || "Standard"}</span>
+                    </div>
                 </div>
 
                 <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -429,6 +461,13 @@ const PortfolioView: React.FC = () => {
                     {/* Rebalancing Suggestions */}
                     <div>
                         <h4 className="text-sm font-bold text-slate-400 uppercase mb-4">AI Rebalancing Plan</h4>
+                        {mptResult.rebalancingContext && (
+                            <div className="mb-4 bg-purple-900/10 p-3 rounded border border-purple-500/10">
+                                <div className="text-xs font-bold text-purple-300 mb-1">Strategy: {mptResult.rebalancingContext.strategyUsed}</div>
+                                <div className="text-xs text-slate-400 italic mb-2">"{mptResult.rebalancingContext.notes}"</div>
+                                <div className="text-[10px] uppercase font-bold text-slate-500">Next Action: {mptResult.rebalancingContext.nextRebalanceDate}</div>
+                            </div>
+                        )}
                         <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                             {mptResult.suggestions.map((sug, idx) => (
                                 <div key={idx} className="bg-slate-800/30 p-3 rounded border border-purple-500/20 flex gap-3 items-start">
@@ -523,7 +562,7 @@ const PortfolioView: React.FC = () => {
                                 ★
                             </button>
                         </div>
-                        <span className="text-[10px] bg-blue-900/30 text-blue-200 px-1.5 py-0.5 rounded">{etfResult.topHoldings.length} Assets</span>
+                        <span className="text-[10px] bg-blue-900/30 text-blue-200 px-1.5 py-0.5 rounded text-xs font-mono font-bold">{etfResult.topHoldings.length} Assets</span>
                      </div>
                      
                      <div className="space-y-1 mb-4 max-h-[150px] overflow-y-auto custom-scrollbar">

@@ -11,7 +11,9 @@ const CLUSTERING_ALGORITHMS = [
   "BIRCH CLUSTERING",
   "K-MEANS CLUSTERING",
   "MINIBATCH CLUSTERING",
-  "SPECTRAL CLUSTERING"
+  "SPECTRAL CLUSTERING",
+  "GAUSSIAN MIXTURE MODEL",
+  "GBML-EMO CLUSTERING"
 ];
 
 const AnalysisView: React.FC = () => {
@@ -86,11 +88,16 @@ const AnalysisView: React.FC = () => {
                     <h2 className="text-2xl font-bold text-white drop-shadow-md flex items-center gap-3">
                         <div className="relative">
                             <div className="absolute inset-0 bg-purple-500 blur-lg opacity-20 rounded-full"></div>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-9 h-9 text-purple-400 bg-slate-900/80 rounded-lg p-1.5 border border-purple-500/50 backdrop-blur-sm shadow-[0_0_15px_rgba(168,85,247,0.3)] relative z-10">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12h1.5m-1.5 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25z" />
-                                <circle cx="12" cy="12" r="3" className="fill-purple-500/20 stroke-none" />
-                                <circle cx="12" cy="12" r="1" className="fill-purple-300 stroke-none" />
-                            </svg>
+                            {/* AI Chip Icon */}
+                            <div className="w-9 h-9 bg-slate-900/80 rounded-lg border border-purple-500/50 backdrop-blur-sm shadow-[0_0_15px_rgba(168,85,247,0.3)] relative z-10 p-1 flex items-center justify-center">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-purple-400">
+                                    <path d="M9 3V5M15 3V5M9 19V21M15 19V21M5 9H3M5 15H3M21 9H19M21 15H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                                    <rect x="5" y="5" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="2" fill="rgba(168, 85, 247, 0.1)"/>
+                                    <path d="M9 9H15V15H9V9Z" stroke="currentColor" strokeWidth="1.5"/>
+                                    <circle cx="12" cy="12" r="1.5" fill="currentColor" className="animate-pulse"/>
+                                    <path d="M12 9V5M12 19V15M9 12H5M19 12H15" stroke="currentColor" strokeWidth="1" strokeDasharray="2 2"/>
+                                </svg>
+                            </div>
                         </div>
                         Advanced Market Analysis
                     </h2>

@@ -208,6 +208,11 @@ export interface MPTAnalysisResult {
     amount: string;
     reason: string;
   }[];
+  rebalancingContext: {
+    strategyUsed: string;
+    nextRebalanceDate: string; // e.g. "End of Month" or "Immediate (Threshold Breach)"
+    notes: string;
+  };
   correlationMatrix: { ticker1: string; ticker2: string; value: number }[];
 }
 
