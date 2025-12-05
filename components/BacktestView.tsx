@@ -19,6 +19,9 @@ const BacktestView: React.FC = () => {
   const [stopLoss, setStopLoss] = useState("2%");
   const [takeProfit, setTakeProfit] = useState("5%");
   const [trailingStop, setTrailingStop] = useState("1.5%");
+  
+  // Simulation Model
+  const [simulationModel, setSimulationModel] = useState("Standard (Historical)");
 
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<BacktestResult | null>(null);
@@ -28,7 +31,18 @@ const BacktestView: React.FC = () => {
     setResult(null);
     try {
         const riskRewardString = `${riskUnit}:${rewardUnit}`;
-        const data = await runBacktest(ticker, strategy, startDate, endDate, timeframe, riskRewardString, stopLoss, takeProfit, trailingStop);
+        const data = await runBacktest(
+            ticker, 
+            strategy, 
+            startDate, 
+            endDate, 
+            timeframe, 
+            riskRewardString, 
+            stopLoss, 
+            takeProfit, 
+            trailingStop,
+            simulationModel
+        );
         setResult(data);
     } catch (e) {
         console.error(e);
@@ -46,6 +60,9 @@ const BacktestView: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zm-7.518-.267A8.25 8.25 0 1120.25 10.5M8.288 14.212A5.25 5.25 0 1117.25 10.5" />
                 </svg>
                 Strategy Configuration
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-red-500">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zm-7.518-.267A8.25 8.25 0 1120.25 10.5M8.288 14.212A5.25 5.25 0 1117.25 10.5" />
+                </svg>
             </h2>
             
             <div className="space-y-4">
@@ -75,6 +92,19 @@ const BacktestView: React.FC = () => {
                             <option value="Weekly">Weekly</option>
                         </select>
                     </div>
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-1">Simulation Model</label>
+                    <select 
+                        value={simulationModel}
+                        onChange={(e) => setSimulationModel(e.target.value)}
+                        className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white focus:border-purple-500 outline-none text-sm transition-colors font-bold"
+                    >
+                        <option value="Standard (Historical)">Standard (Historical)</option>
+                        <option value="Monte Carlo Simulation">Monte Carlo Simulation</option>
+                        <option value="Black-Scholes Model">Black-Scholes Model</option>
+                    </select>
                 </div>
 
                 <div>
@@ -198,6 +228,14 @@ const BacktestView: React.FC = () => {
 
             {result && (
                 <div className="space-y-8">
+                    {/* Header */}
+                    <div className="flex justify-between items-center border-b border-purple-500/20 pb-4">
+                        <h3 className="text-lg font-bold text-white">Simulation Results</h3>
+                        <span className="px-3 py-1 rounded-full bg-cyan-900/30 text-cyan-400 text-xs font-bold border border-cyan-500/30">
+                            {simulationModel}
+                        </span>
+                    </div>
+
                     {/* KPIs */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="bg-slate-800/50 p-4 rounded border border-purple-500/20">
@@ -242,7 +280,7 @@ const BacktestView: React.FC = () => {
                         </div>
                         <div>
                             <h3 className="text-sm font-semibold text-slate-400 mb-2">Key Trades</h3>
-                            <div className="space-y-2">
+                            <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
                                 {result.trades.map((t, i) => (
                                     <div key={i} className="flex justify-between text-sm bg-slate-800/30 p-2 rounded border border-purple-500/10">
                                         <span className="text-slate-400">{t.date}</span>

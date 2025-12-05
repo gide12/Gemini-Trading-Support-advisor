@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, InstitutionalDeepDiveResult, ETFProfile, OptimalFuzzyDesignResult, FFTSPLPRResult } from "../types";
 
@@ -384,9 +383,33 @@ export const runBacktest = async (
   riskReward: string,
   stopLoss: string,
   takeProfit: string,
-  trailingStop: string
+  trailingStop: string,
+  simulationModel: string = "Standard (Historical)"
 ): Promise<BacktestResult> => {
-  const prompt = `Simulate a trading backtest for ${ticker} using the following strategy: "${strategy}".
+  let modelInstructions = "";
+  
+  if (simulationModel === "Monte Carlo Simulation") {
+      modelInstructions = `
+      **Monte Carlo Simulation Mode**:
+      - Run 1,000 simulated price paths based on historical volatility and drift derived from the strategy parameters.
+      - Provide a probability distribution of returns.
+      - In the summary, include the "Confidence Level" of success (e.g., 95% likelihood of profit > X).
+      `;
+  } else if (simulationModel === "Black-Scholes Model") {
+      modelInstructions = `
+      **Black-Scholes Model Mode**:
+      - Apply Black-Scholes logic to estimate the probability of the price reaching the Take Profit vs Stop Loss levels within the holding period (assuming geometric Brownian motion).
+      - Treat the strategy targets as "strike prices" to calculate the theoretical probability of expiring ITM (profitable).
+      `;
+  } else {
+      modelInstructions = `
+      **Standard Historical Mode**:
+      - Simulate a deterministic backtest against historical price action.
+      `;
+  }
+
+  const prompt = `Simulate a trading backtest for ${ticker}.
+  Strategy: "${strategy}".
   Date Range: ${startDate} to ${endDate}.
   Timeframe: ${timeframe}.
   Risk/Reward Ratio: ${riskReward}.
@@ -394,13 +417,15 @@ export const runBacktest = async (
   Take Profit: ${takeProfit}.
   Trailing Stop: ${trailingStop}.
   
+  ${modelInstructions}
+  
   Assume a starting capital of $10,000.
   
   Return a JSON object with:
   1. metrics: { totalReturn, maxDrawdown, winRate, tradesCount }
   2. equityCurve: Array of { date, value }
   3. trades: Array of { date, type, price, result }
-  4. summary: Text summary.
+  4. summary: Text summary explaining the result and the methodology used (${simulationModel}).
   `;
 
   try {
