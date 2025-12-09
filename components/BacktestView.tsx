@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { runBacktest } from "../services/geminiService";
 import { BacktestResult } from "../types";
@@ -235,7 +236,7 @@ const BacktestView: React.FC = () => {
                             {simulationModel}
                         </span>
                     </div>
-
+                    
                     {/* KPIs */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="bg-slate-800/50 p-4 rounded border border-purple-500/20">
@@ -255,6 +256,61 @@ const BacktestView: React.FC = () => {
                             <div className="text-2xl font-mono font-bold text-white">{result.metrics.tradesCount}</div>
                         </div>
                     </div>
+
+                    {/* Black Scholes Greeks Dashboard (Only if available) */}
+                    {result.blackScholesMetrics && (
+                        <div className="bg-slate-800/30 border border-purple-500/30 rounded-xl p-5 animate-fade-in">
+                             <div className="flex justify-between items-center mb-4">
+                                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-purple-400">
+                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                     </svg>
+                                     Black-Scholes Pricing & Greeks
+                                 </h3>
+                                 <div className="text-xs bg-slate-900 px-2 py-1 rounded text-slate-400 border border-slate-700">
+                                     IV: {(result.blackScholesMetrics.impliedVolatility * 100).toFixed(1)}%
+                                 </div>
+                             </div>
+
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                 {/* Pricing */}
+                                 <div className="md:col-span-1 space-y-3">
+                                     <div className="bg-[#1e293b] p-3 rounded border border-purple-500/20">
+                                         <div className="text-[10px] text-green-400 uppercase font-bold mb-1">Call Price</div>
+                                         <div className="text-xl font-mono text-white">${result.blackScholesMetrics.callOptionPrice.toFixed(2)}</div>
+                                     </div>
+                                     <div className="bg-[#1e293b] p-3 rounded border border-purple-500/20">
+                                         <div className="text-[10px] text-red-400 uppercase font-bold mb-1">Put Price</div>
+                                         <div className="text-xl font-mono text-white">${result.blackScholesMetrics.putOptionPrice.toFixed(2)}</div>
+                                     </div>
+                                 </div>
+
+                                 {/* Greeks Grid */}
+                                 <div className="md:col-span-2 grid grid-cols-2 gap-3">
+                                     <div className="bg-[#1e293b] p-2 rounded flex justify-between items-center">
+                                         <span className="text-xs text-slate-400 uppercase">Delta (Δ)</span>
+                                         <span className="font-mono text-cyan-300">{result.blackScholesMetrics.greeks.delta.toFixed(3)}</span>
+                                     </div>
+                                     <div className="bg-[#1e293b] p-2 rounded flex justify-between items-center">
+                                         <span className="text-xs text-slate-400 uppercase">Gamma (Γ)</span>
+                                         <span className="font-mono text-purple-300">{result.blackScholesMetrics.greeks.gamma.toFixed(3)}</span>
+                                     </div>
+                                     <div className="bg-[#1e293b] p-2 rounded flex justify-between items-center">
+                                         <span className="text-xs text-slate-400 uppercase">Theta (Θ)</span>
+                                         <span className="font-mono text-red-300">{result.blackScholesMetrics.greeks.theta.toFixed(3)}</span>
+                                     </div>
+                                     <div className="bg-[#1e293b] p-2 rounded flex justify-between items-center">
+                                         <span className="text-xs text-slate-400 uppercase">Vega (ν)</span>
+                                         <span className="font-mono text-green-300">{result.blackScholesMetrics.greeks.vega.toFixed(3)}</span>
+                                     </div>
+                                     <div className="col-span-2 bg-[#1e293b] p-2 rounded flex justify-between items-center">
+                                         <span className="text-xs text-slate-400 uppercase">Rho (ρ)</span>
+                                         <span className="font-mono text-blue-300">{result.blackScholesMetrics.greeks.rho.toFixed(3)}</span>
+                                     </div>
+                                 </div>
+                             </div>
+                        </div>
+                    )}
 
                     {/* Equity Curve */}
                     <div className="h-64 w-full">

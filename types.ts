@@ -26,6 +26,13 @@ export interface NewsItem {
   url: string;
 }
 
+export interface OrderFlowAnalysis {
+    tradeSignAcf: number[]; // Autocorrelation of Buy/Sell signs (Expect low)
+    volumeAcf: number[];    // Autocorrelation of Shares Traded (Expect high/power-law)
+    returnAcf: number[];    // Autocorrelation of Returns (Expect near zero)
+    interpretation: string;
+}
+
 export interface TechnicalAnalysisData {
   currentPrice: number;
   trend: "Bullish" | "Bearish" | "Neutral";
@@ -40,6 +47,7 @@ export interface TechnicalAnalysisData {
     support: number[];
     resistance: number[];
   };
+  orderFlowAnalysis?: OrderFlowAnalysis;
   summary: string;
 }
 
@@ -138,6 +146,18 @@ export interface BacktestResult {
   equityCurve: { date: string; value: number }[];
   trades: { date: string; type: 'Buy' | 'Sell'; price: number; result?: string }[];
   summary: string;
+  blackScholesMetrics?: {
+      impliedVolatility: number;
+      callOptionPrice: number;
+      putOptionPrice: number;
+      greeks: {
+          delta: number;
+          gamma: number;
+          theta: number;
+          vega: number;
+          rho: number;
+      };
+  };
 }
 
 // --- ML Types ---

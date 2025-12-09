@@ -157,22 +157,34 @@ export const analyzeStock = async (
 
     // 5. TECHNICAL ANALYSIS (NEW STRUCTURED)
     if (analysisType === AnalysisType.Technical) {
-        const prompt = `Act as a technical analyst. Analyze ${ticker} using indicators like RSI, MACD, and Moving Averages based on recent data found via search.
+        const prompt = `Act as a quantitative technical analyst. Analyze ${ticker} using standard indicators AND Institutional Order Flow logic.
         
+        1. Standard: RSI, MACD, Moving Averages.
+        2. **Order Flow Autocorrelation**: Investigate the presence of metaorders (large institutional orders broken into child orders).
+           - Analyze Trade Signs (Buy/Sell/None): Expect minimal autocorrelation (randomness).
+           - Analyze Trade Volume (Shares): Expect power-law decay (persistence) if institutions are active.
+           - Analyze Returns: Expect near zero autocorrelation (Efficient Market).
+
         IMPORTANT: Return ONLY a raw JSON object (no markdown) with this structure:
         {
           "currentPrice": number (raw number of current price),
           "trend": "Bullish" | "Bearish" | "Neutral",
           "signalStrength": "Strong" | "Moderate" | "Weak",
           "indicators": {
-            "rsi": "string (e.g. '45 - Neutral')",
-            "macd": "string (e.g. 'Bullish Crossover')",
-            "movingAverages": "string (e.g. 'Price above 200 MA')",
-            "bollingerBands": "string (e.g. 'Squeeze')"
+            "rsi": "string",
+            "macd": "string",
+            "movingAverages": "string",
+            "bollingerBands": "string"
           },
           "supportResistance": {
-            "support": [number, number] (Array of 2-3 numbers for support levels),
-            "resistance": [number, number] (Array of 2-3 numbers for resistance levels)
+            "support": [number, number],
+            "resistance": [number, number]
+          },
+          "orderFlowAnalysis": {
+            "tradeSignAcf": [number, number, ... 10 lags], (Simulate 10 lag values, e.g. [1.0, 0.05, 0.01...])
+            "volumeAcf": [number, number, ... 10 lags], (Simulate 10 lag values showing persistence, e.g. [1.0, 0.8, 0.65, 0.55...])
+            "returnAcf": [number, number, ... 10 lags], (Simulate 10 lag values close to 0)
+            "interpretation": "string (Explain the child order dynamics and metaorder presence based on the ACFs)"
           },
           "summary": "string (brief analysis text)"
         }`;
@@ -442,8 +454,9 @@ export const runBacktest = async (
   } else if (simulationModel === "Black-Scholes Model") {
       modelInstructions = `
       **Black-Scholes Model Mode**:
-      - Apply Black-Scholes logic to estimate the probability of the price reaching the Take Profit vs Stop Loss levels within the holding period (assuming geometric Brownian motion).
-      - Treat the strategy targets as "strike prices" to calculate the theoretical probability of expiring ITM (profitable).
+      - Calculate theoretical Call/Put prices and Greeks (Delta, Gamma, Theta, Vega) based on the current price and strategy duration (time to expiration).
+      - Use the strategy targets (Take Profit) as Strike Prices for the probability calculation.
+      - Return full Greeks and pricing in the 'blackScholesMetrics' field.
       `;
   } else {
       modelInstructions = `
@@ -470,6 +483,7 @@ export const runBacktest = async (
   2. equityCurve: Array of { date, value }
   3. trades: Array of { date, type, price, result }
   4. summary: Text summary explaining the result and the methodology used (${simulationModel}).
+  5. blackScholesMetrics: (ONLY if model is Black-Scholes) { impliedVolatility, callOptionPrice, putOptionPrice, greeks: { delta, gamma, theta, vega, rho } }
   `;
 
   try {
@@ -512,7 +526,25 @@ export const runBacktest = async (
                 }
               }
             },
-            summary: { type: Type.STRING }
+            summary: { type: Type.STRING },
+            blackScholesMetrics: {
+                type: Type.OBJECT,
+                properties: {
+                    impliedVolatility: { type: Type.NUMBER },
+                    callOptionPrice: { type: Type.NUMBER },
+                    putOptionPrice: { type: Type.NUMBER },
+                    greeks: {
+                        type: Type.OBJECT,
+                        properties: {
+                            delta: { type: Type.NUMBER },
+                            gamma: { type: Type.NUMBER },
+                            theta: { type: Type.NUMBER },
+                            vega: { type: Type.NUMBER },
+                            rho: { type: Type.NUMBER }
+                        }
+                    }
+                }
+            }
           }
         }
       }

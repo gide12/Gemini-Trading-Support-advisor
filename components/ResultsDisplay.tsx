@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState, useMemo } from "react";
 import { AnalysisResult, AnalysisType } from "../types";
 import ReactMarkdown from 'react-markdown';
 import { 
-    ComposedChart, ReferenceLine, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar, Line, Cell, Area, AreaChart, CartesianGrid
+    ComposedChart, ReferenceLine, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Line, Cell, Area, AreaChart, CartesianGrid
 } from "recharts";
 
 interface ResultsDisplayProps {
@@ -523,6 +523,69 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isLoading, acti
                               </div>
                           </div>
                       </div>
+                      
+                      {/* Institutional Order Flow Dynamics */}
+                      {result.technicalAnalysis.orderFlowAnalysis && (
+                          <div className="bg-[#1e222d] p-5 rounded-lg border border-purple-500/20 mt-4">
+                              <div className="flex items-center gap-2 mb-4">
+                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-purple-400">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                                  </svg>
+                                  <h4 className="text-sm font-bold text-slate-300 uppercase">Institutional Order Flow Dynamics (Child Order Autocorrelation)</h4>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                                  {/* Plot 1: Trade Sign ACF */}
+                                  <div>
+                                      <div className="text-[10px] text-slate-500 font-bold uppercase mb-2 text-center">Trade Sign ACF (Randomness)</div>
+                                      <div className="h-32 w-full">
+                                          <ResponsiveContainer width="100%" height="100%">
+                                              <BarChart data={result.technicalAnalysis.orderFlowAnalysis.tradeSignAcf.map((val, i) => ({ lag: i + 1, val }))}>
+                                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+                                                  <XAxis dataKey="lag" tick={{fontSize: 9}} tickLine={false} axisLine={false} />
+                                                  <YAxis tick={{fontSize: 9}} tickLine={false} axisLine={false} domain={[0, 1]} />
+                                                  <Bar dataKey="val" fill="#94a3b8" />
+                                              </BarChart>
+                                          </ResponsiveContainer>
+                                      </div>
+                                  </div>
+
+                                  {/* Plot 2: Volume ACF */}
+                                  <div>
+                                      <div className="text-[10px] text-purple-400 font-bold uppercase mb-2 text-center">Volume/Shares ACF (Persistence)</div>
+                                      <div className="h-32 w-full">
+                                          <ResponsiveContainer width="100%" height="100%">
+                                              <BarChart data={result.technicalAnalysis.orderFlowAnalysis.volumeAcf.map((val, i) => ({ lag: i + 1, val }))}>
+                                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+                                                  <XAxis dataKey="lag" tick={{fontSize: 9}} tickLine={false} axisLine={false} />
+                                                  <YAxis tick={{fontSize: 9}} tickLine={false} axisLine={false} domain={[0, 1]} />
+                                                  <Bar dataKey="val" fill="#a855f7" />
+                                              </BarChart>
+                                          </ResponsiveContainer>
+                                      </div>
+                                  </div>
+
+                                  {/* Plot 3: Returns ACF */}
+                                  <div>
+                                      <div className="text-[10px] text-slate-500 font-bold uppercase mb-2 text-center">Returns ACF (Efficiency)</div>
+                                      <div className="h-32 w-full">
+                                          <ResponsiveContainer width="100%" height="100%">
+                                              <BarChart data={result.technicalAnalysis.orderFlowAnalysis.returnAcf.map((val, i) => ({ lag: i + 1, val }))}>
+                                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+                                                  <XAxis dataKey="lag" tick={{fontSize: 9}} tickLine={false} axisLine={false} />
+                                                  <YAxis tick={{fontSize: 9}} tickLine={false} axisLine={false} domain={[-0.2, 1]} />
+                                                  <Bar dataKey="val" fill="#64748b" />
+                                              </BarChart>
+                                          </ResponsiveContainer>
+                                      </div>
+                                  </div>
+                              </div>
+                              
+                              <p className="text-xs text-slate-400 italic bg-slate-800/50 p-3 rounded border border-slate-700">
+                                  "{result.technicalAnalysis.orderFlowAnalysis.interpretation}"
+                              </p>
+                          </div>
+                      )}
                   </div>
               ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
