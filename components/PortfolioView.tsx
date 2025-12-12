@@ -1,4 +1,5 @@
 
+
 import React, { useEffect, useState } from "react";
 import { Holding, MPTAnalysisResult, ETFProfile } from "../types";
 import { getInitialHoldings, getPortfolioHistory } from "../services/marketDataService";
@@ -309,6 +310,7 @@ const PortfolioView: React.FC = () => {
                         <option value="Time-based (Quarterly)">Time-based (Quarterly)</option>
                         <option value="Threshold-based (>5%)">Threshold-based ({'>'}5%)</option>
                         <option value="Hybrid">Hybrid</option>
+                        <option value="Black-Litterman Model">Black-Litterman Model</option>
                     </select>
 
                     <button 

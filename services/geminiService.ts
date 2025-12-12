@@ -879,6 +879,7 @@ export const runMPTAnalysis = async (holdings: Holding[], rebalancingStrategy: s
       - If "Time-based (Monthly/Quarterly)": Focus rebalancing advice on calendar reset (e.g. adjust to optimal weights at end of month).
       - If "Threshold-based (>5% Deviation)": Only suggest rebalancing if current weight deviates > 5% from optimal weight.
       - If "Hybrid": Combine both approaches (Time-based triggers + Threshold breaches).
+      - If "Black-Litterman Model": Apply the Black-Litterman model. Start with the market equilibrium returns (CAPM) as the prior. Synthesize AI-driven "investor views" (Bullish/Bearish) for the specific assets in the portfolio based on their recent general market sentiment. Combine these views with the equilibrium returns to derive a new set of expected returns. Optimize weights based on this posterior distribution.
       
       Return ONLY a raw JSON object:
       {
