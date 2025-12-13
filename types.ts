@@ -35,6 +35,7 @@ export interface OrderFlowAnalysis {
 
 export interface TechnicalAnalysisData {
   currentPrice: number;
+  dailyLogReturn?: number; // Added Daily Log Return
   trend: "Bullish" | "Bearish" | "Neutral";
   signalStrength: "Strong" | "Moderate" | "Weak";
   indicators: {
@@ -82,6 +83,19 @@ export interface TotalViewData {
     summary: string;
 }
 
+export interface FundamentalMetrics {
+    open: string;
+    dayRange: string;
+    fiftyTwoWeekRange: string;
+    fiveYearRange: string;
+    beta: string;
+    volume: string;
+    avgVolume: string;
+    marketCap: string;
+    sharesOutstanding: string;
+    float: string;
+}
+
 export interface AnalysisResult {
   ticker: string;
   type: AnalysisType;
@@ -106,6 +120,7 @@ export interface AnalysisResult {
     name: string;
     type: string; // e.g. "Market Maker", "ECN"
   }[];
+  fundamentalMetrics?: FundamentalMetrics;
 }
 
 export interface TabItem {

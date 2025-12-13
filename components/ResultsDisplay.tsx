@@ -274,6 +274,60 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isLoading, acti
       {/* FUNDAMENTAL ANALYSIS - VALUATION & MPID */}
       {isFundamental && (
           <div className="space-y-6 mb-6">
+              {/* Fundamental Metrics Grid */}
+              {result.fundamentalMetrics && (
+                  <div className="bg-slate-800/50 rounded-xl border border-purple-500/20 p-5 mb-6 animate-fade-in">
+                      <h3 className="text-sm font-bold text-slate-300 uppercase mb-4 flex items-center gap-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-purple-400">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                          </svg>
+                          Key Market Data
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                              <span className="block text-[10px] text-slate-500 uppercase font-bold">Open</span>
+                              <span className="text-white font-mono">{result.fundamentalMetrics.open}</span>
+                          </div>
+                          <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                              <span className="block text-[10px] text-slate-500 uppercase font-bold">Day's Range</span>
+                              <span className="text-white font-mono">{result.fundamentalMetrics.dayRange}</span>
+                          </div>
+                          <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                              <span className="block text-[10px] text-slate-500 uppercase font-bold">52-W Range</span>
+                              <span className="text-white font-mono">{result.fundamentalMetrics.fiftyTwoWeekRange}</span>
+                          </div>
+                          <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                              <span className="block text-[10px] text-slate-500 uppercase font-bold">5-Year Range</span>
+                              <span className="text-white font-mono">{result.fundamentalMetrics.fiveYearRange}</span>
+                          </div>
+                          <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                              <span className="block text-[10px] text-slate-500 uppercase font-bold">Market Cap</span>
+                              <span className="text-white font-mono">{result.fundamentalMetrics.marketCap}</span>
+                          </div>
+                          <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                              <span className="block text-[10px] text-slate-500 uppercase font-bold">Volume</span>
+                              <span className="text-white font-mono">{result.fundamentalMetrics.volume}</span>
+                          </div>
+                          <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                              <span className="block text-[10px] text-slate-500 uppercase font-bold">Avg Volume</span>
+                              <span className="text-white font-mono">{result.fundamentalMetrics.avgVolume}</span>
+                          </div>
+                          <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                              <span className="block text-[10px] text-slate-500 uppercase font-bold">Beta (5Y)</span>
+                              <span className="text-white font-mono">{result.fundamentalMetrics.beta}</span>
+                          </div>
+                          <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                              <span className="block text-[10px] text-slate-500 uppercase font-bold">Float</span>
+                              <span className="text-white font-mono">{result.fundamentalMetrics.float}</span>
+                          </div>
+                          <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                              <span className="block text-[10px] text-slate-500 uppercase font-bold">Shares Out</span>
+                              <span className="text-white font-mono">{result.fundamentalMetrics.sharesOutstanding}</span>
+                          </div>
+                      </div>
+                  </div>
+              )}
+
               {/* Valuation Badge */}
               {result.valuationStatus && (
                   <div className="bg-slate-800/50 p-6 rounded-xl border border-purple-500/20 flex flex-col md:flex-row justify-between items-center gap-4 animate-fade-in">
@@ -468,7 +522,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isLoading, acti
                       </div>
 
                       {/* Technical Indicators Panel */}
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                           <div className="bg-slate-800/40 p-4 rounded-lg border border-purple-500/20">
                               <h4 className="text-xs text-slate-400 uppercase font-bold mb-1">RSI (14)</h4>
                               <div className="flex items-baseline gap-2">
@@ -518,9 +572,24 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isLoading, acti
                                       result.technicalAnalysis.trend === 'Bullish' ? 'text-[#089981]' :
                                       result.technicalAnalysis.trend === 'Bearish' ? 'text-[#F23645]' : 'text-yellow-400'
                                   }`}>
-                                      {result.technicalAnalysis.signalStrength} {result.technicalAnalysis.trend}
+                                      {result.technicalAnalysis.signalStrength}
                                   </span>
                               </div>
+                          </div>
+
+                          {/* New Daily Log Return Card */}
+                          <div className="bg-slate-800/40 p-4 rounded-lg border border-purple-500/20">
+                              <h4 className="text-xs text-slate-400 uppercase font-bold mb-1">Daily Log Return</h4>
+                              {result.technicalAnalysis.dailyLogReturn !== undefined ? (
+                                <div className="flex flex-col">
+                                    <div className={`text-2xl font-mono font-bold ${result.technicalAnalysis.dailyLogReturn > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                        {result.technicalAnalysis.dailyLogReturn.toFixed(4)}
+                                    </div>
+                                    <div className="text-xs text-slate-500 mt-1 font-mono">ln(Pt / Pt-1)</div>
+                                </div>
+                              ) : (
+                                <div className="text-sm text-slate-500">N/A</div>
+                              )}
                           </div>
                       </div>
                       
@@ -604,6 +673,14 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isLoading, acti
                                       <span className="text-white font-mono text-sm text-right">{val}</span>
                                   </div>
                               ))}
+                              {result.technicalAnalysis.dailyLogReturn !== undefined && (
+                                  <div className="flex justify-between items-center border-b border-slate-700 pb-2 last:border-0">
+                                      <span className="text-slate-400 text-sm capitalize">Daily Log Return</span>
+                                      <span className={`font-mono text-sm text-right font-bold ${result.technicalAnalysis.dailyLogReturn > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                          {result.technicalAnalysis.dailyLogReturn.toFixed(4)}
+                                      </span>
+                                  </div>
+                              )}
                           </div>
                       </div>
 

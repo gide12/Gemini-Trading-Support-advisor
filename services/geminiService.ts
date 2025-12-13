@@ -160,7 +160,8 @@ export const analyzeStock = async (
         const prompt = `Act as a quantitative technical analyst. Analyze ${ticker} using standard indicators AND Institutional Order Flow logic.
         
         1. Standard: RSI, MACD, Moving Averages.
-        2. **Order Flow Autocorrelation**: Investigate the presence of metaorders (large institutional orders broken into child orders).
+        2. **Log Returns**: Calculate the **Daily Log Return**: ln(Current Price / Previous Close).
+        3. **Order Flow Autocorrelation**: Investigate the presence of metaorders (large institutional orders broken into child orders).
            - Analyze Trade Signs (Buy/Sell/None): Expect minimal autocorrelation (randomness).
            - Analyze Trade Volume (Shares): Expect power-law decay (persistence) if institutions are active.
            - Analyze Returns: Expect near zero autocorrelation (Efficient Market).
@@ -168,6 +169,7 @@ export const analyzeStock = async (
         IMPORTANT: Return ONLY a raw JSON object (no markdown) with this structure:
         {
           "currentPrice": number (raw number of current price),
+          "dailyLogReturn": number (e.g. 0.0123),
           "trend": "Bullish" | "Bearish" | "Neutral",
           "signalStrength": "Strong" | "Moderate" | "Weak",
           "indicators": {
@@ -215,7 +217,18 @@ export const analyzeStock = async (
         const prompt = `Act as a professional equity research analyst. Perform a deep-dive fundamental analysis on ${ticker} using the latest data.
         
         1. Determine if the stock is Overvalued, Undervalued, or Fair Value based on DCF models, P/E ratios, and growth prospects.
-        2. Identify the major **Market Participants (MPIDs)** typical for this stock (e.g., Major Market Makers like CDEL, NITE, or ECNs like ARCA, NSDQ). Simulate a Level 2 perspective.
+        2. Retrieve key market statistics: 
+           - Open Price
+           - Day's Range (Low - High)
+           - 52-week Range
+           - 5-year Range
+           - Beta (5Y monthly)
+           - Volume
+           - Average Volume
+           - Market Capitalization
+           - Shares Outstanding
+           - Float
+        3. Identify the major **Market Participants (MPIDs)** typical for this stock (e.g., Major Market Makers like CDEL, NITE, or ECNs like ARCA, NSDQ). Simulate a Level 2 perspective.
         
         IMPORTANT: Return ONLY a raw JSON object (no markdown code blocks) with this structure:
         {
@@ -223,6 +236,18 @@ export const analyzeStock = async (
           "intrinsicValue": "string (estimated fair price, e.g. '$150.00')",
           "summary": "string (Comprehensive analysis using markdown headers ### and bullet points *)",
           "sentiment": "Bullish" | "Bearish" | "Neutral",
+          "metrics": {
+            "open": "string",
+            "dayRange": "string",
+            "fiftyTwoWeekRange": "string",
+            "fiveYearRange": "string",
+            "beta": "string",
+            "volume": "string",
+            "avgVolume": "string",
+            "marketCap": "string",
+            "sharesOutstanding": "string",
+            "float": "string"
+          },
           "mpidData": [
              { "code": "CDEL", "name": "Citadel Securities", "type": "Market Maker" },
              { "code": "NITE", "name": "Virtu Financial", "type": "Market Maker" },
@@ -250,6 +275,7 @@ export const analyzeStock = async (
             valuationStatus: json.valuationStatus,
             intrinsicValue: json.intrinsicValue,
             mpidData: json.mpidData,
+            fundamentalMetrics: json.metrics,
             sources
         };
     }
