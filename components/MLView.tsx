@@ -22,6 +22,7 @@ const MODEL_TYPES = [
   "Autoregressive Integrated Moving Average (ARIMA)",
   "Hybrid ES-DRNN (Exp. Smoothing + Dilated RNN)",
   "Linear-Exponential-Polynomial model",
+  "Ridge Regression",
   "Multivariate Time Series Forecasting (GRU)",
   "GRU (Gated Recurrent Unit)",
   "Recurrent Neural Network (RNN)",

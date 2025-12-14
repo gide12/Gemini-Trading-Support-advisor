@@ -701,6 +701,13 @@ export const runMLSimulation = async (
     - Represent historical price curves and future price trajectories using basis expansions (e.g., B-splines or Fourier series).
     - Learn the mapping between the basis coefficients of the input functions and the output functions to capture the continuous dynamics of the financial time series.
     `;
+  } else if (modelType === "Ridge Regression") {
+    specificInstructions = `
+    Specific Architecture Instructions:
+    - Implement Ridge Regression (L2 Regularization).
+    - Minimize the sum of squared residuals plus the penalty term (lambda * slope^2).
+    - Focus on preventing overfitting in multicollinear financial data by shrinking coefficients.
+    `;
   }
 
   const prompt = `Act as an advanced AI Trading Model (${modelType}). 
