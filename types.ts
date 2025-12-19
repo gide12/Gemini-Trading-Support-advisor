@@ -10,7 +10,8 @@ export enum AnalysisType {
   TotalView = "Nasdaq TotalView",
   Chart = "Chart",
   Quantum = "Quantum Forecast",
-  Ideas = "Trade Ideas"
+  Ideas = "Trade Ideas",
+  OptionsExpert = "Options Expert Analysis"
 }
 
 export type View = 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart';
@@ -50,6 +51,28 @@ export interface TechnicalAnalysisData {
   };
   orderFlowAnalysis?: OrderFlowAnalysis;
   summary: string;
+}
+
+export interface OptionsAnalysisData {
+    prediction: {
+        type: "Breakout" | "Bounce" | "Consolidation";
+        side: "Upside" | "Downside" | "Neutral";
+        probability: number; // 0-100
+        target: number;
+        stop: number;
+    };
+    volumeSignal: {
+        intensity: "High" | "Average" | "Low";
+        trend: "Accumulation" | "Distribution" | "Neutral";
+        confirmation: boolean;
+        description: string;
+    };
+    patterns: {
+        pattern: string;
+        type: "Bullish" | "Bearish" | "Neutral";
+        strength: "Strong" | "Moderate" | "Emerging";
+    }[];
+    summary: string;
 }
 
 export interface ClusteringData {
@@ -111,6 +134,7 @@ export interface AnalysisResult {
   };
   financials?: Record<string, string>;
   technicalAnalysis?: TechnicalAnalysisData;
+  optionsAnalysis?: OptionsAnalysisData;
   clusteringData?: ClusteringData;
   totalViewData?: TotalViewData;
   valuationStatus?: "Overvalued" | "Undervalued" | "Fair Value";

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Header from "./components/Header";
+import StockTicker from "./components/StockTicker";
 import AnalysisView from "./components/AnalysisView";
 import PortfolioView from "./components/PortfolioView";
 import MarketDataView from "./components/MarketDataView";
@@ -16,6 +17,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0B1221] text-slate-200 flex flex-col font-sans">
       <Header currentView={currentView} onViewChange={setCurrentView} />
+      <StockTicker />
       
       <main className="flex-1 max-w-7xl mx-auto w-full p-6 lg:p-10">
         {currentView === 'analysis' && <AnalysisView />}
