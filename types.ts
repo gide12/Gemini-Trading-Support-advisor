@@ -199,6 +199,26 @@ export interface BacktestResult {
   };
 }
 
+export interface DeltaGammaHedgeResult {
+    portfolioGreeks: {
+        netDelta: number;
+        netGamma: number;
+        netTheta: number;
+        netVega: number;
+    };
+    hedgingActions: {
+        type: "Delta-Neutral" | "Gamma-Neutral" | "Full Neutral";
+        action: string; // e.g. "Sell 450 shares of Underlying"
+        instrument: string;
+        impact: string;
+    }[];
+    sensitivityPath: {
+        priceShift: number; // -10% to +10%
+        pnlImpact: number;
+    }[];
+    riskSummary: string;
+}
+
 // --- ML Types ---
 
 export interface MLPredictionResult {

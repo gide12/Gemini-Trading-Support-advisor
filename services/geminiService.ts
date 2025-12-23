@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, InstitutionalDeepDiveResult, ETFProfile, OptimalFuzzyDesignResult, FFTSPLPRResult, TotalViewData, OptionsAnalysisData } from "../types";
+import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, InstitutionalDeepDiveResult, ETFProfile, OptimalFuzzyDesignResult, FFTSPLPRResult, TotalViewData, OptionsAnalysisData, DeltaGammaHedgeResult } from "../types";
 
 // Initialize the client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -487,6 +487,35 @@ export const runMPTAnalysis = async (holdings: Holding[], rebalancingStrategy: s
         return cleanAndParseJSON(response.text || "{}") as MPTAnalysisResult;
     } catch (e: any) {
         throw new Error("MPT Analysis Failed");
+    }
+};
+
+export const runHedgeAnalysis = async (holdings: Holding[]): Promise<DeltaGammaHedgeResult> => {
+    const prompt = `Perform a Delta-Gamma Hedging Analysis for a portfolio of ${holdings.length} assets. 
+    Current Holdings: ${holdings.map(h => `${h.ticker} (${h.quantity} shares @ $${h.currentPrice})`).join(', ')}.
+    
+    1. Calculate aggregate Net Delta and Net Gamma.
+    2. Suggest concrete hedging actions (Delta-neutral and Gamma-neutral).
+    3. Generate a sensitivity path for price shifts of -10% to +10%.
+    
+    IMPORTANT: Return ONLY a raw JSON object (no markdown) with this structure:
+    {
+        "portfolioGreeks": { "netDelta": number, "netGamma": number, "netTheta": number, "netVega": number },
+        "hedgingActions": [{ "type": "string", "action": "string", "instrument": "string", "impact": "string" }],
+        "sensitivityPath": [{ "priceShift": number, "pnlImpact": number }],
+        "riskSummary": "string"
+    }`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: { tools: [{ googleSearch: {} }] },
+        });
+        return cleanAndParseJSON(response.text || "{}") as DeltaGammaHedgeResult;
+    } catch (e: any) {
+        console.error("Hedge Analysis Failed:", e);
+        throw new Error("Hedging Analysis Failed");
     }
 };
 

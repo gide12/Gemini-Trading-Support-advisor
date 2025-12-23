@@ -1,9 +1,8 @@
 
-
 import React, { useEffect, useState } from "react";
-import { Holding, MPTAnalysisResult, ETFProfile } from "../types";
+import { Holding, MPTAnalysisResult, ETFProfile, DeltaGammaHedgeResult } from "../types";
 import { getInitialHoldings, getPortfolioHistory } from "../services/marketDataService";
-import { runMPTAnalysis, getETFProfile } from "../services/geminiService";
+import { runMPTAnalysis, getETFProfile, runHedgeAnalysis } from "../services/geminiService";
 import { 
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     ComposedChart, Line, Scatter, ScatterChart, ZAxis, Cell
@@ -47,6 +46,10 @@ const PortfolioView: React.FC = () => {
   const [mptLoading, setMptLoading] = useState(false);
   const [mptResult, setMptResult] = useState<MPTAnalysisResult | null>(null);
   const [rebalanceStrategy, setRebalanceStrategy] = useState("Threshold-based (>5%)");
+
+  // Hedge State
+  const [hedgeLoading, setHedgeLoading] = useState(false);
+  const [hedgeResult, setHedgeResult] = useState<DeltaGammaHedgeResult | null>(null);
 
   // ETF State
   const [etfTicker, setEtfTicker] = useState("");
@@ -131,6 +134,20 @@ const PortfolioView: React.FC = () => {
     }
   };
 
+  const handleRunHedge = async () => {
+      if (holdings.length === 0) return;
+      setHedgeLoading(true);
+      setHedgeResult(null);
+      try {
+          const result = await runHedgeAnalysis(holdings);
+          setHedgeResult(result);
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setHedgeLoading(false);
+      }
+  };
+
   const fetchEtfProfile = async (ticker: string) => {
     if (!ticker) return;
     setEtfLoading(true);
@@ -199,7 +216,6 @@ const PortfolioView: React.FC = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
              <div className="flex-1">
                 <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-2">
-                    {/* Euro Icon */}
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-green-400">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 7.756a4.5 4.5 0 100 8.488M7.5 10.5h5.25m-5.25 3h5.25M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -292,6 +308,99 @@ const PortfolioView: React.FC = () => {
                     Add / Update
                 </button>
             </form>
+        </div>
+
+        {/* Option Delta-Gamma Hedging Dashboard */}
+        <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg shadow-purple-900/10">
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                        Option Delta-Gamma Hedging
+                    </h3>
+                    <p className="text-xs text-slate-400">Simulated Greeks analysis for market-neutral positioning.</p>
+                </div>
+                <button 
+                    onClick={handleRunHedge}
+                    disabled={hedgeLoading || holdings.length === 0}
+                    className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-4 py-2 rounded transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-purple-900/40"
+                >
+                    {hedgeLoading ? 'Analyzing Greeks...' : 'Calculate Hedge'}
+                </button>
+            </div>
+
+            {hedgeResult ? (
+                <div className="animate-fade-in space-y-6">
+                    {/* Neutrality Meters */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-[#1e293b]/50 border border-purple-500/20 p-4 rounded-lg">
+                            <div className="flex justify-between text-xs mb-2">
+                                <span className="text-slate-400 uppercase font-bold tracking-widest">Portfolio Delta (Δ)</span>
+                                <span className={`font-mono font-bold ${hedgeResult.portfolioGreeks.netDelta > 0 ? 'text-green-400' : 'text-red-400'}`}>{hedgeResult.portfolioGreeks.netDelta.toFixed(2)}</span>
+                            </div>
+                            <div className="relative h-2 bg-slate-700 rounded-full overflow-hidden">
+                                <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-full bg-slate-500 z-10"></div>
+                                <div className={`absolute h-full transition-all duration-1000 ${hedgeResult.portfolioGreeks.netDelta > 0 ? 'bg-green-500 left-1/2' : 'bg-red-500 right-1/2'}`} style={{ width: `${Math.min(Math.abs(hedgeResult.portfolioGreeks.netDelta) * 5, 50)}%` }}></div>
+                            </div>
+                        </div>
+                        <div className="bg-[#1e293b]/50 border border-purple-500/20 p-4 rounded-lg">
+                            <div className="flex justify-between text-xs mb-2">
+                                <span className="text-slate-400 uppercase font-bold tracking-widest">Portfolio Gamma (Γ)</span>
+                                <span className={`font-mono font-bold ${hedgeResult.portfolioGreeks.netGamma > 0 ? 'text-cyan-400' : 'text-amber-400'}`}>{hedgeResult.portfolioGreeks.netGamma.toFixed(4)}</span>
+                            </div>
+                            <div className="relative h-2 bg-slate-700 rounded-full overflow-hidden">
+                                <div className={`h-full transition-all duration-1000 ${hedgeResult.portfolioGreeks.netGamma > 0 ? 'bg-cyan-500' : 'bg-amber-500'}`} style={{ width: `${Math.min(Math.abs(hedgeResult.portfolioGreeks.netGamma) * 1000, 100)}%` }}></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Sensitivity Path Chart */}
+                    <div className="bg-[#131B2E] p-4 rounded-lg border border-purple-500/10">
+                        <h4 className="text-[10px] font-bold text-slate-500 uppercase mb-4 tracking-widest">P&L Sensitivity vs Price Shift</h4>
+                        <div className="h-40 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <ComposedChart data={hedgeResult.sensitivityPath}>
+                                    <XAxis dataKey="priceShift" hide />
+                                    <YAxis hide />
+                                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#7e22ce' }} />
+                                    <Area type="monotone" dataKey="pnlImpact" stroke="#a855f7" fill="#a855f7" fillOpacity={0.1} />
+                                    <Line type="monotone" dataKey="pnlImpact" stroke="#a855f7" strokeWidth={2} dot={false} />
+                                </ComposedChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Hedging Actions */}
+                    <div className="space-y-3">
+                        <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Recommended Neutralizing Actions</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {hedgeResult.hedgingActions.map((h, i) => (
+                                <div key={i} className="bg-slate-800/40 p-3 rounded border border-purple-500/10 flex items-center gap-4">
+                                    <div className={`p-2 rounded-lg ${h.type === 'Delta-Neutral' ? 'bg-green-500/10 text-green-400' : 'bg-cyan-500/10 text-cyan-400'}`}>
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="text-[10px] text-slate-500 font-bold uppercase">{h.type}</div>
+                                        <div className="text-sm font-bold text-white">{h.action}</div>
+                                        <div className="text-[10px] text-slate-400 italic mt-0.5">{h.impact}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="bg-purple-900/10 p-4 rounded border border-purple-500/10">
+                        <p className="text-xs text-slate-300 italic leading-relaxed">
+                            <span className="font-bold text-purple-400">Risk Desk Note:</span> {hedgeResult.riskSummary}
+                        </p>
+                    </div>
+                </div>
+            ) : (
+                <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-xl">
+                    <svg className="w-12 h-12 text-slate-700 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
+                    <p className="text-sm text-slate-600">Run analysis to compute portfolio-wide Greeks and hedging offsets.</p>
+                </div>
+            )}
         </div>
 
         {/* Holdings Table */}
