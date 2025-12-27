@@ -219,6 +219,38 @@ export interface DeltaGammaHedgeResult {
     riskSummary: string;
 }
 
+// --- Advanced Quant Pricing Result ---
+
+export interface AdvancedPricingResult {
+    ticker: string;
+    bsm: {
+        fairValue: number;
+        impliedVol: number;
+        greeks: { delta: number; gamma: number; theta: number; vega: number; rho: number };
+    };
+    heston: {
+        parameters: { v0: number; kappa: number; theta: number; sigma: number; rho: number };
+        surfaceStatus: string;
+        description: string;
+    };
+    jumpDiffusion: {
+        parameters: { lambda: number; muJ: number; sigmaJ: number };
+        jumpProbability: number;
+        description: string;
+    };
+    localVol: {
+        skewIntensity: "High" | "Moderate" | "Low";
+        smileProfile: string;
+        description: string;
+    };
+    varianceSwap: {
+        fairVarianceStrike: number;
+        notionalExposure: number;
+        payoffDescription: string;
+    };
+    summary: string;
+}
+
 // --- ML Types ---
 
 export interface MLPredictionResult {

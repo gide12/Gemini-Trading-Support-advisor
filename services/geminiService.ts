@@ -1,11 +1,11 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, InstitutionalDeepDiveResult, ETFProfile, OptimalFuzzyDesignResult, FFTSPLPRResult, TotalViewData, OptionsAnalysisData, DeltaGammaHedgeResult } from "../types";
+import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, InstitutionalDeepDiveResult, ETFProfile, OptimalFuzzyDesignResult, FFTSPLPRResult, TotalViewData, OptionsAnalysisData, DeltaGammaHedgeResult, AdvancedPricingResult } from "../types";
 
 // Initialize the client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const modelName = "gemini-2.5-flash";
+const modelName = "gemini-3-flash-preview";
 
 // Helper to clean markdown JSON
 const cleanAndParseJSON = (text: string) => {
@@ -516,6 +516,39 @@ export const runHedgeAnalysis = async (holdings: Holding[]): Promise<DeltaGammaH
     } catch (e: any) {
         console.error("Hedge Analysis Failed:", e);
         throw new Error("Hedging Analysis Failed");
+    }
+};
+
+export const runAdvancedPricingAnalysis = async (ticker: string): Promise<AdvancedPricingResult> => {
+    const prompt = `Act as a Quantitative Finance Engineer. Perform an advanced derivative pricing analysis for **${ticker}**.
+    
+    1. **Black-Scholes-Merton (BSM)**: Calculate Fair Value, Implied Volatility, and Greeks (Delta, Gamma, Theta, Vega, Rho).
+    2. **Heston Model**: Provide stochastic volatility parameters (v0, kappa, theta, sigma, rho) and describe the volatility skew/smile status.
+    3. **Merton Jump Diffusion**: Calculate jump intensity (lambda), mean jump size (muJ), and jump volatility (sigmaJ). Estimate jump probability.
+    4. **Local Volatility (Dupire)**: Analyze the local volatility surface. Determine if skew intensity is High/Moderate/Low and describe the smile profile.
+    5. **Variance Swap**: Calculate the fair variance strike and potential notional exposure.
+    
+    IMPORTANT: Return ONLY a raw JSON object (no markdown) with this structure:
+    {
+        "ticker": "string",
+        "bsm": { "fairValue": number, "impliedVol": number, "greeks": { "delta": number, "gamma": number, "theta": number, "vega": number, "rho": number } },
+        "heston": { "parameters": { "v0": number, "kappa": number, "theta": number, "sigma": number, "rho": number }, "surfaceStatus": "string", "description": "string" },
+        "jumpDiffusion": { "parameters": { "lambda": number, "muJ": number, "sigmaJ": number }, "jumpProbability": number, "description": "string" },
+        "localVol": { "skewIntensity": "High" | "Moderate" | "Low", "smileProfile": "string", "description": "string" },
+        "varianceSwap": { "fairVarianceStrike": number, "notionalExposure": number, "payoffDescription": "string" },
+        "summary": "string"
+    }`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: { tools: [{ googleSearch: {} }] },
+        });
+        return cleanAndParseJSON(response.text || "{}") as AdvancedPricingResult;
+    } catch (e: any) {
+        console.error("Advanced Pricing Analysis Failed:", e);
+        throw new Error("Advanced Pricing Analysis Failed");
     }
 };
 

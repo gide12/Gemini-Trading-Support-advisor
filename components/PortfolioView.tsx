@@ -1,11 +1,11 @@
 
 import React, { useEffect, useState } from "react";
-import { Holding, MPTAnalysisResult, ETFProfile, DeltaGammaHedgeResult } from "../types";
+import { Holding, MPTAnalysisResult, ETFProfile, DeltaGammaHedgeResult, AdvancedPricingResult } from "../types";
 import { getInitialHoldings, getPortfolioHistory } from "../services/marketDataService";
-import { runMPTAnalysis, getETFProfile, runHedgeAnalysis } from "../services/geminiService";
+import { runMPTAnalysis, getETFProfile, runHedgeAnalysis, runAdvancedPricingAnalysis } from "../services/geminiService";
 import { 
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    ComposedChart, Line, Scatter, ScatterChart, ZAxis, Cell
+    ComposedChart, Line, Scatter, ScatterChart, ZAxis, Cell, BarChart, Bar
 } from 'recharts';
 
 const AssetIcon = ({ ticker }: { ticker: string }) => {
@@ -51,6 +51,11 @@ const PortfolioView: React.FC = () => {
   const [hedgeLoading, setHedgeLoading] = useState(false);
   const [hedgeResult, setHedgeResult] = useState<DeltaGammaHedgeResult | null>(null);
 
+  // Advanced Pricing State
+  const [pricingLoading, setPricingLoading] = useState(false);
+  const [pricingResult, setPricingResult] = useState<AdvancedPricingResult | null>(null);
+  const [pricingTicker, setPricingTicker] = useState("");
+
   // ETF State
   const [etfTicker, setEtfTicker] = useState("");
   const [etfCapital, setEtfCapital] = useState("10000");
@@ -70,6 +75,9 @@ const PortfolioView: React.FC = () => {
     const cost = holdings.reduce((acc, curr) => acc + (curr.quantity * curr.avgBuyPrice), 0);
     setTotalValue(val);
     setTotalPL(val - cost);
+    if (holdings.length > 0 && !pricingTicker) {
+        setPricingTicker(holdings[0].ticker);
+    }
   }, [holdings]);
 
   const handleAddOrUpdate = (e: React.FormEvent) => {
@@ -145,6 +153,20 @@ const PortfolioView: React.FC = () => {
           console.error(e);
       } finally {
           setHedgeLoading(false);
+      }
+  };
+
+  const handleRunAdvancedPricing = async () => {
+      if (!pricingTicker) return;
+      setPricingLoading(true);
+      setPricingResult(null);
+      try {
+          const result = await runAdvancedPricingAnalysis(pricingTicker);
+          setPricingResult(result);
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setPricingLoading(false);
       }
   };
 
@@ -308,6 +330,130 @@ const PortfolioView: React.FC = () => {
                     Add / Update
                 </button>
             </form>
+        </div>
+
+        {/* Advanced Pricing Engine (BSM, Heston, Jump Diffusion, etc) */}
+        <div className="bg-[#0f172a] rounded-xl border border-cyan-500/30 p-6 shadow-lg shadow-cyan-900/10">
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <svg className="w-6 h-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                        Advanced Quant Pricing Engine
+                    </h3>
+                    <p className="text-xs text-slate-400">Institutional derivatives modeling: BSM, Heston, Jump Diffusion, and Var Swaps.</p>
+                </div>
+                <div className="flex gap-2">
+                    <select 
+                        value={pricingTicker}
+                        onChange={(e) => setPricingTicker(e.target.value)}
+                        className="bg-[#1e293b] border border-cyan-500/30 text-xs text-white rounded px-3 py-2 outline-none"
+                    >
+                        {holdings.map(h => <option key={h.ticker} value={h.ticker}>{h.ticker}</option>)}
+                    </select>
+                    <button 
+                        onClick={handleRunAdvancedPricing}
+                        disabled={pricingLoading || !pricingTicker}
+                        className="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold px-4 py-2 rounded transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-cyan-900/40"
+                    >
+                        {pricingLoading ? 'Calculating...' : 'Run Analysis'}
+                    </button>
+                </div>
+            </div>
+
+            {pricingResult ? (
+                <div className="animate-fade-in space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Black-Scholes-Merton */}
+                        <div className="bg-[#1e293b]/50 border border-cyan-500/20 p-5 rounded-xl">
+                            <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-widest mb-4">Black-Scholes-Merton (BSM)</h4>
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div className="text-center bg-slate-900/50 p-2 rounded border border-slate-700">
+                                    <div className="text-[10px] text-slate-500">FAIR VALUE</div>
+                                    {/* Fix: Explicitly cast fairValue to number to avoid unknown type error on line 383 */}
+                                    <div className="text-lg font-mono text-white">${(pricingResult.bsm.fairValue as number).toFixed(2)}</div>
+                                </div>
+                                <div className="text-center bg-slate-900/50 p-2 rounded border border-slate-700">
+                                    <div className="text-[10px] text-slate-500">IMPLIED VOL (σ)</div>
+                                    <div className="text-lg font-mono text-white">{(pricingResult.bsm.impliedVol * 100).toFixed(1)}%</div>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-5 gap-2 text-center">
+                                {Object.entries(pricingResult.bsm.greeks).map(([name, val]) => (
+                                    <div key={name}>
+                                        <div className="text-[8px] text-slate-600 uppercase font-black">{name}</div>
+                                        {/* Fix: Explicitly cast val to number to avoid unknown type error on line 396 */}
+                                        <div className="text-[10px] font-mono text-cyan-300">{(val as number).toFixed(3)}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Heston Stochastic Vol */}
+                        <div className="bg-[#1e293b]/50 border border-purple-500/20 p-5 rounded-xl">
+                            <h4 className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-4">Heston Stochastic Volatility</h4>
+                            <div className="grid grid-cols-3 gap-2 mb-4">
+                                {Object.entries(pricingResult.heston.parameters).map(([key, val]) => (
+                                    <div key={key} className="bg-slate-900/50 p-1.5 rounded text-center border border-slate-700/50">
+                                        <div className="text-[8px] text-slate-500 font-bold uppercase">{key}</div>
+                                        <div className="text-xs font-mono text-purple-300">{(val as number).toFixed(3)}</div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="text-xs bg-purple-900/10 p-2 rounded border border-purple-500/10">
+                                <span className="font-bold text-purple-400">Skew/Smile:</span> {pricingResult.heston.surfaceStatus}
+                                <p className="text-[10px] text-slate-400 mt-1 leading-tight">{pricingResult.heston.description}</p>
+                            </div>
+                        </div>
+
+                        {/* Jump Diffusion */}
+                        <div className="bg-[#1e293b]/50 border border-amber-500/20 p-5 rounded-xl">
+                            <h4 className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-4">Merton Jump Diffusion</h4>
+                            <div className="flex items-center gap-6 mb-4">
+                                <div className="flex-1">
+                                    <div className="flex justify-between text-[10px] mb-1">
+                                        <span className="text-slate-500 uppercase">Jump Probability</span>
+                                        <span className="text-amber-300 font-bold">{(pricingResult.jumpDiffusion.jumpProbability * 100).toFixed(1)}%</span>
+                                    </div>
+                                    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                                        <div className="h-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" style={{width: `${pricingResult.jumpDiffusion.jumpProbability * 100}%`}}></div>
+                                    </div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-[8px] text-slate-600 font-bold uppercase">λ (Lambda)</div>
+                                    <div className="text-lg font-mono text-white">{pricingResult.jumpDiffusion.parameters.lambda.toFixed(2)}</div>
+                                </div>
+                            </div>
+                            <p className="text-[10px] text-slate-400 italic leading-snug">{pricingResult.jumpDiffusion.description}</p>
+                        </div>
+
+                        {/* Variance Swap */}
+                        <div className="bg-[#1e293b]/50 border border-green-500/20 p-5 rounded-xl">
+                            <h4 className="text-xs font-bold text-green-400 uppercase tracking-widest mb-4">Variance Swap Pricing</h4>
+                            <div className="bg-slate-900/50 p-3 rounded border border-slate-700 mb-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs text-slate-500 uppercase">Fair Variance Strike</span>
+                                    <span className="text-xl font-mono text-green-400 font-bold">{pricingResult.varianceSwap.fairVarianceStrike.toFixed(4)}</span>
+                                </div>
+                            </div>
+                            <div className="text-[10px] text-slate-400 leading-tight">
+                                <div className="font-bold text-slate-500 mb-1">PAYOFF REGIME</div>
+                                {pricingResult.varianceSwap.payoffDescription}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Summary Inference */}
+                    <div className="bg-gradient-to-r from-cyan-900/20 to-transparent p-5 rounded-xl border border-cyan-500/10">
+                        <h4 className="text-xs font-bold text-cyan-500 uppercase mb-2">Quant Analyst Synthesis</h4>
+                        <p className="text-sm text-slate-300 italic leading-relaxed">"{pricingResult.summary}"</p>
+                    </div>
+                </div>
+            ) : (
+                <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-xl">
+                    <svg className="w-12 h-12 text-slate-700 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                    <p className="text-sm text-slate-600">Select a portfolio asset to run institutional-grade pricing and volatility models.</p>
+                </div>
+            )}
         </div>
 
         {/* Option Delta-Gamma Hedging Dashboard */}
