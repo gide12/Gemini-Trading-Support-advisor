@@ -19,6 +19,7 @@ import {
 const MODEL_TYPES = [
   "Transformer (Time-Series)",
   "LSTM-Attention Network",
+  "SVM (Support Vector Machine)",
   "Autoregressive Integrated Moving Average (ARIMA)",
   "Hybrid ES-DRNN (Exp. Smoothing + Dilated RNN)",
   "Linear-Exponential-Polynomial model",
