@@ -59,6 +59,7 @@ const PortfolioView: React.FC = () => {
   // ETF State
   const [etfTicker, setEtfTicker] = useState("");
   const [etfCapital, setEtfCapital] = useState("10000");
+  const [etfLeverage, setEtfLeverage] = useState("1");
   const [etfLoading, setEtfLoading] = useState(false);
   const [etfResult, setEtfResult] = useState<ETFProfile | null>(null);
   const [etfWatchlist, setEtfWatchlist] = useState<string[]>(['SPY', 'QQQ', 'ARKK', 'VOO', 'SMH']);
@@ -191,9 +192,12 @@ const PortfolioView: React.FC = () => {
   };
 
   const handleAdoptETF = () => {
-    if (!etfResult || !etfCapital) return;
-    const totalCap = parseFloat(etfCapital);
-    if (isNaN(totalCap)) return;
+    if (!etfResult || !etfCapital || !etfResult.topHoldings) return;
+    const baseCap = parseFloat(etfCapital);
+    const leverage = parseFloat(etfLeverage) || 1;
+    if (isNaN(baseCap)) return;
+
+    const totalCap = baseCap * leverage;
 
     // We will replace current holdings with ETF allocation
     const newHoldings: Holding[] = [];
@@ -332,7 +336,7 @@ const PortfolioView: React.FC = () => {
             </form>
         </div>
 
-        {/* Advanced Pricing Engine (BSM, Heston, Jump Diffusion, etc) */}
+        {/* Advanced Pricing Engine */}
         <div className="bg-[#0f172a] rounded-xl border border-cyan-500/30 p-6 shadow-lg shadow-cyan-900/10">
             <div className="flex justify-between items-center mb-6">
                 <div>
@@ -369,7 +373,6 @@ const PortfolioView: React.FC = () => {
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div className="text-center bg-slate-900/50 p-2 rounded border border-slate-700">
                                     <div className="text-[10px] text-slate-500">FAIR VALUE</div>
-                                    {/* Fix: Explicitly cast fairValue to number to avoid unknown type error on line 383 */}
                                     <div className="text-lg font-mono text-white">${(pricingResult.bsm.fairValue as number).toFixed(2)}</div>
                                 </div>
                                 <div className="text-center bg-slate-900/50 p-2 rounded border border-slate-700">
@@ -381,7 +384,6 @@ const PortfolioView: React.FC = () => {
                                 {Object.entries(pricingResult.bsm.greeks).map(([name, val]) => (
                                     <div key={name}>
                                         <div className="text-[8px] text-slate-600 uppercase font-black">{name}</div>
-                                        {/* Fix: Explicitly cast val to number to avoid unknown type error on line 396 */}
                                         <div className="text-[10px] font-mono text-cyan-300">{(val as number).toFixed(3)}</div>
                                     </div>
                                 ))}
@@ -694,7 +696,7 @@ const PortfolioView: React.FC = () => {
                                         }}
                                     />
                                     {/* The Frontier Curve */}
-                                    <Line data={mptResult.efficientFrontier} type="monotone" dataKey="return" stroke="#a855f7" strokeWidth={2} dot={false} />
+                                    <Line data={mptResult.efficientFrontier || []} type="monotone" dataKey="return" stroke="#a855f7" strokeWidth={2} dot={false} />
                                     
                                     {/* Current Portfolio Point */}
                                     <Scatter name="Current" data={[{ risk: mptResult.currentMetrics.volatility, return: mptResult.currentMetrics.expectedReturn }]} fill="#f87171">
@@ -726,7 +728,7 @@ const PortfolioView: React.FC = () => {
                             </div>
                         )}
                         <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                            {mptResult.suggestions.map((sug, idx) => (
+                            {(mptResult.suggestions || []).map((sug, idx) => (
                                 <div key={idx} className="bg-slate-800/30 p-3 rounded border border-purple-500/20 flex gap-3 items-start">
                                     <div className={`mt-1 p-1 rounded-full ${sug.action === 'Buy' ? 'bg-green-500/20 text-green-400' : sug.action === 'Sell' ? 'bg-red-500/20 text-red-400' : 'bg-slate-500/20 text-slate-400'}`}>
                                         {sug.action === 'Buy' && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>}
@@ -819,11 +821,11 @@ const PortfolioView: React.FC = () => {
                                 ★
                             </button>
                         </div>
-                        <span className="text-[10px] bg-blue-900/30 text-blue-200 px-1.5 py-0.5 rounded text-xs font-mono font-bold">{etfResult.topHoldings.length} Assets</span>
+                        <span className="text-[10px] bg-blue-900/30 text-blue-200 px-1.5 py-0.5 rounded text-xs font-mono font-bold">{(etfResult.topHoldings || []).length} Assets</span>
                      </div>
                      
                      <div className="space-y-1 mb-4 max-h-[150px] overflow-y-auto custom-scrollbar">
-                         {etfResult.topHoldings.map(h => (
+                         {(etfResult.topHoldings || []).map(h => (
                              <div key={h.ticker} className="flex justify-between text-xs">
                                  <span className="text-slate-300 font-mono font-bold">{h.ticker}</span>
                                  <span className="text-slate-400 font-mono">{h.weight}%</span>
@@ -831,22 +833,46 @@ const PortfolioView: React.FC = () => {
                          ))}
                      </div>
 
-                     <div className="pt-3 border-t border-slate-700">
-                         <label className="block text-[10px] text-slate-400 mb-1 uppercase font-bold">Capital to Deploy ($)</label>
-                         <div className="flex gap-2">
-                             <input 
-                                 type="number"
-                                 value={etfCapital}
-                                 onChange={(e) => setEtfCapital(e.target.value)}
-                                 className="flex-1 bg-[#0f172a] border border-slate-600 rounded px-2 py-1 text-white text-xs"
-                             />
-                             <button 
-                                 onClick={handleAdoptETF}
-                                 className="bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-3 py-1 rounded"
-                             >
-                                 Adopt
-                             </button>
+                     <div className="pt-3 border-t border-slate-700 space-y-3">
+                         <div className="grid grid-cols-2 gap-3">
+                             <div>
+                                 <label className="block text-[10px] text-slate-400 mb-1 uppercase font-bold">Capital to Deploy ($)</label>
+                                 <input 
+                                     type="number"
+                                     value={etfCapital}
+                                     onChange={(e) => setEtfCapital(e.target.value)}
+                                     className="w-full bg-[#0f172a] border border-slate-600 rounded px-2 py-1 text-white text-xs"
+                                 />
+                             </div>
+                             <div>
+                                 <label className="block text-[10px] text-slate-400 mb-1 uppercase font-bold">Leverage (x)</label>
+                                 <select 
+                                     value={etfLeverage}
+                                     onChange={(e) => setEtfLeverage(e.target.value)}
+                                     className="w-full bg-[#0f172a] border border-slate-600 rounded px-2 py-1 text-white text-xs outline-none focus:border-blue-500"
+                                 >
+                                     <option value="1">1x (Standard)</option>
+                                     <option value="1.5">1.5x (Moderate)</option>
+                                     <option value="2">2x (Double)</option>
+                                     <option value="3">3x (Triple)</option>
+                                     <option value="5">5x (Aggressive)</option>
+                                 </select>
+                             </div>
                          </div>
+                         
+                         {parseFloat(etfLeverage) > 1 && (
+                             <div className="text-[9px] text-amber-500 flex items-center gap-1 font-bold italic">
+                                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                 WARNING: Leveraging increases liquidation risk.
+                             </div>
+                         )}
+
+                         <button 
+                             onClick={handleAdoptETF}
+                             className="w-full bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-3 py-2 rounded transition-colors shadow-lg shadow-green-900/20"
+                         >
+                             Adopt with {etfLeverage}x Leverage
+                         </button>
                      </div>
                  </div>
              )}
@@ -873,7 +899,7 @@ const PortfolioView: React.FC = () => {
             </div>
          </div>
 
-         {mptResult && mptResult.correlationMatrix.length > 0 && (
+         {mptResult && (mptResult.correlationMatrix || []).length > 0 && (
              <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
                 <h3 className="text-lg font-semibold text-white mb-4">Asset Correlations</h3>
                 <div className="text-xs space-y-2">

@@ -234,52 +234,52 @@ const FuzzyLogicView: React.FC = () => {
                       <div className="relative">
                           <div className="flex justify-between text-xs mb-1">
                               <span className="text-slate-400 uppercase font-bold">Market Risk (MKT)</span>
-                              <span className="text-purple-300 font-mono">{advancedData.famaFrenchFactors.marketRisk.value.toFixed(2)}</span>
+                              <span className="text-purple-300 font-mono">{(advancedData.famaFrenchFactors?.marketRisk?.value || 0).toFixed(2)}</span>
                           </div>
                           <div className="w-full bg-slate-800 h-2 rounded-full mb-1">
-                              <div className="bg-purple-500 h-2 rounded-full" style={{width: `${advancedData.famaFrenchFactors.marketRisk.value * 100}%`}}></div>
+                              <div className="bg-purple-500 h-2 rounded-full" style={{width: `${(advancedData.famaFrenchFactors?.marketRisk?.value || 0) * 100}%`}}></div>
                           </div>
-                          <p className="text-[10px] text-slate-500">{advancedData.famaFrenchFactors.marketRisk.description}</p>
+                          <p className="text-[10px] text-slate-500">{advancedData.famaFrenchFactors?.marketRisk?.description}</p>
                       </div>
 
                       <div className="relative">
                           <div className="flex justify-between text-xs mb-1">
                               <span className="text-slate-400 uppercase font-bold">Size Factor (SMB)</span>
-                              <span className="text-blue-300 font-mono">{advancedData.famaFrenchFactors.sizeFactorSMB.value.toFixed(2)}</span>
+                              <span className="text-blue-300 font-mono">{(advancedData.famaFrenchFactors?.sizeFactorSMB?.value || 0).toFixed(2)}</span>
                           </div>
                           <div className="w-full bg-slate-800 h-2 rounded-full mb-1">
-                              <div className="bg-blue-500 h-2 rounded-full" style={{width: `${advancedData.famaFrenchFactors.sizeFactorSMB.value * 100}%`}}></div>
+                              <div className="bg-blue-500 h-2 rounded-full" style={{width: `${(advancedData.famaFrenchFactors?.sizeFactorSMB?.value || 0) * 100}%`}}></div>
                           </div>
-                          <p className="text-[10px] text-slate-500">{advancedData.famaFrenchFactors.sizeFactorSMB.description}</p>
+                          <p className="text-[10px] text-slate-500">{advancedData.famaFrenchFactors?.sizeFactorSMB?.description}</p>
                       </div>
 
                       <div className="relative">
                           <div className="flex justify-between text-xs mb-1">
                               <span className="text-slate-400 uppercase font-bold">Value Factor (HML)</span>
-                              <span className="text-pink-300 font-mono">{advancedData.famaFrenchFactors.valueFactorHML.value.toFixed(2)}</span>
+                              <span className="text-pink-300 font-mono">{(advancedData.famaFrenchFactors?.valueFactorHML?.value || 0).toFixed(2)}</span>
                           </div>
                           <div className="w-full bg-slate-800 h-2 rounded-full mb-1">
-                              <div className="bg-pink-500 h-2 rounded-full" style={{width: `${advancedData.famaFrenchFactors.valueFactorHML.value * 100}%`}}></div>
+                              <div className="bg-pink-500 h-2 rounded-full" style={{width: `${(advancedData.famaFrenchFactors?.valueFactorHML?.value || 0) * 100}%`}}></div>
                           </div>
-                          <p className="text-[10px] text-slate-500">{advancedData.famaFrenchFactors.valueFactorHML.description}</p>
+                          <p className="text-[10px] text-slate-500">{advancedData.famaFrenchFactors?.valueFactorHML?.description}</p>
                       </div>
                   </div>
               </div>
 
-              {/* Card 2: Cognitive Map Visualization (Grid of Concepts) */}
+              {/* Card 2: Cognitive Map Visualization */}
               <div className="lg:col-span-1 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
                   <h3 className="text-lg font-bold text-white mb-4 border-b border-purple-500/20 pb-2">Fuzzy Cognitive Map</h3>
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                      {advancedData.fuzzyCognitiveMap.nodes.map((node, i) => (
+                      {(advancedData.fuzzyCognitiveMap?.nodes || []).map((node, i) => (
                           <div key={i} className={`p-2 rounded border border-purple-500/10 flex flex-col justify-center items-center text-center ${node.influenceType === 'Positive' ? 'bg-green-900/10' : node.influenceType === 'Negative' ? 'bg-red-900/10' : 'bg-slate-800/30'}`}>
                               <span className="text-xs font-bold text-slate-300">{node.name}</span>
                               <div className="w-full h-1 bg-slate-700 mt-2 rounded-full overflow-hidden">
-                                   <div className={`h-full ${node.influenceType === 'Positive' ? 'bg-green-500' : 'bg-red-500'}`} style={{width: `${node.activationLevel * 100}%`}}></div>
+                                   <div className={`h-full ${node.influenceType === 'Positive' ? 'bg-green-500' : 'bg-red-500'}`} style={{width: `${(node.activationLevel || 0) * 100}%`}}></div>
                               </div>
                           </div>
                       ))}
                   </div>
-                  <p className="text-xs text-slate-400 italic text-center">"{advancedData.fuzzyCognitiveMap.primaryCausalLink}"</p>
+                  <p className="text-xs text-slate-400 italic text-center">"{advancedData.fuzzyCognitiveMap?.primaryCausalLink}"</p>
               </div>
 
               {/* Card 3: GNN Output */}
@@ -294,10 +294,10 @@ const FuzzyLogicView: React.FC = () => {
                     <h3 className="text-lg font-bold text-white mb-4 border-b border-purple-500/20 pb-2">GNN Prediction</h3>
                     <div className="text-center py-4">
                         <div className="text-xs text-slate-500 uppercase font-bold mb-1">Signal Strength</div>
-                        <div className={`text-4xl font-bold ${advancedData.gnnPrediction.signal.includes('Buy') ? 'text-green-400' : advancedData.gnnPrediction.signal.includes('Sell') ? 'text-red-400' : 'text-yellow-400'}`}>
-                            {advancedData.gnnPrediction.signal}
+                        <div className={`text-4xl font-bold ${(advancedData.gnnPrediction?.signal || "").includes('Buy') ? 'text-green-400' : (advancedData.gnnPrediction?.signal || "").includes('Sell') ? 'text-red-400' : 'text-yellow-400'}`}>
+                            {advancedData.gnnPrediction?.signal || "Hold"}
                         </div>
-                        <div className="text-sm font-mono text-slate-400 mt-1">{advancedData.gnnPrediction.confidence}% Confidence</div>
+                        <div className="text-sm font-mono text-slate-400 mt-1">{advancedData.gnnPrediction?.confidence || 0}% Confidence</div>
                     </div>
                   </div>
                   
@@ -305,7 +305,7 @@ const FuzzyLogicView: React.FC = () => {
                   <div>
                       <div className="text-[10px] text-slate-500 uppercase font-bold mb-2 text-center">Graph Embedding Vector</div>
                       <div className="flex gap-1 justify-center h-16 items-end">
-                          {advancedData.gnnPrediction.graphEmbedding.map((val, idx) => (
+                          {(advancedData.gnnPrediction?.graphEmbedding || []).map((val, idx) => (
                               <div key={idx} className="w-3 bg-purple-500/60 rounded-t" style={{height: `${val * 100}%`}}></div>
                           ))}
                       </div>
@@ -330,18 +330,18 @@ const FuzzyLogicView: React.FC = () => {
                           <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
                           Genetic-Fuzzy (GFS)
                       </h3>
-                      <span className="text-xs bg-cyan-900/30 text-cyan-400 px-2 py-0.5 rounded border border-cyan-500/30">{optimalFisData.gfsAnalysis.optimizationStatus}</span>
+                      <span className="text-xs bg-cyan-900/30 text-cyan-400 px-2 py-0.5 rounded border border-cyan-500/30">{optimalFisData.gfsAnalysis?.optimizationStatus}</span>
                   </div>
                   <div className="mb-4">
                       <div className="flex justify-between text-xs mb-1 text-slate-400">
                           <span>Optimization Score</span>
-                          <span>{optimalFisData.gfsAnalysis.score}/100</span>
+                          <span>{optimalFisData.gfsAnalysis?.score}/100</span>
                       </div>
                       <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                          <div className="h-full bg-cyan-500" style={{width: `${optimalFisData.gfsAnalysis.score}%`}}></div>
+                          <div className="h-full bg-cyan-500" style={{width: `${optimalFisData.gfsAnalysis?.score || 0}%`}}></div>
                       </div>
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed flex-1">{optimalFisData.gfsAnalysis.description}</p>
+                  <p className="text-xs text-slate-400 leading-relaxed flex-1">{optimalFisData.gfsAnalysis?.description}</p>
               </div>
 
               {/* NFS Card */}
@@ -355,14 +355,14 @@ const FuzzyLogicView: React.FC = () => {
                   <div className="grid grid-cols-2 gap-2 mb-4">
                       <div className="bg-[#1e293b] p-2 rounded text-center">
                           <div className="text-[10px] text-slate-500 uppercase font-bold">Network Depth</div>
-                          <div className="text-lg font-mono text-pink-400">{optimalFisData.nfsAnalysis.networkDepth}</div>
+                          <div className="text-lg font-mono text-pink-400">{optimalFisData.nfsAnalysis?.networkDepth}</div>
                       </div>
                       <div className="bg-[#1e293b] p-2 rounded text-center">
                           <div className="text-[10px] text-slate-500 uppercase font-bold">Learning Rate</div>
-                          <div className="text-lg font-mono text-pink-400">{optimalFisData.nfsAnalysis.learningRate}</div>
+                          <div className="text-lg font-mono text-pink-400">{optimalFisData.nfsAnalysis?.learningRate}</div>
                       </div>
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed flex-1">{optimalFisData.nfsAnalysis.description}</p>
+                  <p className="text-xs text-slate-400 leading-relaxed flex-1">{optimalFisData.nfsAnalysis?.description}</p>
               </div>
 
               {/* HFS Card */}
@@ -375,16 +375,16 @@ const FuzzyLogicView: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-4 mb-4">
                       <div className="flex-1 text-center">
-                          <div className="text-2xl font-bold text-purple-400">{optimalFisData.hfsAnalysis.reducedRules}</div>
+                          <div className="text-2xl font-bold text-purple-400">{optimalFisData.hfsAnalysis?.reducedRules}</div>
                           <div className="text-[10px] text-slate-500 uppercase">Rules Reduced</div>
                       </div>
                       <div className="w-px h-8 bg-slate-700"></div>
                       <div className="flex-1 text-center">
-                          <div className="text-2xl font-bold text-purple-400">{optimalFisData.hfsAnalysis.layers}</div>
+                          <div className="text-2xl font-bold text-purple-400">{optimalFisData.hfsAnalysis?.layers}</div>
                           <div className="text-[10px] text-slate-500 uppercase">Layers</div>
                       </div>
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed flex-1">{optimalFisData.hfsAnalysis.description}</p>
+                  <p className="text-xs text-slate-400 leading-relaxed flex-1">{optimalFisData.hfsAnalysis?.description}</p>
               </div>
 
               {/* EFS Card */}
@@ -394,20 +394,20 @@ const FuzzyLogicView: React.FC = () => {
                           <span className="w-2 h-2 rounded-full bg-green-400"></span>
                           Evolving (EFS)
                       </h3>
-                      <span className={`text-xs px-2 py-0.5 rounded border ${optimalFisData.efsAnalysis.evolvingStatus === 'Expanding' ? 'bg-green-900/30 text-green-400 border-green-500/30' : 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30'}`}>
-                          {optimalFisData.efsAnalysis.evolvingStatus}
+                      <span className={`text-xs px-2 py-0.5 rounded border ${optimalFisData.efsAnalysis?.evolvingStatus === 'Expanding' ? 'bg-green-900/30 text-green-400 border-green-500/30' : 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30'}`}>
+                          {optimalFisData.efsAnalysis?.evolvingStatus}
                       </span>
                   </div>
                   <div className="mb-4">
                       <div className="flex justify-between text-xs mb-1 text-slate-400">
                           <span>Adaptation Speed</span>
-                          <span>{optimalFisData.efsAnalysis.adaptationSpeed}ms</span>
+                          <span>{optimalFisData.efsAnalysis?.adaptationSpeed}ms</span>
                       </div>
                       <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                          <div className="h-full bg-green-500" style={{width: `${Math.min(optimalFisData.efsAnalysis.adaptationSpeed, 100)}%`}}></div>
+                          <div className="h-full bg-green-500" style={{width: `${Math.min(optimalFisData.efsAnalysis?.adaptationSpeed || 0, 100)}%`}}></div>
                       </div>
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed flex-1">{optimalFisData.efsAnalysis.description}</p>
+                  <p className="text-xs text-slate-400 leading-relaxed flex-1">{optimalFisData.efsAnalysis?.description}</p>
               </div>
 
               {/* MFS Card */}
@@ -417,21 +417,21 @@ const FuzzyLogicView: React.FC = () => {
                           <span className="w-2 h-2 rounded-full bg-orange-400"></span>
                           Multiobjective (MFS)
                       </h3>
-                      {optimalFisData.mfsAnalysis.paretoOptimal && (
+                      {optimalFisData.mfsAnalysis?.paretoOptimal && (
                           <span className="text-[10px] bg-orange-900/30 text-orange-400 px-2 py-0.5 rounded border border-orange-500/30">Pareto Optimal</span>
                       )}
                   </div>
                   <div className="flex items-end justify-between h-16 gap-2 mb-4 px-4">
                        <div className="w-8 bg-slate-700 relative group h-full rounded-t">
-                           <div className="absolute bottom-0 w-full bg-blue-500 rounded-t transition-all" style={{height: `${optimalFisData.mfsAnalysis.accuracy}%`}}></div>
+                           <div className="absolute bottom-0 w-full bg-blue-500 rounded-t transition-all" style={{height: `${optimalFisData.mfsAnalysis?.accuracy || 0}%`}}></div>
                            <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] uppercase text-slate-500">Acc</span>
                        </div>
                        <div className="w-8 bg-slate-700 relative group h-full rounded-t">
-                           <div className="absolute bottom-0 w-full bg-orange-500 rounded-t transition-all" style={{height: `${optimalFisData.mfsAnalysis.interpretability}%`}}></div>
+                           <div className="absolute bottom-0 w-full bg-orange-500 rounded-t transition-all" style={{height: `${optimalFisData.mfsAnalysis?.interpretability || 0}%`}}></div>
                            <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] uppercase text-slate-500">Int</span>
                        </div>
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed flex-1 mt-4">{optimalFisData.mfsAnalysis.description}</p>
+                  <p className="text-xs text-slate-400 leading-relaxed flex-1 mt-4">{optimalFisData.mfsAnalysis?.description}</p>
               </div>
 
               {/* Overall Summary */}
@@ -453,24 +453,24 @@ const FuzzyLogicView: React.FC = () => {
                 
                 <div className="mb-6">
                     <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs font-bold text-cyan-400 uppercase">Internal Trend (Potential)</span>
-                        <span className="text-sm font-mono text-white">{(fftsData.twoFactors.internalTrend.strength * 100).toFixed(0)}%</span>
+                        <span className="text-xs font-bold text-cyan-400 uppercase">Internal Trend</span>
+                        <span className="text-sm font-mono text-white">{((fftsData.twoFactors?.internalTrend?.strength || 0) * 100).toFixed(0)}%</span>
                     </div>
                     <div className="w-full bg-slate-800 h-2 rounded-full mb-2">
-                        <div className="bg-cyan-500 h-2 rounded-full" style={{width: `${fftsData.twoFactors.internalTrend.strength * 100}%`}}></div>
+                        <div className="bg-cyan-500 h-2 rounded-full" style={{width: `${(fftsData.twoFactors?.internalTrend?.strength || 0) * 100}%`}}></div>
                     </div>
-                    <p className="text-[10px] text-slate-400">{fftsData.twoFactors.internalTrend.description}</p>
+                    <p className="text-[10px] text-slate-400">{fftsData.twoFactors?.internalTrend?.description}</p>
                 </div>
 
                 <div>
                     <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs font-bold text-pink-400 uppercase">External Shock (Disturbance)</span>
-                        <span className="text-sm font-mono text-white">{(fftsData.twoFactors.externalDisturbance.impact * 100).toFixed(0)}%</span>
+                        <span className="text-xs font-bold text-pink-400 uppercase">External Shock</span>
+                        <span className="text-sm font-mono text-white">{((fftsData.twoFactors?.externalDisturbance?.impact || 0) * 100).toFixed(0)}%</span>
                     </div>
                     <div className="w-full bg-slate-800 h-2 rounded-full mb-2">
-                        <div className="bg-pink-500 h-2 rounded-full" style={{width: `${fftsData.twoFactors.externalDisturbance.impact * 100}%`}}></div>
+                        <div className="bg-pink-500 h-2 rounded-full" style={{width: `${(fftsData.twoFactors?.externalDisturbance?.impact || 0) * 100}%`}}></div>
                     </div>
-                    <p className="text-[10px] text-slate-400">{fftsData.twoFactors.externalDisturbance.description}</p>
+                    <p className="text-[10px] text-slate-400">{fftsData.twoFactors?.externalDisturbance?.description}</p>
                 </div>
              </div>
 
@@ -478,7 +478,7 @@ const FuzzyLogicView: React.FC = () => {
              <div className="lg:col-span-1 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg flex flex-col">
                  <h3 className="text-lg font-bold text-white mb-4 border-b border-purple-500/20 pb-2">Probabilistic Linguistic Preferences</h3>
                  <div className="space-y-3 flex-1 overflow-y-auto max-h-[250px] custom-scrollbar pr-2">
-                     {fftsData.plprRules.map(rule => (
+                     {(fftsData.plprRules || []).map(rule => (
                          <div key={rule.ruleId} className="bg-[#1e293b]/50 border border-purple-500/10 p-3 rounded">
                              <div className="flex justify-between text-[10px] uppercase font-bold text-slate-500 mb-1">
                                  <span>{rule.ruleId}</span>
@@ -505,26 +505,25 @@ const FuzzyLogicView: React.FC = () => {
                  <div>
                      <h3 className="text-lg font-bold text-white mb-4 border-b border-purple-500/20 pb-2">Similarity Forecast</h3>
                      <div className="bg-[#1e293b] p-3 rounded mb-4">
-                         <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Method: {fftsData.similarityAnalysis.methodUsed}</div>
+                         <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Method: {fftsData.similarityAnalysis?.methodUsed}</div>
                          <div className="flex justify-between items-center">
                              <span className="text-xs text-slate-300">Distance from History</span>
-                             <span className="font-mono text-cyan-400 font-bold">{fftsData.similarityAnalysis.distanceValue.toFixed(4)}</span>
+                             <span className="font-mono text-cyan-400 font-bold">{(fftsData.similarityAnalysis?.distanceValue || 0).toFixed(4)}</span>
                          </div>
                          <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2">
-                             {/* Inverse representation: shorter distance = fuller bar (better match) */}
-                             <div className="bg-cyan-500 h-1.5 rounded-full" style={{width: `${Math.max(0, 1 - fftsData.similarityAnalysis.distanceValue) * 100}%`}}></div>
+                             <div className="bg-cyan-500 h-1.5 rounded-full" style={{width: `${Math.max(0, 1 - (fftsData.similarityAnalysis?.distanceValue || 0)) * 100}%`}}></div>
                          </div>
-                         <div className="text-[10px] text-slate-500 mt-1 text-right">Matches Rule: {fftsData.similarityAnalysis.closestHistoricalRuleId}</div>
+                         <div className="text-[10px] text-slate-500 mt-1 text-right">Matches Rule: {fftsData.similarityAnalysis?.closestHistoricalRuleId}</div>
                      </div>
                  </div>
 
                  <div className="text-center">
                      <div className="text-xs text-slate-400 uppercase tracking-widest mb-1">Predicted Direction</div>
-                     <div className={`text-3xl font-bold ${fftsData.forecast.direction === 'Bullish' ? 'text-green-400' : fftsData.forecast.direction === 'Bearish' ? 'text-red-400' : 'text-yellow-400'}`}>
-                         {fftsData.forecast.direction}
+                     <div className={`text-3xl font-bold ${fftsData.forecast?.direction === 'Bullish' ? 'text-green-400' : fftsData.forecast?.direction === 'Bearish' ? 'text-red-400' : 'text-yellow-400'}`}>
+                         {fftsData.forecast?.direction || "Neutral"}
                      </div>
-                     <div className="text-sm font-mono text-white mt-1">Target: ${fftsData.forecast.priceTarget.toFixed(2)}</div>
-                     <div className="text-xs text-slate-500 mt-1">Confidence: {fftsData.forecast.confidence}%</div>
+                     <div className="text-sm font-mono text-white mt-1">Target: ${fftsData.forecast?.priceTarget?.toFixed(2) || "0.00"}</div>
+                     <div className="text-xs text-slate-500 mt-1">Confidence: {fftsData.forecast?.confidence || 0}%</div>
                  </div>
              </div>
              

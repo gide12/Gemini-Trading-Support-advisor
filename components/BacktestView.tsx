@@ -61,9 +61,6 @@ const BacktestView: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zm-7.518-.267A8.25 8.25 0 1120.25 10.5M8.288 14.212A5.25 5.25 0 1117.25 10.5" />
                 </svg>
                 Strategy Configuration
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-red-500">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zm-7.518-.267A8.25 8.25 0 1120.25 10.5M8.288 14.212A5.25 5.25 0 1117.25 10.5" />
-                </svg>
             </h2>
             
             <div className="space-y-4">
@@ -121,7 +118,6 @@ const BacktestView: React.FC = () => {
                 <div>
                     <label className="block text-sm font-medium text-slate-400 mb-2">Risk & Exit Parameters</label>
                     <div className="space-y-3 bg-[#1e293b]/50 p-3 rounded border border-purple-500/10">
-                        {/* Risk : Reward Ratio */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs text-slate-500 mb-1">Risk Unit (R)</label>
@@ -143,7 +139,6 @@ const BacktestView: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* SL / TP / Trailing */}
                         <div className="grid grid-cols-3 gap-3 pt-2 border-t border-purple-500/10">
                             <div>
                                 <label className="block text-xs text-slate-500 mb-1">Stop Loss</label>
@@ -229,7 +224,6 @@ const BacktestView: React.FC = () => {
 
             {result && (
                 <div className="space-y-8">
-                    {/* Header */}
                     <div className="flex justify-between items-center border-b border-purple-500/20 pb-4">
                         <h3 className="text-lg font-bold text-white">Simulation Results</h3>
                         <span className="px-3 py-1 rounded-full bg-cyan-900/30 text-cyan-400 text-xs font-bold border border-cyan-500/30">
@@ -237,27 +231,25 @@ const BacktestView: React.FC = () => {
                         </span>
                     </div>
                     
-                    {/* KPIs */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="bg-slate-800/50 p-4 rounded border border-purple-500/20">
                             <div className="text-slate-400 text-xs uppercase">Total Return</div>
-                            <div className={`text-2xl font-mono font-bold ${(result.metrics.totalReturn || "").includes('-') ? 'text-red-400' : 'text-green-400'}`}>{(result.metrics.totalReturn || "0%")}</div>
+                            <div className={`text-2xl font-mono font-bold ${(result.metrics?.totalReturn || "").includes('-') ? 'text-red-400' : 'text-green-400'}`}>{(result.metrics?.totalReturn || "0%")}</div>
                         </div>
                         <div className="bg-slate-800/50 p-4 rounded border border-purple-500/20">
                             <div className="text-slate-400 text-xs uppercase">Win Rate</div>
-                            <div className="text-2xl font-mono font-bold text-blue-400">{result.metrics.winRate}</div>
+                            <div className="text-2xl font-mono font-bold text-blue-400">{result.metrics?.winRate || "0%"}</div>
                         </div>
                         <div className="bg-slate-800/50 p-4 rounded border border-purple-500/20">
                             <div className="text-slate-400 text-xs uppercase">Max Drawdown</div>
-                            <div className="text-2xl font-mono font-bold text-red-400">{result.metrics.maxDrawdown}</div>
+                            <div className="text-2xl font-mono font-bold text-red-400">{result.metrics?.maxDrawdown || "0%"}</div>
                         </div>
                         <div className="bg-slate-800/50 p-4 rounded border border-purple-500/20">
                             <div className="text-slate-400 text-xs uppercase">Trades</div>
-                            <div className="text-2xl font-mono font-bold text-white">{result.metrics.tradesCount}</div>
+                            <div className="text-2xl font-mono font-bold text-white">{result.metrics?.tradesCount || 0}</div>
                         </div>
                     </div>
 
-                    {/* Black Scholes Greeks Dashboard (Only if available) */}
                     {result.blackScholesMetrics && (
                         <div className="bg-slate-800/30 border border-purple-500/30 rounded-xl p-5 animate-fade-in">
                              <div className="flex justify-between items-center mb-4">
@@ -268,44 +260,42 @@ const BacktestView: React.FC = () => {
                                      Black-Scholes Pricing & Greeks
                                  </h3>
                                  <div className="text-xs bg-slate-900 px-2 py-1 rounded text-slate-400 border border-slate-700">
-                                     IV: {(result.blackScholesMetrics.impliedVolatility * 100).toFixed(1)}%
+                                     IV: {((result.blackScholesMetrics.impliedVolatility || 0) * 100).toFixed(1)}%
                                  </div>
                              </div>
 
                              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                 {/* Pricing */}
                                  <div className="md:col-span-1 space-y-3">
                                      <div className="bg-[#1e293b] p-3 rounded border border-purple-500/20">
                                          <div className="text-[10px] text-green-400 uppercase font-bold mb-1">Call Price</div>
-                                         <div className="text-xl font-mono text-white">${result.blackScholesMetrics.callOptionPrice.toFixed(2)}</div>
+                                         <div className="text-xl font-mono text-white">${(result.blackScholesMetrics.callOptionPrice || 0).toFixed(2)}</div>
                                      </div>
                                      <div className="bg-[#1e293b] p-3 rounded border border-purple-500/20">
                                          <div className="text-[10px] text-red-400 uppercase font-bold mb-1">Put Price</div>
-                                         <div className="text-xl font-mono text-white">${result.blackScholesMetrics.putOptionPrice.toFixed(2)}</div>
+                                         <div className="text-xl font-mono text-white">${(result.blackScholesMetrics.putOptionPrice || 0).toFixed(2)}</div>
                                      </div>
                                  </div>
 
-                                 {/* Greeks Grid */}
                                  <div className="md:col-span-2 grid grid-cols-2 gap-3">
                                      <div className="bg-[#1e293b] p-2 rounded flex justify-between items-center">
                                          <span className="text-xs text-slate-400 uppercase">Delta (Δ)</span>
-                                         <span className="font-mono text-cyan-300">{result.blackScholesMetrics.greeks.delta.toFixed(3)}</span>
+                                         <span className="font-mono text-cyan-300">{(result.blackScholesMetrics.greeks?.delta || 0).toFixed(3)}</span>
                                      </div>
                                      <div className="bg-[#1e293b] p-2 rounded flex justify-between items-center">
                                          <span className="text-xs text-slate-400 uppercase">Gamma (Γ)</span>
-                                         <span className="font-mono text-purple-300">{result.blackScholesMetrics.greeks.gamma.toFixed(3)}</span>
+                                         <span className="font-mono text-purple-300">{(result.blackScholesMetrics.greeks?.gamma || 0).toFixed(3)}</span>
                                      </div>
                                      <div className="bg-[#1e293b] p-2 rounded flex justify-between items-center">
                                          <span className="text-xs text-slate-400 uppercase">Theta (Θ)</span>
-                                         <span className="font-mono text-red-300">{result.blackScholesMetrics.greeks.theta.toFixed(3)}</span>
+                                         <span className="font-mono text-red-300">{(result.blackScholesMetrics.greeks?.theta || 0).toFixed(3)}</span>
                                      </div>
                                      <div className="bg-[#1e293b] p-2 rounded flex justify-between items-center">
                                          <span className="text-xs text-slate-400 uppercase">Vega (ν)</span>
-                                         <span className="font-mono text-green-300">{result.blackScholesMetrics.greeks.vega.toFixed(3)}</span>
+                                         <span className="font-mono text-green-300">{(result.blackScholesMetrics.greeks?.vega || 0).toFixed(3)}</span>
                                      </div>
                                      <div className="col-span-2 bg-[#1e293b] p-2 rounded flex justify-between items-center">
                                          <span className="text-xs text-slate-400 uppercase">Rho (ρ)</span>
-                                         <span className="font-mono text-blue-300">{result.blackScholesMetrics.greeks.rho.toFixed(3)}</span>
+                                         <span className="font-mono text-blue-300">{(result.blackScholesMetrics.greeks?.rho || 0).toFixed(3)}</span>
                                      </div>
                                  </div>
                              </div>
@@ -316,7 +306,7 @@ const BacktestView: React.FC = () => {
                     <div className="h-64 w-full">
                          <h3 className="text-sm font-semibold text-slate-400 mb-4">Equity Curve</h3>
                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={result.equityCurve}>
+                            <LineChart data={result.equityCurve || []}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                               <XAxis dataKey="date" stroke="#64748b" tick={{fontSize: 10}} />
                               <YAxis stroke="#64748b" tick={{fontSize: 10}} domain={['auto', 'auto']} />
@@ -337,7 +327,7 @@ const BacktestView: React.FC = () => {
                         <div>
                             <h3 className="text-sm font-semibold text-slate-400 mb-2">Key Trades</h3>
                             <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
-                                {result.trades.map((t, i) => (
+                                {(result.trades || []).map((t, i) => (
                                     <div key={i} className="flex justify-between text-sm bg-slate-800/30 p-2 rounded border border-purple-500/10">
                                         <span className="text-slate-400">{t.date}</span>
                                         <span className={`font-bold ${t.type === 'Buy' ? 'text-green-400' : 'text-red-400'}`}>{t.type}</span>

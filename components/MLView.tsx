@@ -321,22 +321,22 @@ const MLView: React.FC = () => {
                      <div className="relative z-10 flex justify-between items-end">
                         <div>
                             <div className="text-slate-400 text-sm uppercase tracking-widest mb-1">{predictionHorizon} Forecast</div>
-                            <div className="text-5xl font-bold text-white mb-2">${result.predictedPrice.toFixed(2)}</div>
-                            <div className={`flex items-center gap-2 text-sm ${result.predictedPrice > result.currentPrice ? 'text-green-400' : 'text-red-400'}`}>
-                                <span>Current: ${result.currentPrice.toFixed(2)}</span>
-                                <span>({((result.predictedPrice - result.currentPrice) / result.currentPrice * 100).toFixed(2)}%)</span>
+                            <div className="text-5xl font-bold text-white mb-2">${(result.predictedPrice || 0).toFixed(2)}</div>
+                            <div className={`flex items-center gap-2 text-sm ${(result.predictedPrice || 0) > (result.currentPrice || 0) ? 'text-green-400' : 'text-red-400'}`}>
+                                <span>Current: ${(result.currentPrice || 0).toFixed(2)}</span>
+                                <span>({result.currentPrice ? (((result.predictedPrice || 0) - result.currentPrice) / result.currentPrice * 100).toFixed(2) : 0}%)</span>
                             </div>
                         </div>
                         <div className="text-right">
                              <div className="text-sm text-slate-400 mb-1">Confidence</div>
-                             <div className="text-3xl font-bold text-purple-400">{result.confidenceScore}%</div>
+                             <div className="text-3xl font-bold text-purple-400">{result.confidenceScore || 0}%</div>
                              <div className="text-xs text-slate-500 mt-1">Volatility: {result.volatility}</div>
                         </div>
                      </div>
 
                      <div className="mt-6 h-48">
                         <ResponsiveContainer width="100%" height="100%">
-                            <ComposedChart data={result.predictionPath}>
+                            <ComposedChart data={result.predictionPath || []}>
                                 <defs>
                                     <linearGradient id="confidence" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor="#8884d8" stopOpacity={0.3}/>
@@ -370,20 +370,20 @@ const MLView: React.FC = () => {
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
                                         <div className="text-[10px] text-slate-400 uppercase">Accuracy Rate (AR)</div>
-                                        <div className="text-xl font-mono text-white font-bold">{(result.evaluationMetrics.accuracy * 100).toFixed(1)}%</div>
+                                        <div className="text-xl font-mono text-white font-bold">{((result.evaluationMetrics.accuracy || 0) * 100).toFixed(1)}%</div>
                                     </div>
                                     <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
                                         <div className="text-[10px] text-slate-400 uppercase">Precision (PR)</div>
-                                        <div className="text-xl font-mono text-cyan-300 font-bold">{(result.evaluationMetrics.precision * 100).toFixed(1)}%</div>
+                                        <div className="text-xl font-mono text-cyan-300 font-bold">{((result.evaluationMetrics.precision || 0) * 100).toFixed(1)}%</div>
                                     </div>
                                     <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
                                         <div className="text-[10px] text-slate-400 uppercase">Recall (RR)</div>
-                                        <div className="text-xl font-mono text-cyan-300 font-bold">{(result.evaluationMetrics.recall * 100).toFixed(1)}%</div>
+                                        <div className="text-xl font-mono text-cyan-300 font-bold">{((result.evaluationMetrics.recall || 0) * 100).toFixed(1)}%</div>
                                     </div>
                                     <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
                                         <div className="text-[10px] text-slate-400 uppercase">F1-Score / AUC</div>
                                         <div className="text-lg font-mono text-slate-200 font-bold">
-                                            {result.evaluationMetrics.f1Score.toFixed(2)} <span className="text-slate-500 text-sm font-normal mx-1">/</span> {result.evaluationMetrics.auc.toFixed(2)}
+                                            {(result.evaluationMetrics.f1Score || 0).toFixed(2)} <span className="text-slate-500 text-sm font-normal mx-1">/</span> {(result.evaluationMetrics.auc || 0).toFixed(2)}
                                         </div>
                                     </div>
                                 </div>
@@ -395,23 +395,23 @@ const MLView: React.FC = () => {
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
                                         <div className="text-[10px] text-slate-400 uppercase">Winning Rate (WR)</div>
-                                        <div className={`text-xl font-mono font-bold ${result.tradingMetrics.winningRate > 0.5 ? 'text-green-400' : 'text-yellow-400'}`}>
-                                            {(result.tradingMetrics.winningRate * 100).toFixed(1)}%
+                                        <div className={`text-xl font-mono font-bold ${(result.tradingMetrics.winningRate || 0) > 0.5 ? 'text-green-400' : 'text-yellow-400'}`}>
+                                            {((result.tradingMetrics.winningRate || 0) * 100).toFixed(1)}%
                                         </div>
                                     </div>
                                     <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
                                         <div className="text-[10px] text-slate-400 uppercase">Annual Return (ARR)</div>
-                                        <div className={`text-xl font-mono font-bold ${result.tradingMetrics.annualizedReturn > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                            {(result.tradingMetrics.annualizedReturn * 100).toFixed(1)}%
+                                        <div className={`text-xl font-mono font-bold ${(result.tradingMetrics.annualizedReturn || 0) > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                            {((result.tradingMetrics.annualizedReturn || 0) * 100).toFixed(1)}%
                                         </div>
                                     </div>
                                     <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
                                         <div className="text-[10px] text-slate-400 uppercase">Sharpe Ratio (ASR)</div>
-                                        <div className="text-xl font-mono text-purple-300 font-bold">{result.tradingMetrics.sharpeRatio.toFixed(2)}</div>
+                                        <div className="text-xl font-mono text-purple-300 font-bold">{(result.tradingMetrics.sharpeRatio || 0).toFixed(2)}</div>
                                     </div>
                                     <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
                                         <div className="text-[10px] text-slate-400 uppercase">Max Drawdown (MDD)</div>
-                                        <div className="text-xl font-mono text-red-400 font-bold">{(result.tradingMetrics.maxDrawdown * 100).toFixed(1)}%</div>
+                                        <div className="text-xl font-mono text-red-400 font-bold">{((result.tradingMetrics.maxDrawdown || 0) * 100).toFixed(1)}%</div>
                                     </div>
                                 </div>
                             </div>
@@ -424,7 +424,7 @@ const MLView: React.FC = () => {
                     <h3 className="text-sm font-bold text-slate-400 uppercase mb-4">Feature Importance</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart layout="vertical" data={result.featureImportance}>
+                            <BarChart layout="vertical" data={result.featureImportance || []}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
                                 <XAxis type="number" hide />
                                 <YAxis dataKey="feature" type="category" width={100} tick={{fontSize: 10, fill: '#94a3b8'}} />
