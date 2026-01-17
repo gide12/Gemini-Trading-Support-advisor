@@ -1,8 +1,8 @@
 
 import React, { useEffect, useState } from "react";
-import { Holding, MPTAnalysisResult, ETFProfile, DeltaGammaHedgeResult, AdvancedPricingResult } from "../types";
+import { Holding, MPTAnalysisResult, ETFProfile, DeltaGammaHedgeResult, AdvancedPricingResult, CAPMAPTResult } from "../types";
 import { getInitialHoldings, getPortfolioHistory } from "../services/marketDataService";
-import { runMPTAnalysis, getETFProfile, runHedgeAnalysis, runAdvancedPricingAnalysis } from "../services/geminiService";
+import { runMPTAnalysis, getETFProfile, runHedgeAnalysis, runAdvancedPricingAnalysis, runCAPMAPTAnalysis } from "../services/geminiService";
 import { 
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     ComposedChart, Line, Scatter, ScatterChart, ZAxis, Cell, BarChart, Bar
@@ -56,6 +56,13 @@ const PortfolioView: React.FC = () => {
   const [pricingResult, setPricingResult] = useState<AdvancedPricingResult | null>(null);
   const [pricingTicker, setPricingTicker] = useState("");
 
+  // CAPM/APT State
+  const [capmLoading, setCapmLoading] = useState(false);
+  const [capmResult, setCapmResult] = useState<CAPMAPTResult | null>(null);
+  const [capmTicker, setCapmTicker] = useState("");
+  const [rfRate, setRfRate] = useState(4.25);
+  const [marketReturn, setMarketReturn] = useState(10.0);
+
   // ETF State
   const [etfTicker, setEtfTicker] = useState("");
   const [etfCapital, setEtfCapital] = useState("10000");
@@ -76,8 +83,9 @@ const PortfolioView: React.FC = () => {
     const cost = holdings.reduce((acc, curr) => acc + (curr.quantity * curr.avgBuyPrice), 0);
     setTotalValue(val);
     setTotalPL(val - cost);
-    if (holdings.length > 0 && !pricingTicker) {
-        setPricingTicker(holdings[0].ticker);
+    if (holdings.length > 0) {
+        if (!pricingTicker) setPricingTicker(holdings[0].ticker);
+        if (!capmTicker) setCapmTicker(holdings[0].ticker);
     }
   }, [holdings]);
 
@@ -168,6 +176,20 @@ const PortfolioView: React.FC = () => {
           console.error(e);
       } finally {
           setPricingLoading(false);
+      }
+  };
+
+  const handleRunCAPMAPT = async () => {
+      if (!capmTicker) return;
+      setCapmLoading(true);
+      setCapmResult(null);
+      try {
+          const result = await runCAPMAPTAnalysis(capmTicker, rfRate, marketReturn);
+          setCapmResult(result);
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setCapmLoading(false);
       }
   };
 
@@ -334,6 +356,101 @@ const PortfolioView: React.FC = () => {
                     Add / Update
                 </button>
             </form>
+        </div>
+
+        {/* Capital Asset Modeling (CAPM & APT) */}
+        <div className="bg-[#0f172a] rounded-xl border border-indigo-500/30 p-6 shadow-lg shadow-indigo-900/10">
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <svg className="w-6 h-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Capital Asset Modeling (CAPM & APT)
+                    </h3>
+                    <p className="text-xs text-slate-400">Risk-adjusted return expectations and multi-factor macro sensitivity.</p>
+                </div>
+                <div className="flex gap-2">
+                    <select 
+                        value={capmTicker}
+                        onChange={(e) => setCapmTicker(e.target.value)}
+                        className="bg-[#1e293b] border border-indigo-500/30 text-xs text-white rounded px-3 py-2 outline-none"
+                    >
+                        {holdings.map(h => <option key={h.ticker} value={h.ticker}>{h.ticker}</option>)}
+                    </select>
+                    <button 
+                        onClick={handleRunCAPMAPT}
+                        disabled={capmLoading || !capmTicker}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-indigo-900/40"
+                    >
+                        {capmLoading ? 'Modeling...' : 'Model Asset'}
+                    </button>
+                </div>
+            </div>
+
+            {capmResult ? (
+                <div className="animate-fade-in space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* CAPM Dashboard */}
+                        <div className="bg-[#1e293b]/50 border border-indigo-500/20 p-5 rounded-xl">
+                            <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-4">CAPM Performance</h4>
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div className="text-center bg-slate-900/50 p-2 rounded border border-slate-700">
+                                    <div className="text-[10px] text-slate-500">EXPECTED RETURN (Ke)</div>
+                                    <div className="text-lg font-mono text-white">{(capmResult.capm.expectedReturn).toFixed(2)}%</div>
+                                </div>
+                                <div className="text-center bg-slate-900/50 p-2 rounded border border-slate-700">
+                                    <div className="text-[10px] text-slate-500">BETA (β)</div>
+                                    <div className="text-lg font-mono text-white">{(capmResult.capm.beta).toFixed(2)}</div>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="flex justify-between text-xs px-2">
+                                    <span className="text-slate-500">Alpha (α)</span>
+                                    <span className={`font-bold ${capmResult.capm.alpha >= 0 ? 'text-green-400' : 'text-red-400'}`}>{capmResult.capm.alpha.toFixed(2)}%</span>
+                                </div>
+                                <div className="flex justify-between text-xs px-2">
+                                    <span className="text-slate-500">SML Status</span>
+                                    <span className={`font-bold ${capmResult.capm.securityMarketLineStatus === 'Above' ? 'text-green-400' : 'text-amber-400'}`}>{capmResult.capm.securityMarketLineStatus}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* APT Factors */}
+                        <div className="bg-[#1e293b]/50 border border-emerald-500/20 p-5 rounded-xl">
+                            <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-4">APT Factor Sensitivities</h4>
+                            <div className="space-y-3">
+                                {(capmResult.apt.factors || []).map((f, i) => (
+                                    <div key={i}>
+                                        <div className="flex justify-between text-[10px] mb-1">
+                                            <span className="text-slate-400 font-bold uppercase">{f.name}</span>
+                                            <span className="text-emerald-300 font-mono">β: {f.beta.toFixed(2)}</span>
+                                        </div>
+                                        <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                            <div 
+                                                className={`h-full ${f.beta > 1 ? 'bg-emerald-500' : f.beta > 0 ? 'bg-emerald-400' : 'bg-red-400'}`} 
+                                                style={{ width: `${Math.min(Math.abs(f.beta) * 50, 100)}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="mt-4 pt-3 border-t border-slate-700/50 flex justify-between items-center">
+                                <span className="text-[10px] text-slate-500 uppercase font-bold">Total Macro Expectation</span>
+                                <span className="text-sm font-mono font-bold text-white">{capmResult.apt.totalExpectedReturn.toFixed(2)}%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-indigo-900/10 p-5 rounded-xl border border-indigo-500/10">
+                        <h4 className="text-xs font-bold text-indigo-500 uppercase mb-2">Modeling Synthesis</h4>
+                        <p className="text-sm text-slate-300 italic leading-relaxed">"{capmResult.summary}"</p>
+                    </div>
+                </div>
+            ) : (
+                <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-xl">
+                    <svg className="w-12 h-12 text-slate-700 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
+                    <p className="text-sm text-slate-600">Select an asset to run CAPM and APT risk modeling.</p>
+                </div>
+            )}
         </div>
 
         {/* Advanced Pricing Engine */}

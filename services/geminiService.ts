@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, InstitutionalDeepDiveResult, ETFProfile, OptimalFuzzyDesignResult, FFTSPLPRResult, TotalViewData, OptionsAnalysisData, DeltaGammaHedgeResult, AdvancedPricingResult } from "../types";
+import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, InstitutionalDeepDiveResult, ETFProfile, OptimalFuzzyDesignResult, FFTSPLPRResult, TotalViewData, OptionsAnalysisData, DeltaGammaHedgeResult, AdvancedPricingResult, CAPMAPTResult } from "../types";
 
 // Initialize the client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -487,6 +487,41 @@ export const runMPTAnalysis = async (holdings: Holding[], rebalancingStrategy: s
         return cleanAndParseJSON(response.text || "{}") as MPTAnalysisResult;
     } catch (e: any) {
         throw new Error("MPT Analysis Failed");
+    }
+};
+
+export const runCAPMAPTAnalysis = async (ticker: string, rfRate: number, marketReturn: number): Promise<CAPMAPTResult> => {
+    const prompt = `Act as a Quantitative Investment Strategist. Calculate and model the Capital Asset Pricing Model (CAPM) and Arbitrage Pricing Theory (APT) for **${ticker}**.
+    
+    1. **CAPM**: 
+       - Assume Risk-Free Rate: ${rfRate}%.
+       - Assume Market Return: ${marketReturn}%.
+       - Calculate expected return using Beta.
+       - Provide Alpha and R-Squared.
+       - Determine if the asset is Above, Below, or On the Security Market Line (SML).
+    2. **APT**: 
+       - Identify 4-5 multi-factor sensitivities (e.g., Inflation, Interest Rate, GDP, Industry factor).
+       - Provide Beta sensitivities for each factor.
+       - Calculate contribution to expected return per factor.
+       
+    IMPORTANT: Return ONLY a raw JSON object (no markdown) with this structure:
+    {
+        "ticker": "string",
+        "capm": { "beta": number, "expectedReturn": number, "alpha": number, "rSquared": number, "sharpeRatio": number, "securityMarketLineStatus": "Above" | "Below" | "On Line" },
+        "apt": { "factors": [{ "name": "string", "beta": number, "riskPremium": number, "contribution": number }], "residualRisk": number, "totalExpectedReturn": number },
+        "summary": "string"
+    }`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: { tools: [{ googleSearch: {} }] },
+        });
+        return cleanAndParseJSON(response.text || "{}") as CAPMAPTResult;
+    } catch (e: any) {
+        console.error("CAPM/APT Analysis Failed:", e);
+        throw new Error("Capital Asset Modeling Failed");
     }
 };
 

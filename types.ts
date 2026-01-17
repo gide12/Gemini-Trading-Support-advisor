@@ -351,6 +351,24 @@ export interface MPTAnalysisResult {
   correlationMatrix: { ticker1: string; ticker2: string; value: number }[];
 }
 
+export interface CAPMAPTResult {
+    ticker: string;
+    capm: {
+        beta: number;
+        expectedReturn: number;
+        alpha: number;
+        rSquared: number;
+        sharpeRatio: number;
+        securityMarketLineStatus: "Above" | "Below" | "On Line";
+    };
+    apt: {
+        factors: { name: string; beta: number; riskPremium: number; contribution: number }[];
+        residualRisk: number;
+        totalExpectedReturn: number;
+    };
+    summary: string;
+}
+
 // --- Fuzzy Logic Types ---
 
 export interface FuzzyAnalysisResult {
