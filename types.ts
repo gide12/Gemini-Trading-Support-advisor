@@ -369,6 +369,14 @@ export interface CAPMAPTResult {
     summary: string;
 }
 
+export interface InvestorView {
+    type: "Absolute" | "Relative";
+    asset1: string;
+    asset2?: string;
+    expectedReturn: number;
+    confidence: number;
+}
+
 // --- Fuzzy Logic Types ---
 
 export interface FuzzyAnalysisResult {

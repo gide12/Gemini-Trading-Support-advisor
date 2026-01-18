@@ -183,6 +183,35 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isLoading, acti
         )}
       </div>
 
+      {/* CLUSTERING VIEW */}
+      {isClustering && result.clusteringData && (
+          <div className="animate-fade-in space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {(result.clusteringData.clusters || []).map((cluster, idx) => (
+                      <div key={idx} className="bg-slate-800/40 border border-purple-500/20 rounded-xl p-5 hover:border-purple-500/50 transition-colors">
+                          <div className="flex items-center justify-between mb-3">
+                              <h4 className="text-lg font-bold text-purple-400">{cluster.name}</h4>
+                              <span className="text-[10px] font-black bg-purple-900/30 text-purple-300 px-2 py-1 rounded uppercase tracking-widest border border-purple-500/20">
+                                  {cluster.stocks?.length || 0} Assets
+                              </span>
+                          </div>
+                          <p className="text-sm text-slate-300 mb-4 leading-relaxed italic">"{cluster.description}"</p>
+                          <div className="flex flex-wrap gap-2">
+                              {(cluster.stocks || []).map(stock => (
+                                  <span key={stock} className="px-2 py-1 bg-slate-900 text-cyan-400 rounded text-[11px] font-mono font-bold border border-cyan-500/20">
+                                      {stock}
+                                  </span>
+                              ))}
+                          </div>
+                      </div>
+                  ))}
+              </div>
+              <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-800 text-center">
+                  <p className="text-xs text-slate-500 uppercase font-black tracking-widest">Algorithm Architecture: {result.clusteringData.algorithm || "Standard K-Means"}</p>
+              </div>
+          </div>
+      )}
+
       {/* OPTIONS EXPERT VIEW */}
       {isOptionsExpert && result.optionsAnalysis && (
           <div className="animate-fade-in space-y-6">
@@ -273,6 +302,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isLoading, acti
                   <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={chartData} margin={{ top: 40, right: 30, left: 10, bottom: 10 }}>
                           <defs>
+                              {/* Fix: removed duplicate x1 attribute and changed second to y1 to correctly define the linear gradient */}
                               <linearGradient id="predictionArea" x1="0" y1="0" x2="0" y2="1">
                                   <stop offset="5%" stopColor="#a855f7" stopOpacity={0.2}/>
                                   <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>

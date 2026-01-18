@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, InstitutionalDeepDiveResult, ETFProfile, OptimalFuzzyDesignResult, FFTSPLPRResult, TotalViewData, OptionsAnalysisData, DeltaGammaHedgeResult, AdvancedPricingResult, CAPMAPTResult } from "../types";
+import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, InstitutionalDeepDiveResult, ETFProfile, OptimalFuzzyDesignResult, FFTSPLPRResult, TotalViewData, OptionsAnalysisData, DeltaGammaHedgeResult, AdvancedPricingResult, CAPMAPTResult, InvestorView } from "../types";
 
 // Initialize the client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -476,8 +476,21 @@ export const runInstitutionalDeepDive = async (ticker: string, institution: stri
     }
 };
 
-export const runMPTAnalysis = async (holdings: Holding[], rebalancingStrategy: string = "Standard MPT"): Promise<MPTAnalysisResult> => {
-    const prompt = `Perform MPT optimization for these holdings. Return JSON.`;
+export const runMPTAnalysis = async (holdings: Holding[], rebalancingStrategy: string = "Standard MPT", views?: InvestorView[]): Promise<MPTAnalysisResult> => {
+    const viewsContext = views && views.length > 0 
+        ? `Additionally, incorporate the following investor views for a Black-Litterman optimization: ${JSON.stringify(views)}.`
+        : '';
+        
+    const prompt = `Perform ${rebalancingStrategy} optimization for these holdings: ${JSON.stringify(holdings)}. 
+    ${viewsContext}
+    
+    1. Calculate current Sharpe, Return, Volatility.
+    2. Calculate optimal allocation based on the efficient frontier.
+    3. Generate specific Buy/Sell trade suggestions.
+    4. Provide a correlation matrix.
+    
+    Return ONLY a raw JSON object.`;
+
     try {
         const response = await ai.models.generateContent({
             model: modelName,
@@ -486,7 +499,7 @@ export const runMPTAnalysis = async (holdings: Holding[], rebalancingStrategy: s
         });
         return cleanAndParseJSON(response.text || "{}") as MPTAnalysisResult;
     } catch (e: any) {
-        throw new Error("MPT Analysis Failed");
+        throw new Error("Portfolio Analysis Failed");
     }
 };
 

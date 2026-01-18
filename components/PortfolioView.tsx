@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import { Holding, MPTAnalysisResult, ETFProfile, DeltaGammaHedgeResult, AdvancedPricingResult, CAPMAPTResult } from "../types";
+import { Holding, MPTAnalysisResult, ETFProfile, DeltaGammaHedgeResult, AdvancedPricingResult, CAPMAPTResult, InvestorView } from "../types";
 import { getInitialHoldings, getPortfolioHistory } from "../services/marketDataService";
 import { runMPTAnalysis, getETFProfile, runHedgeAnalysis, runAdvancedPricingAnalysis, runCAPMAPTAnalysis } from "../services/geminiService";
 import { 
@@ -46,6 +46,15 @@ const PortfolioView: React.FC = () => {
   const [mptLoading, setMptLoading] = useState(false);
   const [mptResult, setMptResult] = useState<MPTAnalysisResult | null>(null);
   const [rebalanceStrategy, setRebalanceStrategy] = useState("Threshold-based (>5%)");
+  const [showConfirmRebalance, setShowConfirmRebalance] = useState(false);
+
+  // Black-Litterman Views State
+  const [investorViews, setInvestorViews] = useState<InvestorView[]>([]);
+  const [newViewType, setNewViewType] = useState<"Absolute" | "Relative">("Absolute");
+  const [newViewAsset1, setNewViewAsset1] = useState("");
+  const [newViewAsset2, setNewViewAsset2] = useState("");
+  const [newViewReturn, setNewViewReturn] = useState("");
+  const [newViewConfidence, setNewViewConfidence] = useState(50);
 
   // Hedge State
   const [hedgeLoading, setHedgeLoading] = useState(false);
@@ -137,18 +146,106 @@ const PortfolioView: React.FC = () => {
     setHoldings(prev => prev.filter(h => h.ticker !== ticker));
   };
 
+  const handleAddInvestorView = () => {
+      if (!newViewAsset1 || !newViewReturn) return;
+      const view: InvestorView = {
+          type: newViewType,
+          asset1: newViewAsset1,
+          asset2: newViewType === "Relative" ? newViewAsset2 : undefined,
+          expectedReturn: parseFloat(newViewReturn),
+          confidence: newViewConfidence
+      };
+      setInvestorViews(prev => [...prev, view]);
+      setNewViewAsset1("");
+      setNewViewAsset2("");
+      setNewViewReturn("");
+  };
+
+  const handleRemoveInvestorView = (idx: number) => {
+      setInvestorViews(prev => prev.filter((_, i) => i !== idx));
+  };
+
   const handleRunMPT = async () => {
     if (holdings.length === 0) return;
     setMptLoading(true);
     setMptResult(null);
+    setShowConfirmRebalance(false);
     try {
-        const result = await runMPTAnalysis(holdings, rebalanceStrategy);
+        const result = await runMPTAnalysis(holdings, rebalanceStrategy, investorViews);
         setMptResult(result);
     } catch (e) {
         console.error(e);
     } finally {
         setMptLoading(false);
     }
+  };
+
+  const handleExecuteRebalance = () => {
+    if (!mptResult || !mptResult.suggestions) return;
+
+    setHoldings(prev => {
+        let next = [...prev];
+        
+        mptResult.suggestions.forEach(suggestion => {
+            const index = next.findIndex(h => h.ticker === suggestion.ticker);
+            const holding = next[index];
+
+            // Helper to extract a number from strings like "$1,200", "50 shares", "20%"
+            const parseAmount = (str: string, basePrice: number) => {
+                const numeric = parseFloat(str.replace(/[^0-9.]/g, ''));
+                if (str.includes('%')) return (totalValue * (numeric / 100)) / basePrice;
+                if (str.includes('$')) return numeric / basePrice;
+                return numeric; // Default to shares
+            };
+
+            const price = holding ? holding.currentPrice : (Math.random() * 200 + 50);
+            const changeInShares = parseAmount(suggestion.amount, price);
+
+            if (suggestion.action === "Buy") {
+                if (index >= 0) {
+                    const newQty = holding.quantity + changeInShares;
+                    next[index] = { 
+                        ...holding, 
+                        quantity: newQty, 
+                        marketValue: newQty * price,
+                        pl: (newQty * price) - (newQty * holding.avgBuyPrice),
+                        plPercent: (((newQty * price) - (newQty * holding.avgBuyPrice)) / (newQty * holding.avgBuyPrice)) * 100
+                    };
+                } else {
+                    const marketValue = changeInShares * price;
+                    next.push({
+                        ticker: suggestion.ticker,
+                        quantity: changeInShares,
+                        avgBuyPrice: price,
+                        currentPrice: price,
+                        marketValue,
+                        pl: 0,
+                        plPercent: 0
+                    });
+                }
+            } else if (suggestion.action === "Sell") {
+                if (index >= 0) {
+                    const newQty = Math.max(0, holding.quantity - changeInShares);
+                    if (newQty === 0) {
+                        next.splice(index, 1);
+                    } else {
+                        next[index] = { 
+                            ...holding, 
+                            quantity: newQty,
+                            marketValue: newQty * price,
+                            pl: (newQty * price) - (newQty * holding.avgBuyPrice),
+                            plPercent: (((newQty * price) - (newQty * holding.avgBuyPrice)) / (newQty * holding.avgBuyPrice)) * 100
+                        };
+                    }
+                }
+            }
+        });
+        return next;
+    });
+
+    // Reset view
+    setMptResult(null);
+    setShowConfirmRebalance(false);
   };
 
   const handleRunHedge = async () => {
@@ -368,18 +465,39 @@ const PortfolioView: React.FC = () => {
                     </h3>
                     <p className="text-xs text-slate-400">Risk-adjusted return expectations and multi-factor macro sensitivity.</p>
                 </div>
-                <div className="flex gap-2">
-                    <select 
-                        value={capmTicker}
-                        onChange={(e) => setCapmTicker(e.target.value)}
-                        className="bg-[#1e293b] border border-indigo-500/30 text-xs text-white rounded px-3 py-2 outline-none"
-                    >
-                        {holdings.map(h => <option key={h.ticker} value={h.ticker}>{h.ticker}</option>)}
-                    </select>
+                <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-col gap-1">
+                        <span className="text-[8px] text-slate-500 uppercase font-bold">Asset</span>
+                        <select 
+                            value={capmTicker}
+                            onChange={(e) => setCapmTicker(e.target.value)}
+                            className="bg-[#1e293b] border border-indigo-500/30 text-xs text-white rounded px-2 py-1.5 outline-none"
+                        >
+                            {holdings.map(h => <option key={h.ticker} value={h.ticker}>{h.ticker}</option>)}
+                        </select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <span className="text-[8px] text-slate-500 uppercase font-bold">Risk-Free %</span>
+                        <input 
+                            type="number" 
+                            value={rfRate} 
+                            onChange={(e) => setRfRate(parseFloat(e.target.value))}
+                            className="bg-[#1e293b] border border-indigo-500/30 text-xs text-white rounded px-2 py-1 w-16 outline-none"
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <span className="text-[8px] text-slate-500 uppercase font-bold">Market Ret %</span>
+                        <input 
+                            type="number" 
+                            value={marketReturn} 
+                            onChange={(e) => setMarketReturn(parseFloat(e.target.value))}
+                            className="bg-[#1e293b] border border-indigo-500/30 text-xs text-white rounded px-2 py-1 w-16 outline-none"
+                        />
+                    </div>
                     <button 
                         onClick={handleRunCAPMAPT}
                         disabled={capmLoading || !capmTicker}
-                        className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-indigo-900/40"
+                        className="self-end bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-1.5 rounded transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-indigo-900/40"
                     >
                         {capmLoading ? 'Modeling...' : 'Model Asset'}
                     </button>
@@ -394,11 +512,11 @@ const PortfolioView: React.FC = () => {
                             <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-4">CAPM Performance</h4>
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div className="text-center bg-slate-900/50 p-2 rounded border border-slate-700">
-                                    <div className="text-[10px] text-slate-500">EXPECTED RETURN (Ke)</div>
+                                    <div className="text-[10px] text-slate-500 uppercase">Expected Return (Ke)</div>
                                     <div className="text-lg font-mono text-white">{(capmResult.capm.expectedReturn).toFixed(2)}%</div>
                                 </div>
                                 <div className="text-center bg-slate-900/50 p-2 rounded border border-slate-700">
-                                    <div className="text-[10px] text-slate-500">BETA (β)</div>
+                                    <div className="text-[10px] text-slate-500 uppercase">Beta (β)</div>
                                     <div className="text-lg font-mono text-white">{(capmResult.capm.beta).toFixed(2)}</div>
                                 </div>
                             </div>
@@ -489,11 +607,11 @@ const PortfolioView: React.FC = () => {
                             <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-widest mb-4">Black-Scholes-Merton (BSM)</h4>
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div className="text-center bg-slate-900/50 p-2 rounded border border-slate-700">
-                                    <div className="text-[10px] text-slate-500">FAIR VALUE</div>
+                                    <div className="text-[10px] text-slate-500 uppercase">FAIR VALUE</div>
                                     <div className="text-lg font-mono text-white">${(pricingResult.bsm.fairValue as number).toFixed(2)}</div>
                                 </div>
                                 <div className="text-center bg-slate-900/50 p-2 rounded border border-slate-700">
-                                    <div className="text-[10px] text-slate-500">IMPLIED VOL (σ)</div>
+                                    <div className="text-[10px] text-slate-500 uppercase">IMPLIED VOL (σ)</div>
                                     <div className="text-lg font-mono text-white">{(pricingResult.bsm.impliedVol * 100).toFixed(1)}%</div>
                                 </div>
                             </div>
@@ -700,10 +818,119 @@ const PortfolioView: React.FC = () => {
                                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                  Running Strategy...
                             </div>
-                        ) : "Run MPT Rebalance"}
+                        ) : "Run Strategy"}
                     </button>
                 </div>
             </div>
+
+            {/* Black-Litterman Views Configuration Section */}
+            {rebalanceStrategy === "Black-Litterman Model" && (
+                <div className="p-6 bg-indigo-900/10 border-b border-indigo-500/20 animate-fade-in">
+                    <div className="flex justify-between items-center mb-4">
+                        <h4 className="text-sm font-bold text-indigo-300 uppercase tracking-widest">Investor Views Configuration</h4>
+                        <p className="text-[10px] text-slate-500 uppercase font-black">Market Equilibrium + Subjective Outlook</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {/* Add View Form */}
+                        <div className="lg:col-span-2 space-y-4 bg-slate-900/40 p-4 rounded-xl border border-indigo-500/10">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
+                                <div>
+                                    <label className="block text-[10px] text-slate-500 font-black uppercase mb-1">View Type</label>
+                                    <select 
+                                        value={newViewType}
+                                        onChange={(e) => setNewViewType(e.target.value as any)}
+                                        className="w-full bg-[#0f172a] border border-indigo-500/20 text-xs text-white rounded px-2 py-1.5 outline-none"
+                                    >
+                                        <option value="Absolute">Absolute</option>
+                                        <option value="Relative">Relative</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] text-slate-500 font-black uppercase mb-1">Asset A</label>
+                                    <select 
+                                        value={newViewAsset1}
+                                        onChange={(e) => setNewViewAsset1(e.target.value)}
+                                        className="w-full bg-[#0f172a] border border-indigo-500/20 text-xs text-white rounded px-2 py-1.5 outline-none uppercase font-bold"
+                                    >
+                                        <option value="">Select</option>
+                                        {holdings.map(h => <option key={h.ticker} value={h.ticker}>{h.ticker}</option>)}
+                                    </select>
+                                </div>
+                                {newViewType === "Relative" && (
+                                    <div>
+                                        <label className="block text-[10px] text-slate-500 font-black uppercase mb-1">Asset B</label>
+                                        <select 
+                                            value={newViewAsset2}
+                                            onChange={(e) => setNewViewAsset2(e.target.value)}
+                                            className="w-full bg-[#0f172a] border border-indigo-500/20 text-xs text-white rounded px-2 py-1.5 outline-none uppercase font-bold"
+                                        >
+                                            <option value="">Select</option>
+                                            {holdings.map(h => <option key={h.ticker} value={h.ticker}>{h.ticker}</option>)}
+                                        </select>
+                                    </div>
+                                )}
+                                <div>
+                                    <label className="block text-[10px] text-slate-500 font-black uppercase mb-1">{newViewType === 'Absolute' ? 'Exp Return %' : 'Spread %'}</label>
+                                    <input 
+                                        type="number"
+                                        value={newViewReturn}
+                                        onChange={(e) => setNewViewReturn(e.target.value)}
+                                        placeholder="e.g. 5"
+                                        className="w-full bg-[#0f172a] border border-indigo-500/20 text-xs text-white rounded px-2 py-1.5 outline-none"
+                                    />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-[10px] text-slate-500 font-black uppercase mb-1">Confidence ({newViewConfidence}%)</label>
+                                    <input 
+                                        type="range"
+                                        min="1" max="100"
+                                        value={newViewConfidence}
+                                        onChange={(e) => setNewViewConfidence(parseInt(e.target.value))}
+                                        className="w-full accent-indigo-500"
+                                    />
+                                </div>
+                                <button 
+                                    onClick={handleAddInvestorView}
+                                    className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black uppercase py-1.5 rounded"
+                                >
+                                    Add View
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* List of Active Views */}
+                        <div className="bg-[#0f172a] p-4 rounded-xl border border-indigo-500/10 flex flex-col h-[200px]">
+                            <h5 className="text-[10px] font-black text-slate-500 uppercase mb-3 border-b border-white/5 pb-2">Active Posterior Views</h5>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2">
+                                {investorViews.length === 0 ? (
+                                    <p className="text-[10px] text-slate-600 italic text-center mt-8">No active views. Market equilibrium returns will be used.</p>
+                                ) : (
+                                    investorViews.map((v, i) => (
+                                        <div key={i} className="bg-indigo-900/10 p-2 rounded flex justify-between items-center text-[11px] group">
+                                            <div className="flex-1">
+                                                <span className="font-bold text-indigo-300 uppercase">{v.asset1}</span>
+                                                {v.type === 'Relative' ? (
+                                                    <span> vs <span className="font-bold text-indigo-300 uppercase">{v.asset2}</span>: </span>
+                                                ) : ' at '}
+                                                <span className="text-white font-mono">{v.expectedReturn}%</span>
+                                                <div className="text-[9px] text-slate-500">Conf: {v.confidence}%</div>
+                                            </div>
+                                            <button 
+                                                onClick={() => handleRemoveInvestorView(i)}
+                                                className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1"
+                                            >
+                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                     <thead>
@@ -758,22 +985,69 @@ const PortfolioView: React.FC = () => {
             </div>
         </div>
         
-        {/* MPT Analysis Result Section */}
+        {/* MPT Analysis & REBALANCING Result Section */}
         {mptResult && (
             <div className="bg-[#0f172a] rounded-xl border border-purple-500/50 shadow-lg shadow-purple-900/20 overflow-hidden fade-in">
-                <div className="p-6 border-b border-purple-500/20 bg-purple-900/10">
-                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-purple-400">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-                        </svg>
-                        Modern Portfolio Theory (MPT) Analysis
-                    </h3>
-                    <div className="flex gap-4 mt-2 text-xs text-purple-200/60">
-                        <span>Optimization: Sharpe Ratio Max</span>
-                        <span>•</span>
-                        <span>Strategy: {mptResult.rebalancingContext?.strategyUsed || "Standard"}</span>
+                <div className="p-6 border-b border-purple-500/20 bg-purple-900/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-purple-400">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25a2.25 2.25 0 01-13.5 18v-2.25z" />
+                            </svg>
+                            Optimization Output {rebalanceStrategy === 'Black-Litterman Model' ? '(Black-Litterman)' : '(MPT)'}
+                        </h3>
+                        <div className="flex gap-4 mt-2 text-xs text-purple-200/60 font-medium">
+                            <span>Optimization: Sharpe Ratio Max</span>
+                            <span>•</span>
+                            <span>Strategy: {mptResult.rebalancingContext?.strategyUsed || "Standard"}</span>
+                        </div>
                     </div>
+                    
+                    {/* Execute Rebalance Trigger */}
+                    {!showConfirmRebalance ? (
+                        <button 
+                            onClick={() => setShowConfirmRebalance(true)}
+                            className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs uppercase px-5 py-2.5 rounded shadow-lg transition-all"
+                        >
+                            Execute Rebalance Plan
+                        </button>
+                    ) : (
+                        <div className="flex gap-2">
+                             <button 
+                                onClick={() => setShowConfirmRebalance(false)}
+                                className="bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs uppercase px-4 py-2.5 rounded transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={handleExecuteRebalance}
+                                className="bg-green-600 hover:bg-green-500 text-white font-bold text-xs uppercase px-5 py-2.5 rounded shadow-lg shadow-green-900/30 transition-all border border-green-400/30"
+                            >
+                                Confirm & Apply Trades
+                            </button>
+                        </div>
+                    )}
                 </div>
+
+                {showConfirmRebalance && (
+                    <div className="bg-purple-500/10 border-b border-purple-500/20 p-6 animate-fade-in">
+                        <h4 className="text-sm font-bold text-purple-300 uppercase mb-4 tracking-widest">Trade Confirmation Summary</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {mptResult.suggestions.map((sug, i) => (
+                                <div key={i} className="bg-slate-900/60 p-3 rounded border border-purple-500/10 flex justify-between items-center">
+                                    <div>
+                                        <div className="text-xs font-black text-slate-500 uppercase mb-1">{sug.ticker}</div>
+                                        <div className={`text-sm font-bold ${sug.action === 'Buy' ? 'text-green-400' : 'text-red-400'}`}>{sug.action} {sug.amount}</div>
+                                    </div>
+                                    <div className="opacity-40">
+                                        {sug.action === 'Buy' ? '➕' : '➖'}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-4 italic">* These orders will be simulated and reflected in your current holdings list immediately upon confirmation.</p>
+                    </div>
+                )}
 
                 <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Metrics Comparison */}
@@ -781,14 +1055,14 @@ const PortfolioView: React.FC = () => {
                         <h4 className="text-sm font-bold text-slate-400 uppercase mb-4">Performance Metrics</h4>
                         <div className="grid grid-cols-2 gap-4 mb-6">
                             <div className="bg-slate-800/50 p-3 rounded border border-purple-500/20">
-                                <div className="text-xs text-slate-400 mb-1">Current Sharpe Ratio</div>
+                                <div className="text-xs text-slate-400 mb-1 uppercase">Current Sharpe</div>
                                 <div className="text-xl font-mono font-bold text-white">{mptResult.currentMetrics.sharpeRatio.toFixed(2)}</div>
-                                <div className="text-xs text-slate-500">Ret: {mptResult.currentMetrics.expectedReturn}% | Vol: {mptResult.currentMetrics.volatility}%</div>
+                                <div className="text-[10px] text-slate-500">Ret: {mptResult.currentMetrics.expectedReturn}% | Vol: {mptResult.currentMetrics.volatility}%</div>
                             </div>
                             <div className="bg-green-900/20 p-3 rounded border border-green-500/30">
-                                <div className="text-xs text-green-400 mb-1">Optimal Sharpe Ratio</div>
+                                <div className="text-xs text-green-400 mb-1 uppercase">Target Sharpe</div>
                                 <div className="text-xl font-mono font-bold text-green-300">{mptResult.optimalMetrics.sharpeRatio.toFixed(2)}</div>
-                                <div className="text-xs text-green-500/70">Ret: {mptResult.optimalMetrics.expectedReturn}% | Vol: {mptResult.optimalMetrics.volatility}%</div>
+                                <div className="text-[10px] text-green-500/70">Ret: {mptResult.optimalMetrics.expectedReturn}% | Vol: {mptResult.optimalMetrics.volatility}%</div>
                             </div>
                         </div>
 
