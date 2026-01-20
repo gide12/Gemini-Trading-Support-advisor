@@ -128,6 +128,56 @@ export const analyzeStock = async (
         };
     }
 
+    // 6. TECHNICAL ANALYSIS (Structured with Breakouts)
+    if (analysisType === AnalysisType.Technical) {
+      const prompt = `Act as a quantitative technical analyst. Analyze ${ticker} using standard indicators AND Institutional Order Flow logic.
+      Provide specific support and resistance levels, and identify potential breakout/breakdown points.
+      
+      IMPORTANT: Return ONLY a raw JSON object with this structure:
+      {
+        "currentPrice": number,
+        "dailyLogReturn": number,
+        "trend": "Bullish" | "Bearish" | "Neutral",
+        "signalStrength": "Strong" | "Moderate" | "Weak",
+        "indicators": {
+          "rsi": "string",
+          "macd": "string",
+          "movingAverages": "string",
+          "bollingerBands": "string"
+        },
+        "supportResistance": {
+          "support": [number, number],
+          "resistance": [number, number]
+        },
+        "breakoutPoints": [
+          { "price": number, "type": "Breakout" | "Breakdown", "label": "string", "dateIndex": number }
+        ],
+        "summary": "string"
+      }`;
+
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt,
+        config: { 
+            tools: [{ googleSearch: {} }],
+            responseMimeType: "application/json"
+        },
+      });
+
+      const json = cleanAndParseJSON(response.text || "{}");
+      return {
+          ticker,
+          type: analysisType,
+          content: json.summary,
+          sentiment: json.trend,
+          technicalAnalysis: json,
+          sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks?.map((chunk: any) => ({
+            title: chunk.web?.title || "Source",
+            url: chunk.web?.uri || "#"
+          })).filter((s: any) => s.url !== "#") || []
+      };
+    }
+
     // 10. CLUSTERING (Strict JSON)
     if (analysisType === AnalysisType.Clustering) {
       let prompt = `Act as a Quantitative Analyst. Group US stocks using ${ticker} algorithm. Provide clusters with names, descriptions, and a list of typical stock members.`;
@@ -190,6 +240,7 @@ export const analyzeStock = async (
   }
 };
 
+// ... runBacktest, runMLSimulation, runMPTAnalysis, etc ...
 export const runBacktest = async (ticker: string, strategy: string, startDate: string, endDate: string, timeframe: string, riskReward: string, stopLoss: string, takeProfit: string, trailingStop: string, simulationModel: string): Promise<BacktestResult> => {
   const prompt = `Perform backtest for ${ticker} strategy: ${strategy}. Model: ${simulationModel}. Return raw JSON only.`;
   const response = await ai.models.generateContent({

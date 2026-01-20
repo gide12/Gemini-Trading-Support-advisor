@@ -50,6 +50,12 @@ export interface TechnicalAnalysisData {
     support: number[];
     resistance: number[];
   };
+  breakoutPoints?: {
+    price: number;
+    type: "Breakout" | "Breakdown";
+    label: string;
+    dateIndex?: number; // Estimated position on chart
+  }[];
   orderFlowAnalysis?: OrderFlowAnalysis;
   summary: string;
 }
