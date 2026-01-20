@@ -1,6 +1,7 @@
 
+// Fix: Removed unused and non-existent InstitutionalDeepDiveResult import to resolve build error.
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, InstitutionalDeepDiveResult, ETFProfile, OptimalFuzzyDesignResult, FFTSPLPRResult, TotalViewData, OptionsAnalysisData, DeltaGammaHedgeResult, AdvancedPricingResult, CAPMAPTResult, InvestorView, BrokerIntelData } from "../types";
+import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, ETFProfile, OptimalFuzzyDesignResult, FFTSPLPRResult, TotalViewData, OptionsAnalysisData, DeltaGammaHedgeResult, AdvancedPricingResult, CAPMAPTResult, InvestorView, BrokerIntelData } from "../types";
 
 // Initialize the client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -82,31 +83,31 @@ export const analyzeStock = async (
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        activity: { type: Type.STRING, description: "e.g. Institutional Accumulation" },
+                        activity: { type: Type.STRING },
                         consistencyDays: { type: Type.NUMBER },
-                        dominantSide: { type: Type.STRING, description: "Net Buy, Net Sell, or Neutral" },
-                        marketReaction: { type: Type.STRING, description: "e.g. Price Absorption" },
-                        traderBias: { type: Type.STRING, description: "Speculative short-term bias" },
-                        investorBias: { type: Type.STRING, description: "Long-term accumulation/distribution bias" },
+                        dominantSide: { type: Type.STRING },
+                        marketReaction: { type: Type.STRING },
+                        traderBias: { type: Type.STRING },
+                        investorBias: { type: Type.STRING },
                         recommendation: {
                             type: Type.OBJECT,
                             properties: {
                                 action: { type: Type.STRING },
                                 risk: { type: Type.STRING },
-                                color: { type: Type.STRING, description: "tailwind color name like green-400" }
+                                color: { type: Type.STRING }
                             },
                             required: ["action", "risk", "color"]
                         },
-                        confidence: { type: Type.NUMBER, description: "1-5 star rating" },
+                        confidence: { type: Type.NUMBER },
                         advancedTable: {
                             type: Type.ARRAY,
                             items: {
                                 type: Type.OBJECT,
                                 properties: {
-                                    type: { type: Type.STRING, description: "e.g. Institutional, Retail" },
-                                    netBuy: { type: Type.STRING, description: "e.g. +120M" },
+                                    type: { type: Type.STRING },
+                                    netBuy: { type: Type.STRING },
                                     days: { type: Type.NUMBER },
-                                    impact: { type: Type.STRING, description: "Positive, Negative, or Noise" }
+                                    impact: { type: Type.STRING }
                                 },
                                 required: ["type", "netBuy", "days", "impact"]
                             }
@@ -128,10 +129,9 @@ export const analyzeStock = async (
         };
     }
 
-    // 6. TECHNICAL ANALYSIS (Structured with Breakouts)
+    // 6. TECHNICAL ANALYSIS (Strict Coordinate Mapping for Visualization)
     if (analysisType === AnalysisType.Technical) {
-      const prompt = `Act as a quantitative technical analyst. Analyze ${ticker} using standard indicators AND Institutional Order Flow logic.
-      Provide specific support and resistance levels, and identify potential breakout/breakdown points.
+      const prompt = `Act as a quantitative technical analyst. Analyze ${ticker} for technical signals, support/resistance levels, and potential breakout/breakdown points.
       
       IMPORTANT: Return ONLY a raw JSON object with this structure:
       {
@@ -150,10 +150,17 @@ export const analyzeStock = async (
           "resistance": [number, number]
         },
         "breakoutPoints": [
-          { "price": number, "type": "Breakout" | "Breakdown", "label": "string", "dateIndex": number }
+          { 
+            "price": number, 
+            "type": "Breakout" | "Breakdown", 
+            "label": "string", 
+            "dateIndex": number 
+          }
         ],
         "summary": "string"
-      }`;
+      }
+      
+      Note: 'dateIndex' should be a value from 0 to 39, representing the day index in a 40-day lookback window where the signal is strongest.`;
 
       const response = await ai.models.generateContent({
         model: modelName,
@@ -178,7 +185,7 @@ export const analyzeStock = async (
       };
     }
 
-    // 10. CLUSTERING (Strict JSON)
+    // 10. CLUSTERING
     if (analysisType === AnalysisType.Clustering) {
       let prompt = `Act as a Quantitative Analyst. Group US stocks using ${ticker} algorithm. Provide clusters with names, descriptions, and a list of typical stock members.`;
       const response = await ai.models.generateContent({
@@ -217,7 +224,6 @@ export const analyzeStock = async (
       };
     }
 
-    // DEFAULT FALLBACK (NEWS-STYLE TEXT)
     const response = await ai.models.generateContent({
       model: modelName,
       contents: `Analyze ${ticker} for ${analysisType}.`,
@@ -240,7 +246,6 @@ export const analyzeStock = async (
   }
 };
 
-// ... runBacktest, runMLSimulation, runMPTAnalysis, etc ...
 export const runBacktest = async (ticker: string, strategy: string, startDate: string, endDate: string, timeframe: string, riskReward: string, stopLoss: string, takeProfit: string, trailingStop: string, simulationModel: string): Promise<BacktestResult> => {
   const prompt = `Perform backtest for ${ticker} strategy: ${strategy}. Model: ${simulationModel}. Return raw JSON only.`;
   const response = await ai.models.generateContent({

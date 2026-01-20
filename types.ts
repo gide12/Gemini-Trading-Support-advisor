@@ -37,7 +37,7 @@ export interface OrderFlowAnalysis {
 
 export interface TechnicalAnalysisData {
   currentPrice: number;
-  dailyLogReturn?: number; // Added Daily Log Return
+  dailyLogReturn?: number;
   trend: "Bullish" | "Bearish" | "Neutral";
   signalStrength: "Strong" | "Moderate" | "Weak";
   indicators: {
@@ -54,7 +54,12 @@ export interface TechnicalAnalysisData {
     price: number;
     type: "Breakout" | "Breakdown";
     label: string;
-    dateIndex?: number; // Estimated position on chart
+    dateIndex: number; // Index within the 40-day historical window (0-39) or projected (40+)
+  }[];
+  trendLines?: {
+      start: { x: number, y: number };
+      end: { x: number, y: number };
+      color: string;
   }[];
   orderFlowAnalysis?: OrderFlowAnalysis;
   summary: string;
@@ -182,8 +187,6 @@ export interface TabItem {
   label: string;
 }
 
-// --- New Types for Portfolio & Market Data ---
-
 export interface Holding {
   ticker: string;
   quantity: number;
@@ -249,8 +252,6 @@ export interface DeltaGammaHedgeResult {
     riskSummary: string;
 }
 
-// --- Advanced Quant Pricing Result ---
-
 export interface AdvancedPricingResult {
     ticker: string;
     bsm: {
@@ -281,8 +282,6 @@ export interface AdvancedPricingResult {
     summary: string;
 }
 
-// --- ML Types ---
-
 export interface MLPredictionResult {
   ticker: string;
   currentPrice: number;
@@ -293,24 +292,20 @@ export interface MLPredictionResult {
   featureImportance: { feature: string; score: number }[];
   predictionPath: { date: string; price: number; upper: number; lower: number }[];
   explanation: string;
-  // Model Performance Indicators
   evaluationMetrics: {
-      accuracy: number; // AR
-      precision: number; // PR
-      recall: number; // RR
-      f1Score: number; // F1
-      auc: number; // AUC
+      accuracy: number;
+      precision: number;
+      recall: number;
+      f1Score: number;
+      auc: number;
   };
-  // Trading Performance Indicators
   tradingMetrics: {
-      winningRate: number; // WR
-      annualizedReturn: number; // ARR
-      sharpeRatio: number; // ASR
-      maxDrawdown: number; // MDD
+      winningRate: number;
+      annualizedReturn: number;
+      sharpeRatio: number;
+      maxDrawdown: number;
   };
 }
-
-// --- Community & Institutional Types ---
 
 export interface CommunityInsightResult {
   ticker: string;
@@ -320,7 +315,7 @@ export interface CommunityInsightResult {
   forumTopics: {
     topic: string;
     sentiment: "Bullish" | "Bearish" | "Neutral";
-    mentions: number; // simulated volume
+    mentions: number;
     platform: "Reddit" | "Twitter" | "Discord";
   }[];
   hedgeFundActivity: {
@@ -328,13 +323,7 @@ export interface CommunityInsightResult {
     action: "Bought" | "Sold" | "Held";
     shares: string;
     date: string;
-    url?: string; // URL to fund site or 13F
-  }[];
-  academicMentions: {
-    institution: string; // University Name
-    type: "University" | "Research Lab" | "Campus";
-    relevance: string; // e.g. "Endowment Holder", "Published Research"
-    url: string;
+    url?: string;
   }[];
   analystRatings: {
     buy: number;
@@ -344,16 +333,9 @@ export interface CommunityInsightResult {
   };
 }
 
-export interface InstitutionalDeepDiveResult {
-    institution: string;
-    ticker: string;
-    relationship: "Holder" | "Observer" | "Bearish" | "Unknown";
-    summary: string;
-    sourceUrl: string;
-    lastFilingDate?: string;
+export interface ModernPortfolioTheoryTypes {
+  efficientFrontier: { risk: number; return: number }[];
 }
-
-// --- Modern Portfolio Theory Types ---
 
 export interface MPTAnalysisResult {
   currentMetrics: {
@@ -375,7 +357,7 @@ export interface MPTAnalysisResult {
   }[];
   rebalancingContext: {
     strategyUsed: string;
-    nextRebalanceDate: string; // e.g. "End of Month" or "Immediate (Threshold Breach)"
+    nextRebalanceDate: string;
     notes: string;
   };
   correlationMatrix: { ticker1: string; ticker2: string; value: number }[];
@@ -407,13 +389,11 @@ export interface InvestorView {
     confidence: number;
 }
 
-// --- Fuzzy Logic Types ---
-
 export interface FuzzyAnalysisResult {
   ticker: string;
   marketMakerBehavior: {
-    score: string; // Weak, Moderate, Strong
-    value: number; // 0-100
+    score: string;
+    value: number;
     metrics: {
         spreadCompression: string;
         orderBookImbalance: string;
@@ -422,8 +402,8 @@ export interface FuzzyAnalysisResult {
     };
   };
   whaleActivity: {
-    score: string; // None, Low, Elevated, Extreme
-    value: number; // 0-100
+    score: string;
+    value: number;
     metrics: {
         blockTradeFreq: string;
         sweepOrders: string;
@@ -432,8 +412,8 @@ export interface FuzzyAnalysisResult {
     };
   };
   accumulation: {
-    score: string; // Low, Medium, High, Very High
-    value: number; // 0-100
+    score: string;
+    value: number;
     metrics: {
         netBuyingPressure: string;
         darkPoolRatio: string;
@@ -447,23 +427,23 @@ export interface FuzzyAnalysisResult {
 export interface FFFCMGNNResult {
     ticker: string;
     famaFrenchFactors: {
-        marketRisk: { value: number; description: string }; // MKT
-        sizeFactorSMB: { value: number; description: string }; // SMB
-        valueFactorHML: { value: number; description: string }; // HML
+        marketRisk: { value: number; description: string };
+        sizeFactorSMB: { value: number; description: string };
+        valueFactorHML: { value: number; description: string };
     };
     fuzzyCognitiveMap: {
         nodes: {
             id: string;
             name: string;
-            activationLevel: number; // 0-1
+            activationLevel: number;
             influenceType: "Positive" | "Negative" | "Neutral";
         }[];
-        primaryCausalLink: string; // Text description of main link
+        primaryCausalLink: string;
     };
     gnnPrediction: {
         signal: "Strong Buy" | "Buy" | "Hold" | "Sell" | "Strong Sell";
         confidence: number;
-        graphEmbedding: number[]; // Array for visualization
+        graphEmbedding: number[];
         predictedTrend: string;
     };
     summary: string;
@@ -472,7 +452,7 @@ export interface FFFCMGNNResult {
 export interface OptimalFuzzyDesignResult {
     ticker: string;
     gfsAnalysis: { 
-        score: number; // 0-100 (Optimization Level)
+        score: number;
         optimizationStatus: string; 
         description: string;
     };
@@ -488,12 +468,12 @@ export interface OptimalFuzzyDesignResult {
     };
     efsAnalysis: { 
         evolvingStatus: "Expanding" | "Pruning" | "Stable"; 
-        adaptationSpeed: number; // 0-100
+        adaptationSpeed: number;
         description: string;
     };
     mfsAnalysis: { 
-        accuracy: number; // 0-100
-        interpretability: number; // 0-100
+        accuracy: number;
+        interpretability: number;
         paretoOptimal: boolean; 
         description: string;
     };
@@ -505,22 +485,22 @@ export interface FFTSPLPRResult {
     twoFactors: {
         internalTrend: {
             description: string;
-            strength: number; // 0-1
+            strength: number;
         };
         externalDisturbance: {
             description: string;
-            impact: number; // 0-1
+            impact: number;
         };
     };
     plprRules: {
         ruleId: string;
         condition: string;
-        preferenceBehavior: string; // e.g. "Risk Averse", "Trend Following"
+        preferenceBehavior: string;
         probability: number;
     }[];
     similarityAnalysis: {
         methodUsed: "Euclidean Distance" | "Hamming Distance";
-        distanceValue: number; // Lower is better match
+        distanceValue: number;
         closestHistoricalRuleId: string;
     };
     forecast: {
@@ -531,13 +511,12 @@ export interface FFTSPLPRResult {
     summary: string;
 }
 
-// --- ETF Types ---
 export interface ETFProfile {
   ticker: string;
   name: string;
   topHoldings: {
     ticker: string;
     name: string;
-    weight: number; // percentage
+    weight: number;
   }[];
 }
