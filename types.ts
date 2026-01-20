@@ -11,7 +11,8 @@ export enum AnalysisType {
   Chart = "Chart",
   Quantum = "Quantum Forecast",
   Ideas = "Trade Ideas",
-  OptionsExpert = "Options Expert Analysis"
+  OptionsExpert = "Options Expert Analysis",
+  BrokerIntel = "Broker Intelligence"
 }
 
 export type View = 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart';
@@ -106,6 +107,28 @@ export interface TotalViewData {
     summary: string;
 }
 
+export interface BrokerIntelData {
+    activity: string;
+    consistencyDays: number;
+    dominantSide: "Net Buy" | "Net Sell" | "Neutral";
+    marketReaction: string;
+    traderBias: string;
+    investorBias: string;
+    recommendation: {
+        action: string;
+        risk: string;
+        color: string; // hex color or tailwind class hint
+    };
+    confidence: number; // 1-5
+    advancedTable: {
+        type: string;
+        netBuy: string;
+        days: number;
+        impact: string;
+    }[];
+    summary: string;
+}
+
 export interface FundamentalMetrics {
     open: string;
     dayRange: string;
@@ -137,6 +160,7 @@ export interface AnalysisResult {
   optionsAnalysis?: OptionsAnalysisData;
   clusteringData?: ClusteringData;
   totalViewData?: TotalViewData;
+  brokerIntel?: BrokerIntelData;
   valuationStatus?: "Overvalued" | "Undervalued" | "Fair Value";
   intrinsicValue?: string;
   mpidData?: {

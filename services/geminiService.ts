@@ -1,11 +1,12 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, InstitutionalDeepDiveResult, ETFProfile, OptimalFuzzyDesignResult, FFTSPLPRResult, TotalViewData, OptionsAnalysisData, DeltaGammaHedgeResult, AdvancedPricingResult, CAPMAPTResult, InvestorView } from "../types";
+import { AnalysisType, AnalysisResult, ChartDataPoint, BacktestResult, MLPredictionResult, CommunityInsightResult, MPTAnalysisResult, Holding, FuzzyAnalysisResult, FFFCMGNNResult, InstitutionalDeepDiveResult, ETFProfile, OptimalFuzzyDesignResult, FFTSPLPRResult, TotalViewData, OptionsAnalysisData, DeltaGammaHedgeResult, AdvancedPricingResult, CAPMAPTResult, InvestorView, BrokerIntelData } from "../types";
 
 // Initialize the client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const modelName = "gemini-3-flash-preview";
+const proModelName = "gemini-3-pro-preview";
 
 // Helper to clean markdown JSON
 const cleanAndParseJSON = (text: string) => {
@@ -24,7 +25,7 @@ const cleanAndParseJSON = (text: string) => {
         return JSON.parse(candidate);
     }
 
-    // 3. Fallback: standard cleanup (remove markdown code blocks if regex didn't catch them)
+    // 3. Fallback: standard cleanup
     const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleaned);
   } catch (e) {
@@ -39,637 +40,262 @@ export const analyzeStock = async (
 ): Promise<AnalysisResult> => {
   
   try {
-    // 1. CHART (TradingView Widget)
+    // 1. CHART
     if (analysisType === AnalysisType.Chart) {
-      return {
-        ticker,
-        type: analysisType,
-        content: "Interactive TradingView Chart",
-      };
+      return { ticker, type: analysisType, content: "Interactive TradingView Chart" };
     }
 
     // 2. NEWS ANALYSIS
     if (analysisType === AnalysisType.News) {
-      const prompt = `Find the latest news for ${ticker} stock. 
-      
-      Please provide a structured summary:
-      1. **Headline Summary**: A brief 2-sentence overview of the current situation.
-      2. **Key Drivers**: A bulleted list of the specific events moving the stock.
-      3. **Sentiment**: Explicitly state if the news is Bullish, Bearish, or Neutral.
-      
-      Use markdown formatting.`;
-      
+      const prompt = `Find the latest news for ${ticker} stock. Provide a structured summary with Headline Summary, Key Drivers, and Sentiment (Bullish/Bearish/Neutral). Use markdown.`;
       const response = await ai.models.generateContent({
         model: modelName,
         contents: prompt,
-        config: {
-          tools: [{ googleSearch: {} }],
-        },
+        config: { tools: [{ googleSearch: {} }] },
       });
-
-      const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
-        ?.map((chunk: any) => ({
-          title: chunk.web?.title || "Source",
-          url: chunk.web?.uri || "#",
-        }))
-        .filter((s: any) => s.url !== "#") || [];
-
       const text = response.text || "";
       let sentiment: "Bullish" | "Neutral" | "Bearish" = "Neutral";
-      if (text.toLowerCase().includes("bullish") || text.toLowerCase().includes("positive")) sentiment = "Bullish";
-      if (text.toLowerCase().includes("bearish") || text.toLowerCase().includes("negative")) sentiment = "Bearish";
+      if (text.toLowerCase().includes("bullish")) sentiment = "Bullish";
+      if (text.toLowerCase().includes("bearish")) sentiment = "Bearish";
 
       return {
         ticker,
         type: analysisType,
         content: text,
         sentiment,
-        sources,
+        sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks?.map((chunk: any) => ({
+          title: chunk.web?.title || "Source",
+          url: chunk.web?.uri || "#",
+        })).filter((s: any) => s.url !== "#") || [],
       };
     }
 
-    // 3. YAHOO FINANCE
-    if (analysisType === AnalysisType.YahooFinance) {
-      const prompt = `Retrieve the latest financial data for ${ticker} using Yahoo Finance as the primary source.
-      
-      Get these specific metrics:
-      - Current Price
-      - Market Cap
-      - Trailing P/E
-      - Forward P/E
-      - PEG Ratio
-      - Price/Sales
-      - Price/Book
-      - EV/Revenue
-      - EV/EBITDA
-      
-      IMPORTANT: Return ONLY a raw JSON object with this structure:
-      {
-        "summary": "string (company profile)",
-        "metrics": { "Current Price": "string", "Market Cap": "string", ... }
-      }`;
-
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents: prompt,
-        config: { tools: [{ googleSearch: {} }] },
-      });
-
-      const json = cleanAndParseJSON(response.text || "{}");
-      const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
-        ?.map((chunk: any) => ({ title: chunk.web?.title || "Source", url: chunk.web?.uri || "#" }))
-        .filter((s: any) => s.url !== "#") || [];
-
-      return {
-        ticker,
-        type: analysisType,
-        content: json.summary || "No profile available.",
-        financials: json.metrics || {},
-        sources
-      };
-    }
-
-    // 4. TRADE IDEAS
-    if (analysisType === AnalysisType.Ideas) {
-      const prompt = `Based on current market conditions for ${ticker}, suggest a potential trade setup.
-      Return JSON: { "reasoning": "string", "entry": "string", "stopLoss": "string", "takeProfit": "string", "sentiment": "Bullish" | "Bearish" | "Neutral" }`;
-
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents: prompt,
-        config: { tools: [{ googleSearch: {} }] },
-      });
-
-      const json = cleanAndParseJSON(response.text || "{}");
-      const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
-        ?.map((chunk: any) => ({ title: chunk.web?.title || "Source", url: chunk.web?.uri || "#" }))
-        .filter((s: any) => s.url !== "#");
-
-      return {
-        ticker,
-        type: analysisType,
-        content: json.reasoning,
-        tradeSetup: { entry: json.entry, stopLoss: json.stopLoss, takeProfit: json.takeProfit },
-        sentiment: json.sentiment,
-        sources
-      };
-    }
-
-    // 5. TECHNICAL ANALYSIS (NEW STRUCTURED)
-    if (analysisType === AnalysisType.Technical) {
-        const prompt = `Act as a quantitative technical analyst. Analyze ${ticker} using standard indicators AND Institutional Order Flow logic.
-        
-        1. Standard: RSI, MACD, Moving Averages.
-        2. **Log Returns**: Calculate the **Daily Log Return**: ln(Current Price / Previous Close).
-        3. **Order Flow Autocorrelation**: Investigate the presence of metaorders (large institutional orders broken into child orders).
-           - Analyze Trade Signs (Buy/Sell/None): Expect minimal autocorrelation (randomness).
-           - Analyze Trade Volume (Shares): Expect power-law decay (persistence) if institutions are active.
-           - Analyze Returns: Expect near zero autocorrelation (Efficient Market).
-
-        IMPORTANT: Return ONLY a raw JSON object (no markdown) with this structure:
-        {
-          "currentPrice": number,
-          "dailyLogReturn": number,
-          "trend": "Bullish" | "Bearish" | "Neutral",
-          "signalStrength": "Strong" | "Moderate" | "Weak",
-          "indicators": {
-            "rsi": "string",
-            "macd": "string",
-            "movingAverages": "string",
-            "bollingerBands": "string"
-          },
-          "supportResistance": {
-            "support": [number, number],
-            "resistance": [number, number]
-          },
-          "orderFlowAnalysis": {
-            "tradeSignAcf": [number, ...],
-            "volumeAcf": [number, ...],
-            "returnAcf": [number, ...],
-            "interpretation": "string"
-          },
-          "summary": "string"
-        }`;
-
+    // 3. BROKER INTELLIGENCE (Strict JSON)
+    if (analysisType === AnalysisType.BrokerIntel) {
+        const prompt = `Research broker activity for ${ticker} over the last 10 trading days. Analyze institutional flows vs retail.`;
         const response = await ai.models.generateContent({
             model: modelName,
             contents: prompt,
-            config: { tools: [{ googleSearch: {} }] },
+            config: {
+                tools: [{ googleSearch: {} }],
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        activity: { type: Type.STRING, description: "e.g. Institutional Accumulation" },
+                        consistencyDays: { type: Type.NUMBER },
+                        dominantSide: { type: Type.STRING, description: "Net Buy, Net Sell, or Neutral" },
+                        marketReaction: { type: Type.STRING, description: "e.g. Price Absorption" },
+                        traderBias: { type: Type.STRING, description: "Speculative short-term bias" },
+                        investorBias: { type: Type.STRING, description: "Long-term accumulation/distribution bias" },
+                        recommendation: {
+                            type: Type.OBJECT,
+                            properties: {
+                                action: { type: Type.STRING },
+                                risk: { type: Type.STRING },
+                                color: { type: Type.STRING, description: "tailwind color name like green-400" }
+                            },
+                            required: ["action", "risk", "color"]
+                        },
+                        confidence: { type: Type.NUMBER, description: "1-5 star rating" },
+                        advancedTable: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    type: { type: Type.STRING, description: "e.g. Institutional, Retail" },
+                                    netBuy: { type: Type.STRING, description: "e.g. +120M" },
+                                    days: { type: Type.NUMBER },
+                                    impact: { type: Type.STRING, description: "Positive, Negative, or Noise" }
+                                },
+                                required: ["type", "netBuy", "days", "impact"]
+                            }
+                        },
+                        summary: { type: Type.STRING }
+                    },
+                    required: ["activity", "consistencyDays", "dominantSide", "marketReaction", "traderBias", "investorBias", "recommendation", "confidence", "advancedTable", "summary"]
+                }
+            },
         });
 
-        const json = cleanAndParseJSON(response.text || "{}");
-        const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
-            ?.map((chunk: any) => ({ title: chunk.web?.title || "Source", url: chunk.web?.uri || "#" }))
-            .filter((s: any) => s.url !== "#");
-
+        const json = cleanAndParseJSON(response.text || "{}") as BrokerIntelData;
         return {
             ticker,
             type: analysisType,
             content: json.summary,
-            sentiment: json.trend,
-            technicalAnalysis: json,
-            sources
+            brokerIntel: json,
+            sentiment: json.dominantSide === "Net Buy" ? "Bullish" : json.dominantSide === "Net Sell" ? "Bearish" : "Neutral"
         };
     }
 
-    // 6. OPTIONS EXPERT ANALYSIS (NEW)
-    if (analysisType === AnalysisType.OptionsExpert) {
-        const prompt = `Act as an Options Strategist and Price Action Expert. Perform an analysis on ${ticker} focusing on Breakout and Bounce scenarios.
-        
-        1. **Breakout vs Bounce Prediction**: Predict the most likely immediate structural move (Breakout/Bounce/Consolidation).
-        2. **Volume Confirmation**: Analyze recent volume relative to average. Look for confirmation of price action.
-        3. **Price Action & Candle Patterns**: Identify specific candlestick patterns (e.g., Engulfing, Pin Bar, Inside Bar).
-        
-        IMPORTANT: Return ONLY a raw JSON object (no markdown) with this structure:
-        {
-          "prediction": {
-            "type": "Breakout" | "Bounce" | "Consolidation",
-            "side": "Upside" | "Downside" | "Neutral",
-            "probability": number (0-100),
-            "target": number (estimated price target),
-            "stop": number (estimated failure level)
-          },
-          "volumeSignal": {
-            "intensity": "High" | "Average" | "Low",
-            "trend": "Accumulation" | "Distribution" | "Neutral",
-            "confirmation": boolean,
-            "description": "string (brief summary of volume dynamics)"
-          },
-          "patterns": [
-            { "pattern": "string", "type": "Bullish" | "Bearish", "strength": "Strong" | "Moderate" | "Emerging" }
-          ],
-          "summary": "string (Options expert tactical recommendation)"
-        }`;
-
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-            config: { tools: [{ googleSearch: {} }] },
-        });
-
-        const json = cleanAndParseJSON(response.text || "{}");
-        const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
-            ?.map((chunk: any) => ({ title: chunk.web?.title || "Source", url: chunk.web?.uri || "#" }))
-            .filter((s: any) => s.url !== "#");
-
-        let sentiment: "Bullish" | "Bearish" | "Neutral" = "Neutral";
-        if (json.prediction.side === "Upside") sentiment = "Bullish";
-        if (json.prediction.side === "Downside") sentiment = "Bearish";
-
-        return {
-            ticker,
-            type: analysisType,
-            content: json.summary,
-            sentiment,
-            optionsAnalysis: json,
-            sources
-        };
-    }
-
-    // 7. FUNDAMENTAL ANALYSIS (Structured)
-    if (analysisType === AnalysisType.Fundamental) {
-        const prompt = `Act as a professional equity research analyst. Perform a deep-dive fundamental analysis on ${ticker} using the latest data.
-        
-        1. Determine if the stock is Overvalued, Undervalued, or Fair Value based on DCF models, P/E ratios, and growth prospects.
-        2. Retrieve key market statistics: Open, Range, Beta, etc.
-        3. Identify major MPIDs.
-        
-        IMPORTANT: Return ONLY a raw JSON object (no markdown code blocks) with this structure:
-        {
-          "valuationStatus": "Overvalued" | "Undervalued" | "Fair Value",
-          "intrinsicValue": "string",
-          "summary": "string",
-          "sentiment": "Bullish" | "Bearish" | "Neutral",
-          "metrics": { "open": "string", ... },
-          "mpidData": [{ "code": "string", "name": "string", "type": "string" }]
-        }`;
-
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-            config: { tools: [{ googleSearch: {} }] },
-        });
-
-        const json = cleanAndParseJSON(response.text || "{}");
-        const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
-            ?.map((chunk: any) => ({ title: chunk.web?.title || "Source", url: chunk.web?.uri || "#" }))
-            .filter((s: any) => s.url !== "#");
-
-        return {
-            ticker,
-            type: analysisType,
-            content: json.summary,
-            sentiment: json.sentiment,
-            valuationStatus: json.valuationStatus,
-            intrinsicValue: json.intrinsicValue,
-            mpidData: json.mpidData,
-            fundamentalMetrics: json.metrics,
-            sources
-        };
-    }
-
-    // 8. NASDAQ TOTALVIEW (LEVEL 2)
-    if (analysisType === AnalysisType.TotalView) {
-        const prompt = `Act as a NASDAQ TotalView emulator. Simulate Level 2 market depth data for ${ticker}.
-        Return ONLY a raw JSON object.`;
-
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-            config: { tools: [{ googleSearch: {} }] },
-        });
-
-        const json = cleanAndParseJSON(response.text || "{}");
-        
-        return {
-            ticker,
-            type: analysisType,
-            content: json.summary,
-            totalViewData: json
-        };
-    }
-
-    // 9. CLUSTERING (Structured JSON)
+    // 10. CLUSTERING (Strict JSON)
     if (analysisType === AnalysisType.Clustering) {
-      let prompt = `Act as a Quantitative Analyst. Group US stocks using ${ticker} algorithm. Return JSON.`;
-      
+      let prompt = `Act as a Quantitative Analyst. Group US stocks using ${ticker} algorithm. Provide clusters with names, descriptions, and a list of typical stock members.`;
       const response = await ai.models.generateContent({
         model: modelName,
         contents: prompt,
         config: {
-          responseMimeType: "application/json"
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              algorithm: { type: Type.STRING },
+              clusters: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    name: { type: Type.STRING },
+                    description: { type: Type.STRING },
+                    stocks: { type: Type.ARRAY, items: { type: Type.STRING } }
+                  },
+                  required: ["name", "description", "stocks"]
+                }
+              }
+            },
+            required: ["algorithm", "clusters"]
+          }
         },
       });
 
-      const json = JSON.parse(response.text || "{}");
+      const json = cleanAndParseJSON(response.text || "{}");
       return {
         ticker,
         type: analysisType,
-        content: "Market Clustering Complete",
+        content: "Market Clustering Analysis Complete",
         clusteringData: json,
       };
     }
 
-    // 10. QUANTUM (General Text)
-    const promptMap: Record<string, string> = {
-      [AnalysisType.Quantum]: `Perform a theoretical Quantum Financial Forecast for ${ticker}.`,
-    };
-
-    const prompt = promptMap[analysisType] || `Analyze ${ticker}`;
-
+    // DEFAULT FALLBACK (NEWS-STYLE TEXT)
     const response = await ai.models.generateContent({
       model: modelName,
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-      },
+      contents: `Analyze ${ticker} for ${analysisType}.`,
+      config: { tools: [{ googleSearch: {} }] },
     });
 
     return {
       ticker,
       type: analysisType,
       content: response.text || "No analysis generated.",
-      sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks
-        ?.map((chunk: any) => ({
-            title: chunk.web?.title || "Source",
-            url: chunk.web?.uri || "#"
-        }))
-        .filter((s: any) => s.url !== "#")
+      sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks?.map((chunk: any) => ({
+          title: chunk.web?.title || "Source",
+          url: chunk.web?.uri || "#"
+      })).filter((s: any) => s.url !== "#") || []
     };
 
   } catch (error: any) {
     console.error("Gemini API Error:", error);
-    const msg = error.message || error.toString();
-    throw new Error(`Analysis Failed: ${msg}`);
+    throw new Error(`Analysis Failed: ${error.message || error.toString()}`);
   }
 };
 
-export const runBacktest = async (
-  ticker: string,
-  strategy: string,
-  startDate: string,
-  endDate: string,
-  timeframe: string,
-  riskReward: string,
-  stopLoss: string,
-  takeProfit: string,
-  trailingStop: string,
-  simulationModel: string = "Standard (Historical)"
-): Promise<BacktestResult> => {
-  const prompt = `Simulate a trading backtest for ${ticker}. Strategy: ${strategy}. Return JSON.`;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json"
-      }
-    });
-
-    return JSON.parse(response.text || "{}") as BacktestResult;
-  } catch (error: any) {
-    console.error("Backtest Error:", error);
-    throw new Error(`Backtest Failed`);
-  }
+export const runBacktest = async (ticker: string, strategy: string, startDate: string, endDate: string, timeframe: string, riskReward: string, stopLoss: string, takeProfit: string, trailingStop: string, simulationModel: string): Promise<BacktestResult> => {
+  const prompt = `Perform backtest for ${ticker} strategy: ${strategy}. Model: ${simulationModel}. Return raw JSON only.`;
+  const response = await ai.models.generateContent({
+    model: proModelName,
+    contents: prompt,
+    config: { tools: [{ googleSearch: {} }] },
+  });
+  return cleanAndParseJSON(response.text || "{}");
 };
 
-export const runMLSimulation = async (
-  ticker: string,
-  modelType: string,
-  features: string[],
-  trainingPeriod: string,
-  predictionHorizon: string,
-  trainingEndDate: string
-): Promise<MLPredictionResult> => {
-  const prompt = `Act as AI Trading Model (${modelType}). Analyze ${ticker}. Return JSON.`;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json"
-      }
-    });
-    
-    return JSON.parse(response.text || "{}") as MLPredictionResult;
-
-  } catch (error: any) {
-    console.error("ML Sim Error:", error);
-    throw new Error(`ML Simulation Failed`);
-  }
+export const runMLSimulation = async (ticker: string, modelType: string, features: string[], trainingPeriod: string, predictionHorizon: string, endDate: string): Promise<MLPredictionResult> => {
+  const prompt = `Run ML simulation for ${ticker} using ${modelType}. Return raw JSON only.`;
+  const response = await ai.models.generateContent({
+    model: proModelName,
+    contents: prompt,
+    config: { tools: [{ googleSearch: {} }] },
+  });
+  return cleanAndParseJSON(response.text || "{}");
 };
 
-export const getCommunityInsights = async (ticker: string): Promise<CommunityInsightResult> => {
-  const prompt = `Analyze the community and institutional sentiment for ${ticker}. Return JSON.`;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-      },
-    });
-
-    return cleanAndParseJSON(response.text || "{}") as CommunityInsightResult;
-  } catch (error: any) {
-    console.error("Community Insight Error:", error);
-    throw new Error(`Community Insight Failed`);
-  }
-};
-
-export const runInstitutionalDeepDive = async (ticker: string, institution: string): Promise<InstitutionalDeepDiveResult> => {
-    const prompt = `Conduct a deep dive investigation into **${institution}**'s relationship with **${ticker}**. Return JSON.`;
-    try {
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-            config: {
-                tools: [{ googleSearch: {} }],
-            },
-        });
-        return cleanAndParseJSON(response.text || "{}") as InstitutionalDeepDiveResult;
-    } catch (error: any) {
-        throw new Error("Deep Dive Analysis Failed");
-    }
-};
-
-export const runMPTAnalysis = async (holdings: Holding[], rebalancingStrategy: string = "Standard MPT", views?: InvestorView[]): Promise<MPTAnalysisResult> => {
-    const viewsContext = views && views.length > 0 
-        ? `Additionally, incorporate the following investor views for a Black-Litterman optimization: ${JSON.stringify(views)}.`
-        : '';
-        
-    const prompt = `Perform ${rebalancingStrategy} optimization for these holdings: ${JSON.stringify(holdings)}. 
-    ${viewsContext}
-    
-    1. Calculate current Sharpe, Return, Volatility.
-    2. Calculate optimal allocation based on the efficient frontier.
-    3. Generate specific Buy/Sell trade suggestions.
-    4. Provide a correlation matrix.
-    
-    Return ONLY a raw JSON object.`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-            config: { tools: [{ googleSearch: {} }] },
-        });
-        return cleanAndParseJSON(response.text || "{}") as MPTAnalysisResult;
-    } catch (e: any) {
-        throw new Error("Portfolio Analysis Failed");
-    }
-};
-
-export const runCAPMAPTAnalysis = async (ticker: string, rfRate: number, marketReturn: number): Promise<CAPMAPTResult> => {
-    const prompt = `Act as a Quantitative Investment Strategist. Calculate and model the Capital Asset Pricing Model (CAPM) and Arbitrage Pricing Theory (APT) for **${ticker}**.
-    
-    1. **CAPM**: 
-       - Assume Risk-Free Rate: ${rfRate}%.
-       - Assume Market Return: ${marketReturn}%.
-       - Calculate expected return using Beta.
-       - Provide Alpha and R-Squared.
-       - Determine if the asset is Above, Below, or On the Security Market Line (SML).
-    2. **APT**: 
-       - Identify 4-5 multi-factor sensitivities (e.g., Inflation, Interest Rate, GDP, Industry factor).
-       - Provide Beta sensitivities for each factor.
-       - Calculate contribution to expected return per factor.
-       
-    IMPORTANT: Return ONLY a raw JSON object (no markdown) with this structure:
-    {
-        "ticker": "string",
-        "capm": { "beta": number, "expectedReturn": number, "alpha": number, "rSquared": number, "sharpeRatio": number, "securityMarketLineStatus": "Above" | "Below" | "On Line" },
-        "apt": { "factors": [{ "name": "string", "beta": number, "riskPremium": number, "contribution": number }], "residualRisk": number, "totalExpectedReturn": number },
-        "summary": "string"
-    }`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-            config: { tools: [{ googleSearch: {} }] },
-        });
-        return cleanAndParseJSON(response.text || "{}") as CAPMAPTResult;
-    } catch (e: any) {
-        console.error("CAPM/APT Analysis Failed:", e);
-        throw new Error("Capital Asset Modeling Failed");
-    }
-};
-
-export const runHedgeAnalysis = async (holdings: Holding[]): Promise<DeltaGammaHedgeResult> => {
-    const prompt = `Perform a Delta-Gamma Hedging Analysis for a portfolio of ${holdings.length} assets. 
-    Current Holdings: ${holdings.map(h => `${h.ticker} (${h.quantity} shares @ $${h.currentPrice})`).join(', ')}.
-    
-    1. Calculate aggregate Net Delta and Net Gamma.
-    2. Suggest concrete hedging actions (Delta-neutral and Gamma-neutral).
-    3. Generate a sensitivity path for price shifts of -10% to +10%.
-    
-    IMPORTANT: Return ONLY a raw JSON object (no markdown) with this structure:
-    {
-        "portfolioGreeks": { "netDelta": number, "netGamma": number, "netTheta": number, "netVega": number },
-        "hedgingActions": [{ "type": "string", "action": "string", "instrument": "string", "impact": "string" }],
-        "sensitivityPath": [{ "priceShift": number, "pnlImpact": number }],
-        "riskSummary": "string"
-    }`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-            config: { tools: [{ googleSearch: {} }] },
-        });
-        return cleanAndParseJSON(response.text || "{}") as DeltaGammaHedgeResult;
-    } catch (e: any) {
-        console.error("Hedge Analysis Failed:", e);
-        throw new Error("Hedging Analysis Failed");
-    }
-};
-
-export const runAdvancedPricingAnalysis = async (ticker: string): Promise<AdvancedPricingResult> => {
-    const prompt = `Act as a Quantitative Finance Engineer. Perform an advanced derivative pricing analysis for **${ticker}**.
-    
-    1. **Black-Scholes-Merton (BSM)**: Calculate Fair Value, Implied Volatility, and Greeks (Delta, Gamma, Theta, Vega, Rho).
-    2. **Heston Model**: Provide stochastic volatility parameters (v0, kappa, theta, sigma, rho) and describe the volatility skew/smile status.
-    3. **Merton Jump Diffusion**: Calculate jump intensity (lambda), mean jump size (muJ), and jump volatility (sigmaJ). Estimate jump probability.
-    4. **Local Volatility (Dupire)**: Analyze the local volatility surface. Determine if skew intensity is High/Moderate/Low and describe the smile profile.
-    5. **Variance Swap**: Calculate the fair variance strike and potential notional exposure.
-    
-    IMPORTANT: Return ONLY a raw JSON object (no markdown) with this structure:
-    {
-        "ticker": "string",
-        "bsm": { "fairValue": number, "impliedVol": number, "greeks": { "delta": number, "gamma": number, "theta": number, "vega": number, "rho": number } },
-        "heston": { "parameters": { "v0": number, "kappa": number, "theta": number, "sigma": number, "rho": number }, "surfaceStatus": "string", "description": "string" },
-        "jumpDiffusion": { "parameters": { "lambda": number, "muJ": number, "sigmaJ": number }, "jumpProbability": number, "description": "string" },
-        "localVol": { "skewIntensity": "High" | "Moderate" | "Low", "smileProfile": "string", "description": "string" },
-        "varianceSwap": { "fairVarianceStrike": number, "notionalExposure": number, "payoffDescription": "string" },
-        "summary": "string"
-    }`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-            config: { tools: [{ googleSearch: {} }] },
-        });
-        return cleanAndParseJSON(response.text || "{}") as AdvancedPricingResult;
-    } catch (e: any) {
-        console.error("Advanced Pricing Analysis Failed:", e);
-        throw new Error("Advanced Pricing Analysis Failed");
-    }
+export const runMPTAnalysis = async (holdings: Holding[], strategy: string, investorViews: InvestorView[]): Promise<MPTAnalysisResult> => {
+  const prompt = `Run MPT analysis for portfolio: ${JSON.stringify(holdings)}. Strategy: ${strategy}. Views: ${JSON.stringify(investorViews)}. Return raw JSON only.`;
+  const response = await ai.models.generateContent({
+    model: proModelName,
+    contents: prompt,
+    config: { tools: [{ googleSearch: {} }] },
+  });
+  return cleanAndParseJSON(response.text || "{}");
 };
 
 export const getETFProfile = async (ticker: string): Promise<ETFProfile> => {
-  const prompt = `Analyze the ETF **${ticker}**. Return top holdings. Return JSON.`;
-  try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-      },
-    });
-    return cleanAndParseJSON(response.text || "{}") as ETFProfile;
-  } catch (error: any) {
-    throw new Error("Failed to fetch ETF Profile");
-  }
+  const prompt = `Fetch ETF profile and holdings for ${ticker}. Return raw JSON only.`;
+  const response = await ai.models.generateContent({
+    model: modelName,
+    contents: prompt,
+    config: { tools: [{ googleSearch: {} }] },
+  });
+  return cleanAndParseJSON(response.text || "{}");
+};
+
+export const runHedgeAnalysis = async (holdings: Holding[]): Promise<DeltaGammaHedgeResult> => {
+  const prompt = `Run Delta-Gamma hedge analysis for: ${JSON.stringify(holdings)}. Return raw JSON only.`;
+  const response = await ai.models.generateContent({
+    model: proModelName,
+    contents: prompt,
+    config: { tools: [{ googleSearch: {} }] },
+  });
+  return cleanAndParseJSON(response.text || "{}");
+};
+
+export const runAdvancedPricingAnalysis = async (ticker: string): Promise<AdvancedPricingResult> => {
+  const prompt = `Run derivatives pricing for ${ticker}. Return raw JSON only.`;
+  const response = await ai.models.generateContent({
+    model: proModelName,
+    contents: prompt,
+    config: { tools: [{ googleSearch: {} }] },
+  });
+  return cleanAndParseJSON(response.text || "{}");
+};
+
+export const runCAPMAPTAnalysis = async (ticker: string, rfRate: number, marketReturn: number): Promise<CAPMAPTResult> => {
+  const prompt = `Run CAPM/APT multi-factor model for ${ticker}. RF: ${rfRate}%, Market: ${marketReturn}%. Return raw JSON only.`;
+  const response = await ai.models.generateContent({
+    model: proModelName,
+    contents: prompt,
+    config: { tools: [{ googleSearch: {} }] },
+  });
+  return cleanAndParseJSON(response.text || "{}");
 };
 
 export const runFuzzyAnalysis = async (ticker: string): Promise<FuzzyAnalysisResult> => {
-  const prompt = `Act as Fuzzy Logic Financial System. Analyze **${ticker}**. Return JSON.`;
-  try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-      },
-    });
-    return cleanAndParseJSON(response.text || "{}") as FuzzyAnalysisResult;
-  } catch (error: any) {
-    throw new Error("Fuzzy Analysis Failed");
-  }
+  const prompt = `Run Microstructure Fuzzy Logic for ${ticker}. Return raw JSON only.`;
+  const response = await ai.models.generateContent({
+    model: modelName,
+    contents: prompt,
+    config: { tools: [{ googleSearch: {} }] },
+  });
+  return cleanAndParseJSON(response.text || "{}");
 };
 
 export const runFFFCMGNNAnalysis = async (ticker: string): Promise<FFFCMGNNResult> => {
-  const prompt = `Perform Hybrid FF-FCM-GNN Analysis for **${ticker}**. Return JSON.`;
-  try {
-     const response = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: { tools: [{ googleSearch: {} }] },
-    });
-    return cleanAndParseJSON(response.text || "{}") as FFFCMGNNResult;
-  } catch (e: any) {
-    throw new Error("FF-FCM-GNN Analysis Failed");
-  }
+  const prompt = `Run FF-FCM-GNN analysis for ${ticker}. Return raw JSON only.`;
+  const response = await ai.models.generateContent({
+    model: proModelName,
+    contents: prompt,
+    config: { tools: [{ googleSearch: {} }] },
+  });
+  return cleanAndParseJSON(response.text || "{}");
 };
 
 export const runOptimalFuzzyDesignAnalysis = async (ticker: string): Promise<OptimalFuzzyDesignResult> => {
-    const prompt = `Perform Optimal FIS Design Analysis for **${ticker}**. Return JSON.`;
-    try {
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-            config: { tools: [{ googleSearch: {} }] },
-        });
-        return cleanAndParseJSON(response.text || "{}") as OptimalFuzzyDesignResult;
-    } catch (e: any) {
-        throw new Error("Optimal FIS Analysis Failed");
-    }
+  const prompt = `Run Optimal FIS Design for ${ticker}. Return raw JSON only.`;
+  const response = await ai.models.generateContent({
+    model: proModelName,
+    contents: prompt,
+    config: { tools: [{ googleSearch: {} }] },
+  });
+  return cleanAndParseJSON(response.text || "{}");
 };
 
 export const runFFTSPLPRAnalysis = async (ticker: string): Promise<FFTSPLPRResult> => {
-    const prompt = `Perform FFTS-PLPR Analysis for **${ticker}**. Return JSON.`;
-    try {
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-            config: { tools: [{ googleSearch: {} }] },
-        });
-        return cleanAndParseJSON(response.text || "{}") as FFTSPLPRResult;
-    } catch (e: any) {
-        throw new Error("FFTS-PLPR Analysis Failed");
-    }
+  const prompt = `Run FFTS-PLPR analysis for ${ticker}. Return raw JSON only.`;
+  const response = await ai.models.generateContent({
+    model: proModelName,
+    contents: prompt,
+    config: { tools: [{ googleSearch: {} }] },
+  });
+  return cleanAndParseJSON(response.text || "{}");
 };

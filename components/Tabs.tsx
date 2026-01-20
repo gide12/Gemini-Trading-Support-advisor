@@ -12,6 +12,7 @@ const groups = [
     title: "Intelligence",
     items: [
       { id: AnalysisType.News, label: "News Intel", icon: "N" },
+      { id: AnalysisType.BrokerIntel, label: "Broker Intel", icon: "B" },
       { id: AnalysisType.Ideas, label: "Trade Ideas", icon: "I" },
       { id: AnalysisType.OptionsExpert, label: "Options Expert", icon: "O" },
     ]
