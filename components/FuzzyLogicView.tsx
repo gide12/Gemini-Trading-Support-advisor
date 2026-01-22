@@ -1,45 +1,55 @@
 
 import React, { useState } from "react";
-import { runFuzzyAnalysis, runFFFCMGNNAnalysis, runOptimalFuzzyDesignAnalysis, runFFTSPLPRAnalysis } from "../services/geminiService";
-import { FuzzyAnalysisResult, FFFCMGNNResult, OptimalFuzzyDesignResult, FFTSPLPRResult } from "../types";
+import { runFuzzyAnalysis, runFFFCMGNNAnalysis, runOptimalFuzzyDesignAnalysis, runFFTSPLPRAnalysis, runQuantumMCDMAnalysis } from "../services/geminiService";
+import { FuzzyAnalysisResult, FFFCMGNNResult, OptimalFuzzyDesignResult, FFTSPLPRResult, QuantumMCDMResult } from "../types";
 import SearchBar from "./SearchBar";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ScatterChart, Scatter, ZAxis, Legend, CartesianGrid } from "recharts";
 
-type FuzzyModelType = 'standard' | 'ff-fcm-gnn' | 'optimal-fis' | 'ffts-plpr';
+type FuzzyModelType = 'standard' | 'ff-fcm-gnn' | 'optimal-fis' | 'ffts-plpr' | 'quantum-mcdm';
+
+const PipelineNode = ({ title, sub, icon, active = false }: { title: string, sub: string, icon: React.ReactNode, active?: boolean }) => (
+    <div className={`flex flex-col items-center group transition-all duration-500 ${active ? 'scale-110' : 'opacity-60'}`}>
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all duration-500 ${active ? 'bg-emerald-500/20 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'bg-slate-900 border-slate-800 group-hover:border-slate-600'}`}>
+            <div className={`${active ? 'text-emerald-400' : 'text-slate-600'}`}>
+                {icon}
+            </div>
+        </div>
+        <div className="mt-3 text-center">
+            <h4 className={`text-[10px] font-black uppercase tracking-widest ${active ? 'text-white' : 'text-slate-500'}`}>{title}</h4>
+            <p className="text-[8px] text-slate-600 font-bold mt-0.5">{sub}</p>
+        </div>
+    </div>
+);
+
+const PipelineConnector = ({ active = false }: { active?: boolean }) => (
+    <div className="flex-1 flex justify-center py-2">
+        <div className={`w-px h-8 transition-all duration-1000 ${active ? 'bg-gradient-to-b from-emerald-500 to-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-800'}`}></div>
+    </div>
+);
 
 const FuzzyLogicView: React.FC = () => {
   const [ticker, setTicker] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [activeModel, setActiveModel] = useState<FuzzyModelType>('standard');
+  const [activeModel, setActiveModel] = useState<FuzzyModelType>('quantum-mcdm');
   
-  // Results
   const [standardData, setStandardData] = useState<FuzzyAnalysisResult | null>(null);
   const [advancedData, setAdvancedData] = useState<FFFCMGNNResult | null>(null);
   const [optimalFisData, setOptimalFisData] = useState<OptimalFuzzyDesignResult | null>(null);
   const [fftsData, setFftsData] = useState<FFTSPLPRResult | null>(null);
+  const [mcdmData, setMcdmData] = useState<QuantumMCDMResult | null>(null);
 
   const handleSearch = async (searchTerm: string) => {
     setTicker(searchTerm);
     setIsLoading(true);
-    setStandardData(null);
-    setAdvancedData(null);
-    setOptimalFisData(null);
-    setFftsData(null);
+    // Reset results
+    setStandardData(null); setAdvancedData(null); setOptimalFisData(null); setFftsData(null); setMcdmData(null);
 
     try {
-      if (activeModel === 'standard') {
-          const result = await runFuzzyAnalysis(searchTerm);
-          setStandardData(result);
-      } else if (activeModel === 'ff-fcm-gnn') {
-          const result = await runFFFCMGNNAnalysis(searchTerm);
-          setAdvancedData(result);
-      } else if (activeModel === 'optimal-fis') {
-          const result = await runOptimalFuzzyDesignAnalysis(searchTerm);
-          setOptimalFisData(result);
-      } else if (activeModel === 'ffts-plpr') {
-          const result = await runFFTSPLPRAnalysis(searchTerm);
-          setFftsData(result);
-      }
+      if (activeModel === 'standard') setStandardData(await runFuzzyAnalysis(searchTerm));
+      else if (activeModel === 'ff-fcm-gnn') setAdvancedData(await runFFFCMGNNAnalysis(searchTerm));
+      else if (activeModel === 'optimal-fis') setOptimalFisData(await runOptimalFuzzyDesignAnalysis(searchTerm));
+      else if (activeModel === 'ffts-plpr') setFftsData(await runFFTSPLPRAnalysis(searchTerm));
+      else if (activeModel === 'quantum-mcdm') setMcdmData(await runQuantumMCDMAnalysis(searchTerm));
     } catch (error) {
       console.error(error);
     } finally {
@@ -47,491 +57,256 @@ const FuzzyLogicView: React.FC = () => {
     }
   };
 
-  const getFuzzyColor = (score: number) => {
-      if (score < 30) return 'bg-slate-500';
-      if (score < 60) return 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]';
-      if (score < 85) return 'bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.6)]';
-      return 'bg-pink-500 shadow-[0_0_20px_rgba(236,72,153,0.7)]';
-  };
+  const isIdle = !mcdmData && !isLoading;
 
   return (
-    <div className="fade-in space-y-8">
+    <div className="fade-in space-y-8 pb-10">
       <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-cyan-400">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-            </svg>
-            Fuzzy-Logic & Hybrid Engines
-          </h2>
-          <p className="text-slate-400 text-sm">Select an architecture to analyze nonlinear market phenomena.</p>
-        </div>
-        
-        {/* Model Architecture Selector */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 border-b border-purple-500/20 pb-6">
-            <button
-                onClick={() => { setActiveModel('standard'); setStandardData(null); setAdvancedData(null); setOptimalFisData(null); setFftsData(null); }}
-                className={`flex-1 p-4 rounded-xl border transition-all text-left group ${activeModel === 'standard' ? 'bg-purple-900/20 border-purple-500 ring-1 ring-purple-500/50' : 'bg-[#1e293b]/50 border-purple-500/10 hover:border-purple-500/40'}`}
-            >
-                <div className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors mb-1">Microstructure Fuzzy Engine</div>
-                <div className="text-xs text-slate-400">Whale Activity, MM Behavior, Accumulation Logic.</div>
-            </button>
-
-            <button
-                onClick={() => { setActiveModel('ff-fcm-gnn'); setStandardData(null); setAdvancedData(null); setOptimalFisData(null); setFftsData(null); }}
-                className={`flex-1 p-4 rounded-xl border transition-all text-left group ${activeModel === 'ff-fcm-gnn' ? 'bg-purple-900/20 border-purple-500 ring-1 ring-purple-500/50' : 'bg-[#1e293b]/50 border-purple-500/10 hover:border-purple-500/40'}`}
-            >
-                <div className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors mb-1">FF-FCM-GNN Model</div>
-                <div className="text-xs text-slate-400">Fama-French Factors + Fuzzy Cognitive Map + Graph Neural Net.</div>
-            </button>
-
-            <button
-                onClick={() => { setActiveModel('optimal-fis'); setStandardData(null); setAdvancedData(null); setOptimalFisData(null); setFftsData(null); }}
-                className={`flex-1 p-4 rounded-xl border transition-all text-left group ${activeModel === 'optimal-fis' ? 'bg-purple-900/20 border-purple-500 ring-1 ring-purple-500/50' : 'bg-[#1e293b]/50 border-purple-500/10 hover:border-purple-500/40'}`}
-            >
-                <div className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors mb-1">Optimal FIS Design</div>
-                <div className="text-xs text-slate-400">Type-1/Type-2 System Optimization (GFS, NFS, HFS, EFS, MFS).</div>
-            </button>
-            
-            <button
-                onClick={() => { setActiveModel('ffts-plpr'); setStandardData(null); setAdvancedData(null); setOptimalFisData(null); setFftsData(null); }}
-                className={`flex-1 p-4 rounded-xl border transition-all text-left group ${activeModel === 'ffts-plpr' ? 'bg-purple-900/20 border-purple-500 ring-1 ring-purple-500/50' : 'bg-[#1e293b]/50 border-purple-500/10 hover:border-purple-500/40'}`}
-            >
-                <div className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors mb-1">FFTS-PLPR Model</div>
-                <div className="text-xs text-slate-400">Two-Factor Fuzzy-Fluctuation w/ Probabilistic Linguistic Preferences.</div>
-            </button>
+        <div className="mb-6 flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-emerald-400">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v17.792m0-17.792l-4.5 4.5m4.5-4.5l4.5 4.5M3 12h18M3 12l4.5-4.5M3 12l4.5 4.5M21 12l-4.5-4.5M21 12l-4.5 4.5" />
+              </svg>
+              Quant Decision Lab
+            </h2>
+            <p className="text-slate-400 text-xs mt-1 uppercase tracking-widest">Active Architecture: MCDM Pipeline Hybrid</p>
+          </div>
+          <div className="flex bg-slate-900/50 p-1 rounded-lg border border-slate-800">
+             {['quantum-mcdm', 'ffts-plpr', 'optimal-fis', 'ff-fcm-gnn'].map((m: any) => (
+                 <button 
+                    key={m} 
+                    onClick={() => setActiveModel(m)}
+                    className={`px-3 py-1.5 text-[10px] font-black uppercase rounded transition-all ${activeModel === m ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                 >
+                     {m.split('-').join(' ')}
+                 </button>
+             ))}
+          </div>
         </div>
 
         <SearchBar onSearch={handleSearch} isLoading={isLoading} />
       </div>
 
-      {/* STANDARD VIEW */}
-      {activeModel === 'standard' && standardData && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
-            {/* Market Maker Behavior */}
-            <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 flex flex-col">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-bold text-white">Market Maker Behavior</h3>
-                    <span className={`px-3 py-1 rounded text-xs font-bold bg-slate-800 border border-slate-600`}>
-                        {standardData.marketMakerBehavior.score.toUpperCase()}
-                    </span>
-                </div>
-                
-                <div className="mb-6">
-                     <div className="text-xs text-slate-500 uppercase font-bold mb-2">Fuzzy Membership Level</div>
-                     <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
-                        <div className={`h-full transition-all duration-1000 ${getFuzzyColor(standardData.marketMakerBehavior.value)}`} style={{width: `${standardData.marketMakerBehavior.value}%`}}></div>
-                     </div>
-                </div>
-
-                <div className="space-y-4 flex-1">
-                    <div className="bg-[#1e293b]/50 p-3 rounded border border-purple-500/10">
-                        <div className="text-xs text-slate-400 mb-1">Spread Compression</div>
-                        <div className="text-sm font-mono text-cyan-300">{standardData.marketMakerBehavior.metrics.spreadCompression}</div>
-                    </div>
-                    <div className="bg-[#1e293b]/50 p-3 rounded border border-purple-500/10">
-                        <div className="text-xs text-slate-400 mb-1">Order Book Imbalance</div>
-                        <div className="text-sm font-mono text-cyan-300">{standardData.marketMakerBehavior.metrics.orderBookImbalance}</div>
-                    </div>
-                    <div className="bg-[#1e293b]/50 p-3 rounded border border-purple-500/10">
-                        <div className="text-xs text-slate-400 mb-1">Iceberg Probability</div>
-                        <div className="text-sm font-mono text-cyan-300">{standardData.marketMakerBehavior.metrics.icebergProbability}</div>
-                    </div>
-                    <div className="bg-[#1e293b]/50 p-3 rounded border border-purple-500/10">
-                        <div className="text-xs text-slate-400 mb-1">Depth Volatility</div>
-                        <div className="text-sm font-mono text-cyan-300">{standardData.marketMakerBehavior.metrics.depthVolatility}</div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Whale Activity */}
-            <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 flex flex-col">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-bold text-white">Whale Activity</h3>
-                    <span className={`px-3 py-1 rounded text-xs font-bold bg-slate-800 border border-slate-600`}>
-                        {standardData.whaleActivity.score.toUpperCase()}
-                    </span>
-                </div>
-                
-                <div className="mb-6">
-                     <div className="text-xs text-slate-500 uppercase font-bold mb-2">Fuzzy Membership Level</div>
-                     <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
-                        <div className={`h-full transition-all duration-1000 ${getFuzzyColor(standardData.whaleActivity.value)}`} style={{width: `${standardData.whaleActivity.value}%`}}></div>
-                     </div>
-                </div>
-
-                <div className="space-y-4 flex-1">
-                    <div className="bg-[#1e293b]/50 p-3 rounded border border-purple-500/10">
-                        <div className="text-xs text-slate-400 mb-1">Block Trade Freq</div>
-                        <div className="text-sm font-mono text-pink-300">{standardData.whaleActivity.metrics.blockTradeFreq}</div>
-                    </div>
-                    <div className="bg-[#1e293b]/50 p-3 rounded border border-purple-500/10">
-                        <div className="text-xs text-slate-400 mb-1">Sweep Orders</div>
-                        <div className="text-sm font-mono text-pink-300">{standardData.whaleActivity.metrics.sweepOrders}</div>
-                    </div>
-                    <div className="bg-[#1e293b]/50 p-3 rounded border border-purple-500/10">
-                        <div className="text-xs text-slate-400 mb-1">Flow Toxicity (VPIN)</div>
-                        <div className="text-sm font-mono text-pink-300">{standardData.whaleActivity.metrics.flowToxicity}</div>
-                    </div>
-                    <div className="bg-[#1e293b]/50 p-3 rounded border border-purple-500/10">
-                        <div className="text-xs text-slate-400 mb-1">Hidden Orders</div>
-                        <div className="text-sm font-mono text-pink-300">{standardData.whaleActivity.metrics.hiddenOrders}</div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Accumulation */}
-            <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 flex flex-col">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-bold text-white">Accumulation</h3>
-                    <span className={`px-3 py-1 rounded text-xs font-bold bg-slate-800 border border-slate-600`}>
-                        {standardData.accumulation.score.toUpperCase()}
-                    </span>
-                </div>
-                
-                <div className="mb-6">
-                     <div className="text-xs text-slate-500 uppercase font-bold mb-2">Fuzzy Membership Level</div>
-                     <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
-                        <div className={`h-full transition-all duration-1000 ${getFuzzyColor(standardData.accumulation.value)}`} style={{width: `${standardData.accumulation.value}%`}}></div>
-                     </div>
-                </div>
-
-                <div className="space-y-4 flex-1">
-                    <div className="bg-[#1e293b]/50 p-3 rounded border border-purple-500/10">
-                        <div className="text-xs text-slate-400 mb-1">Net Buying Pressure</div>
-                        <div className="text-sm font-mono text-green-300">{standardData.accumulation.metrics.netBuyingPressure}</div>
-                    </div>
-                    <div className="bg-[#1e293b]/50 p-3 rounded border border-purple-500/10">
-                        <div className="text-xs text-slate-400 mb-1">Dark Pool Ratio</div>
-                        <div className="text-sm font-mono text-green-300">{standardData.accumulation.metrics.darkPoolRatio}</div>
-                    </div>
-                    <div className="bg-[#1e293b]/50 p-3 rounded border border-purple-500/10">
-                        <div className="text-xs text-slate-400 mb-1">Vol/Volatility Div</div>
-                        <div className="text-sm font-mono text-green-300">{standardData.accumulation.metrics.volVolatilityDiv}</div>
-                    </div>
-                    <div className="bg-[#1e293b]/50 p-3 rounded border border-purple-500/10">
-                        <div className="text-xs text-slate-400 mb-1">SAR Clusters</div>
-                        <div className="text-sm font-mono text-green-300">{standardData.accumulation.metrics.sarClusters}</div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Inference Summary */}
-            <div className="lg:col-span-3 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6">
-                 <h3 className="text-sm font-bold text-slate-400 uppercase mb-2">System Inference</h3>
-                 <p className="text-slate-200 text-sm leading-relaxed">{standardData.summary}</p>
-            </div>
-        </div>
-      )}
-
-      {/* FF-FCM-GNN VIEW */}
-      {activeModel === 'ff-fcm-gnn' && advancedData && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
-              {/* Card 1: Fama-French Factors */}
-              <div className="lg:col-span-1 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
-                  <h3 className="text-lg font-bold text-white mb-4 border-b border-purple-500/20 pb-2">3-Factor Inputs</h3>
-                  <div className="space-y-6">
-                      <div className="relative">
-                          <div className="flex justify-between text-xs mb-1">
-                              <span className="text-slate-400 uppercase font-bold">Market Risk (MKT)</span>
-                              <span className="text-purple-300 font-mono">{(advancedData.famaFrenchFactors?.marketRisk?.value || 0).toFixed(2)}</span>
-                          </div>
-                          <div className="w-full bg-slate-800 h-2 rounded-full mb-1">
-                              <div className="bg-purple-500 h-2 rounded-full" style={{width: `${(advancedData.famaFrenchFactors?.marketRisk?.value || 0) * 100}%`}}></div>
-                          </div>
-                          <p className="text-[10px] text-slate-500">{advancedData.famaFrenchFactors?.marketRisk?.description}</p>
-                      </div>
-
-                      <div className="relative">
-                          <div className="flex justify-between text-xs mb-1">
-                              <span className="text-slate-400 uppercase font-bold">Size Factor (SMB)</span>
-                              <span className="text-blue-300 font-mono">{(advancedData.famaFrenchFactors?.sizeFactorSMB?.value || 0).toFixed(2)}</span>
-                          </div>
-                          <div className="w-full bg-slate-800 h-2 rounded-full mb-1">
-                              <div className="bg-blue-500 h-2 rounded-full" style={{width: `${(advancedData.famaFrenchFactors?.sizeFactorSMB?.value || 0) * 100}%`}}></div>
-                          </div>
-                          <p className="text-[10px] text-slate-500">{advancedData.famaFrenchFactors?.sizeFactorSMB?.description}</p>
-                      </div>
-
-                      <div className="relative">
-                          <div className="flex justify-between text-xs mb-1">
-                              <span className="text-slate-400 uppercase font-bold">Value Factor (HML)</span>
-                              <span className="text-pink-300 font-mono">{(advancedData.famaFrenchFactors?.valueFactorHML?.value || 0).toFixed(2)}</span>
-                          </div>
-                          <div className="w-full bg-slate-800 h-2 rounded-full mb-1">
-                              <div className="bg-pink-500 h-2 rounded-full" style={{width: `${(advancedData.famaFrenchFactors?.valueFactorHML?.value || 0) * 100}%`}}></div>
-                          </div>
-                          <p className="text-[10px] text-slate-500">{advancedData.famaFrenchFactors?.valueFactorHML?.description}</p>
-                      </div>
-                  </div>
+      {/* PIPELINE SCHEMATIC (The "Engine" before analysis) */}
+      {isIdle && activeModel === 'quantum-mcdm' && (
+          <div className="animate-fade-in flex flex-col items-center py-10">
+              <div className="max-w-md w-full space-y-1">
+                  <PipelineNode 
+                    title="Problem Identification" 
+                    sub="Market Anomalies & Delta Lag" 
+                    icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                    active={true}
+                  />
+                  <PipelineConnector active={isLoading} />
+                  <PipelineNode 
+                    title="Delphi Method" 
+                    sub="Expert Consensus & Criteria Validation" 
+                    icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>}
+                    active={isLoading}
+                  />
+                  <PipelineConnector active={isLoading} />
+                  <PipelineNode 
+                    title="DEMATEL Engine" 
+                    sub="Causality Analysis (Cause-Effect)" 
+                    icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>}
+                    active={isLoading}
+                  />
+                  <PipelineConnector active={isLoading} />
+                  <PipelineNode 
+                    title="Quantum Spherical Fuzzy" 
+                    sub="3D Uncertainty Modeling (α, β, γ)" 
+                    icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>}
+                    active={isLoading}
+                  />
+                  <PipelineConnector active={isLoading} />
+                  <PipelineNode 
+                    title="Evaluation Triad" 
+                    sub="COCOSO | TOPSIS | MULTIMOORA" 
+                    icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>}
+                    active={isLoading}
+                  />
+                  <PipelineConnector active={isLoading} />
+                  <PipelineNode 
+                    title="Optimal Decision" 
+                    sub="Aggregated Strategic Rankings" 
+                    icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                    active={isLoading}
+                  />
               </div>
-
-              {/* Card 2: Cognitive Map Visualization */}
-              <div className="lg:col-span-1 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
-                  <h3 className="text-lg font-bold text-white mb-4 border-b border-purple-500/20 pb-2">Fuzzy Cognitive Map</h3>
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                      {(advancedData.fuzzyCognitiveMap?.nodes || []).map((node, i) => (
-                          <div key={i} className={`p-2 rounded border border-purple-500/10 flex flex-col justify-center items-center text-center ${node.influenceType === 'Positive' ? 'bg-green-900/10' : node.influenceType === 'Negative' ? 'bg-red-900/10' : 'bg-slate-800/30'}`}>
-                              <span className="text-xs font-bold text-slate-300">{node.name}</span>
-                              <div className="w-full h-1 bg-slate-700 mt-2 rounded-full overflow-hidden">
-                                   <div className={`h-full ${node.influenceType === 'Positive' ? 'bg-green-500' : 'bg-red-500'}`} style={{width: `${(node.activationLevel || 0) * 100}%`}}></div>
-                              </div>
-                          </div>
-                      ))}
-                  </div>
-                  <p className="text-xs text-slate-400 italic text-center">"{advancedData.fuzzyCognitiveMap?.primaryCausalLink}"</p>
-              </div>
-
-              {/* Card 3: GNN Output */}
-              <div className="lg:col-span-1 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg flex flex-col justify-between relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-32 h-32 text-purple-500">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
-                      </svg>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-lg font-bold text-white mb-4 border-b border-purple-500/20 pb-2">GNN Prediction</h3>
-                    <div className="text-center py-4">
-                        <div className="text-xs text-slate-500 uppercase font-bold mb-1">Signal Strength</div>
-                        <div className={`text-4xl font-bold ${(advancedData.gnnPrediction?.signal || "").includes('Buy') ? 'text-green-400' : (advancedData.gnnPrediction?.signal || "").includes('Sell') ? 'text-red-400' : 'text-yellow-400'}`}>
-                            {advancedData.gnnPrediction?.signal || "Hold"}
-                        </div>
-                        <div className="text-sm font-mono text-slate-400 mt-1">{advancedData.gnnPrediction?.confidence || 0}% Confidence</div>
-                    </div>
-                  </div>
-                  
-                  {/* Vector Viz */}
-                  <div>
-                      <div className="text-[10px] text-slate-500 uppercase font-bold mb-2 text-center">Graph Embedding Vector</div>
-                      <div className="flex gap-1 justify-center h-16 items-end">
-                          {(advancedData.gnnPrediction?.graphEmbedding || []).map((val, idx) => (
-                              <div key={idx} className="w-3 bg-purple-500/60 rounded-t" style={{height: `${val * 100}%`}}></div>
-                          ))}
-                      </div>
-                  </div>
-              </div>
-
-              {/* Summary */}
-              <div className="lg:col-span-3 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6">
-                 <h3 className="text-sm font-bold text-slate-400 uppercase mb-2">Algorithm Summary</h3>
-                 <p className="text-slate-200 text-sm leading-relaxed">{advancedData.summary}</p>
-              </div>
-          </div>
-      )}
-
-      {/* OPTIMAL FIS DESIGN VIEW */}
-      {activeModel === 'optimal-fis' && optimalFisData && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
-              {/* GFS Card */}
-              <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-5 shadow-lg flex flex-col hover:border-purple-500/50 transition-colors">
-                  <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-base font-bold text-white flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
-                          Genetic-Fuzzy (GFS)
-                      </h3>
-                      <span className="text-xs bg-cyan-900/30 text-cyan-400 px-2 py-0.5 rounded border border-cyan-500/30">{optimalFisData.gfsAnalysis?.optimizationStatus}</span>
-                  </div>
-                  <div className="mb-4">
-                      <div className="flex justify-between text-xs mb-1 text-slate-400">
-                          <span>Optimization Score</span>
-                          <span>{optimalFisData.gfsAnalysis?.score}/100</span>
-                      </div>
-                      <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                          <div className="h-full bg-cyan-500" style={{width: `${optimalFisData.gfsAnalysis?.score || 0}%`}}></div>
-                      </div>
-                  </div>
-                  <p className="text-xs text-slate-400 leading-relaxed flex-1">{optimalFisData.gfsAnalysis?.description}</p>
-              </div>
-
-              {/* NFS Card */}
-              <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-5 shadow-lg flex flex-col hover:border-purple-500/50 transition-colors">
-                  <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-base font-bold text-white flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-pink-400"></span>
-                          Neuro-Fuzzy (NFS)
-                      </h3>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                      <div className="bg-[#1e293b] p-2 rounded text-center">
-                          <div className="text-[10px] text-slate-500 uppercase font-bold">Network Depth</div>
-                          <div className="text-lg font-mono text-pink-400">{optimalFisData.nfsAnalysis?.networkDepth}</div>
-                      </div>
-                      <div className="bg-[#1e293b] p-2 rounded text-center">
-                          <div className="text-[10px] text-slate-500 uppercase font-bold">Learning Rate</div>
-                          <div className="text-lg font-mono text-pink-400">{optimalFisData.nfsAnalysis?.learningRate}</div>
-                      </div>
-                  </div>
-                  <p className="text-xs text-slate-400 leading-relaxed flex-1">{optimalFisData.nfsAnalysis?.description}</p>
-              </div>
-
-              {/* HFS Card */}
-              <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-5 shadow-lg flex flex-col hover:border-purple-500/50 transition-colors">
-                  <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-base font-bold text-white flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-purple-400"></span>
-                          Hierarchical (HFS)
-                      </h3>
-                  </div>
-                  <div className="flex items-center gap-4 mb-4">
-                      <div className="flex-1 text-center">
-                          <div className="text-2xl font-bold text-purple-400">{optimalFisData.hfsAnalysis?.reducedRules}</div>
-                          <div className="text-[10px] text-slate-500 uppercase">Rules Reduced</div>
-                      </div>
-                      <div className="w-px h-8 bg-slate-700"></div>
-                      <div className="flex-1 text-center">
-                          <div className="text-2xl font-bold text-purple-400">{optimalFisData.hfsAnalysis?.layers}</div>
-                          <div className="text-[10px] text-slate-500 uppercase">Layers</div>
-                      </div>
-                  </div>
-                  <p className="text-xs text-slate-400 leading-relaxed flex-1">{optimalFisData.hfsAnalysis?.description}</p>
-              </div>
-
-              {/* EFS Card */}
-              <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-5 shadow-lg flex flex-col hover:border-purple-500/50 transition-colors">
-                  <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-base font-bold text-white flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-green-400"></span>
-                          Evolving (EFS)
-                      </h3>
-                      <span className={`text-xs px-2 py-0.5 rounded border ${optimalFisData.efsAnalysis?.evolvingStatus === 'Expanding' ? 'bg-green-900/30 text-green-400 border-green-500/30' : 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30'}`}>
-                          {optimalFisData.efsAnalysis?.evolvingStatus}
-                      </span>
-                  </div>
-                  <div className="mb-4">
-                      <div className="flex justify-between text-xs mb-1 text-slate-400">
-                          <span>Adaptation Speed</span>
-                          <span>{optimalFisData.efsAnalysis?.adaptationSpeed}ms</span>
-                      </div>
-                      <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                          <div className="h-full bg-green-500" style={{width: `${Math.min(optimalFisData.efsAnalysis?.adaptationSpeed || 0, 100)}%`}}></div>
-                      </div>
-                  </div>
-                  <p className="text-xs text-slate-400 leading-relaxed flex-1">{optimalFisData.efsAnalysis?.description}</p>
-              </div>
-
-              {/* MFS Card */}
-              <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-5 shadow-lg flex flex-col hover:border-purple-500/50 transition-colors">
-                  <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-base font-bold text-white flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-orange-400"></span>
-                          Multiobjective (MFS)
-                      </h3>
-                      {optimalFisData.mfsAnalysis?.paretoOptimal && (
-                          <span className="text-[10px] bg-orange-900/30 text-orange-400 px-2 py-0.5 rounded border border-orange-500/30">Pareto Optimal</span>
-                      )}
-                  </div>
-                  <div className="flex items-end justify-between h-16 gap-2 mb-4 px-4">
-                       <div className="w-8 bg-slate-700 relative group h-full rounded-t">
-                           <div className="absolute bottom-0 w-full bg-blue-500 rounded-t transition-all" style={{height: `${optimalFisData.mfsAnalysis?.accuracy || 0}%`}}></div>
-                           <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] uppercase text-slate-500">Acc</span>
-                       </div>
-                       <div className="w-8 bg-slate-700 relative group h-full rounded-t">
-                           <div className="absolute bottom-0 w-full bg-orange-500 rounded-t transition-all" style={{height: `${optimalFisData.mfsAnalysis?.interpretability || 0}%`}}></div>
-                           <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] uppercase text-slate-500">Int</span>
-                       </div>
-                  </div>
-                  <p className="text-xs text-slate-400 leading-relaxed flex-1 mt-4">{optimalFisData.mfsAnalysis?.description}</p>
-              </div>
-
-              {/* Overall Summary */}
-              <div className="lg:col-span-1 bg-[#1e293b]/50 rounded-xl border border-purple-500/30 p-5 shadow-lg flex flex-col justify-center">
-                  <h3 className="text-sm font-bold text-slate-300 uppercase mb-3 text-center">Optimization Synthesis</h3>
-                  <p className="text-xs text-slate-300 leading-relaxed text-center italic">
-                      "{optimalFisData.summary}"
+              <div className="mt-12 text-center max-w-lg">
+                  <p className="text-slate-500 text-xs italic leading-relaxed">
+                      Enter a ticker above to initiate the Quantum MCDM Pipeline. The system will run through the Delphi validation, DEMATEL causal mapping, and Spherical Fuzzy uncertainty modeling to generate an optimal consensus decision.
                   </p>
               </div>
           </div>
       )}
 
-      {/* FFTS-PLPR VIEW */}
-      {activeModel === 'ffts-plpr' && fftsData && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
-             {/* Factor Split */}
-             <div className="lg:col-span-1 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
-                <h3 className="text-lg font-bold text-white mb-4 border-b border-purple-500/20 pb-2">Two-Factor Analysis</h3>
-                
-                <div className="mb-6">
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs font-bold text-cyan-400 uppercase">Internal Trend</span>
-                        <span className="text-sm font-mono text-white">{((fftsData.twoFactors?.internalTrend?.strength || 0) * 100).toFixed(0)}%</span>
-                    </div>
-                    <div className="w-full bg-slate-800 h-2 rounded-full mb-2">
-                        <div className="bg-cyan-500 h-2 rounded-full" style={{width: `${(fftsData.twoFactors?.internalTrend?.strength || 0) * 100}%`}}></div>
-                    </div>
-                    <p className="text-[10px] text-slate-400">{fftsData.twoFactors?.internalTrend?.description}</p>
-                </div>
+      {/* RESULTS VIEW */}
+      {activeModel === 'quantum-mcdm' && mcdmData && (
+          <div className="animate-fade-in space-y-8">
+              {/* PHASES 1 & 2: Delphi & DEMATEL */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Delphi Card */}
+                  <div className="bg-[#0f172a] rounded-xl border border-emerald-500/20 p-6 shadow-2xl">
+                      <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Phase 1-2: Delphi & Criteria Validation</h3>
+                      <div className="space-y-4">
+                          {mcdmData.delphiValidation.map((c, i) => (
+                              <div key={i} className="flex items-center justify-between p-3 bg-slate-900/40 rounded border border-white/5">
+                                  <div>
+                                      <div className="text-xs font-bold text-slate-200">{c.criteria}</div>
+                                      <div className="text-[9px] text-emerald-500 uppercase font-black">{c.status}</div>
+                                  </div>
+                                  <div className="text-right">
+                                      <div className="text-sm font-mono text-white font-bold">{Math.round(c.validationScore * 100)}%</div>
+                                      <div className="w-16 h-1 bg-slate-800 rounded-full mt-1 overflow-hidden">
+                                          <div className="h-full bg-emerald-500" style={{ width: `${c.validationScore * 100}%` }}></div>
+                                      </div>
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
 
-                <div>
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs font-bold text-pink-400 uppercase">External Shock</span>
-                        <span className="text-sm font-mono text-white">{((fftsData.twoFactors?.externalDisturbance?.impact || 0) * 100).toFixed(0)}%</span>
-                    </div>
-                    <div className="w-full bg-slate-800 h-2 rounded-full mb-2">
-                        <div className="bg-pink-500 h-2 rounded-full" style={{width: `${(fftsData.twoFactors?.externalDisturbance?.impact || 0) * 100}%`}}></div>
-                    </div>
-                    <p className="text-[10px] text-slate-400">{fftsData.twoFactors?.externalDisturbance?.description}</p>
-                </div>
-             </div>
+                  {/* DEMATEL Causal Map */}
+                  <div className="bg-[#0f172a] rounded-xl border border-purple-500/20 p-6 shadow-2xl">
+                      <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Phase 3: DEMATEL Causal Analysis</h3>
+                      <div className="h-64">
+                          <ResponsiveContainer width="100%" height="100%">
+                              <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2e39" opacity={0.3} />
+                                  <XAxis type="number" dataKey="centrality" name="Centrality (R+C)" stroke="#64748b" label={{ value: 'Centrality (R+C)', position: 'insideBottom', offset: -5, fontSize: 10, fill: '#64748b' }} />
+                                  <YAxis type="number" dataKey="causality" name="Causality (R-C)" stroke="#64748b" label={{ value: 'Causality (R-C)', angle: -90, position: 'insideLeft', fontSize: 10, fill: '#64748b' }} />
+                                  <ZAxis type="number" range={[100, 400]} />
+                                  <Tooltip cursor={{ strokeDasharray: '3 3' }} content={({ active, payload }) => {
+                                      if (active && payload && payload.length) {
+                                          return (
+                                              <div className="bg-slate-900 border border-slate-700 p-2 rounded text-[10px] shadow-2xl">
+                                                  <p className="font-bold text-white mb-1 uppercase tracking-tighter">{payload[0].payload.criteria}</p>
+                                                  <p className="text-slate-400">Type: <span className={payload[0].payload.type === 'Cause' ? 'text-emerald-400' : 'text-rose-400'}>{payload[0].payload.type}</span></p>
+                                                  <p className="text-slate-400 font-mono">Index: {payload[0].payload.causality.toFixed(2)}</p>
+                                              </div>
+                                          );
+                                      }
+                                      return null;
+                                  }} />
+                                  <Scatter name="Criteria" data={mcdmData.dematelAnalysis}>
+                                      {mcdmData.dematelAnalysis.map((entry, index) => (
+                                          <Cell key={`cell-${index}`} fill={entry.type === 'Cause' ? '#10b981' : '#f43f5e'} />
+                                      ))}
+                                  </Scatter>
+                              </ScatterChart>
+                          </ResponsiveContainer>
+                      </div>
+                      <div className="flex justify-center gap-6 mt-4">
+                          <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></span><span className="text-[10px] text-slate-500 font-black uppercase tracking-tighter">Cause Driver</span></div>
+                          <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span><span className="text-[10px] text-slate-500 font-black uppercase tracking-tighter">Effect Receiver</span></div>
+                      </div>
+                  </div>
+              </div>
 
-             {/* PLPLR Rules */}
-             <div className="lg:col-span-1 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg flex flex-col">
-                 <h3 className="text-lg font-bold text-white mb-4 border-b border-purple-500/20 pb-2">Probabilistic Linguistic Preferences</h3>
-                 <div className="space-y-3 flex-1 overflow-y-auto max-h-[250px] custom-scrollbar pr-2">
-                     {(fftsData.plprRules || []).map(rule => (
-                         <div key={rule.ruleId} className="bg-[#1e293b]/50 border border-purple-500/10 p-3 rounded">
-                             <div className="flex justify-between text-[10px] uppercase font-bold text-slate-500 mb-1">
-                                 <span>{rule.ruleId}</span>
-                                 <span>Prob: {rule.probability}</span>
-                             </div>
-                             <div className="text-sm text-slate-200 mb-1 font-medium">"{rule.condition}"</div>
-                             <div className="flex items-center gap-2">
-                                 <span className="text-xs text-purple-400">Preference:</span>
-                                 <span className="text-xs bg-purple-900/30 text-purple-300 px-2 py-0.5 rounded">{rule.preferenceBehavior}</span>
-                             </div>
-                         </div>
-                     ))}
-                 </div>
-             </div>
+              {/* PHASE 3: Quantum Spherical Fuzzy */}
+              <div className="bg-gradient-to-br from-slate-800/40 to-slate-900/40 rounded-2xl border border-cyan-500/20 p-8 shadow-2xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+                      <svg className="w-48 h-48 text-cyan-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                  </div>
+                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-8">Phase 4: Quantum Spherical Fuzzy Modeling</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-8 items-center">
+                      <div className="md:col-span-1 flex flex-col items-center">
+                          <div className="relative w-40 h-40">
+                              <div className="absolute inset-0 rounded-full border-2 border-cyan-500/10 flex items-center justify-center animate-pulse">
+                                  <div className="w-28 h-28 rounded-full border-4 border-cyan-400 opacity-20"></div>
+                              </div>
+                              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                  <span className="text-4xl font-black text-white">{Math.round((mcdmData.sphericalFuzzyModeling.membership - mcdmData.sphericalFuzzyModeling.nonMembership) * 100)}%</span>
+                                  <span className="text-[9px] font-black text-cyan-400 uppercase tracking-[0.2em]">Quantum State</span>
+                              </div>
+                          </div>
+                      </div>
+                      <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-6">
+                          <div className="bg-slate-900/50 p-5 rounded-xl border border-emerald-500/10 shadow-inner">
+                              <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1 block">Membership (α)</span>
+                              <div className="text-2xl font-mono text-emerald-400 font-bold">{(mcdmData.sphericalFuzzyModeling.membership).toFixed(3)}</div>
+                              <div className="w-full h-1.5 bg-slate-800 mt-2 rounded-full overflow-hidden">
+                                  <div className="h-full bg-emerald-500 shadow-[0_0_8px_#10b981]" style={{ width: `${mcdmData.sphericalFuzzyModeling.membership * 100}%` }}></div>
+                              </div>
+                          </div>
+                          <div className="bg-slate-900/50 p-5 rounded-xl border border-rose-500/10 shadow-inner">
+                              <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1 block">Non-Membership (β)</span>
+                              <div className="text-2xl font-mono text-rose-400 font-bold">{(mcdmData.sphericalFuzzyModeling.nonMembership).toFixed(3)}</div>
+                              <div className="w-full h-1.5 bg-slate-800 mt-2 rounded-full overflow-hidden">
+                                  <div className="h-full bg-rose-500 shadow-[0_0_8px_#f43f5e]" style={{ width: `${mcdmData.sphericalFuzzyModeling.nonMembership * 100}%` }}></div>
+                              </div>
+                          </div>
+                          <div className="bg-slate-900/50 p-5 rounded-xl border border-amber-500/10 shadow-inner">
+                              <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1 block">Hesitancy (γ)</span>
+                              <div className="text-2xl font-mono text-amber-400 font-bold">{(mcdmData.sphericalFuzzyModeling.hesitancy).toFixed(3)}</div>
+                              <div className="w-full h-1.5 bg-slate-800 mt-2 rounded-full overflow-hidden">
+                                  <div className="h-full bg-amber-500 shadow-[0_0_8px_#f59e0b]" style={{ width: `${mcdmData.sphericalFuzzyModeling.hesitancy * 100}%` }}></div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
 
-             {/* Similarity & Forecast */}
-             <div className="lg:col-span-1 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg relative overflow-hidden flex flex-col justify-between">
-                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-32 h-32 text-cyan-500">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                 </div>
+              {/* PHASE 5-6: Alternative Evaluation Triad */}
+              <div className="bg-slate-900/40 rounded-xl border border-purple-500/20 overflow-hidden shadow-2xl">
+                  <div className="px-6 py-4 border-b border-purple-500/10 flex justify-between items-center bg-slate-800/30">
+                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Phase 5-6: Alternative Evaluation & Multi-Method Ranking</h3>
+                      <span className="text-[9px] text-purple-400 font-mono font-bold">TRIAD: COCOSO | TOPSIS | MULTIMOORA</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                      <table className="w-full text-left">
+                          <thead>
+                              <tr className="text-[9px] text-slate-500 uppercase tracking-widest border-b border-white/5 bg-slate-900/60">
+                                  <th className="px-6 py-4">Strategic Alternative</th>
+                                  <th className="px-6 py-4 text-center">COCOSO</th>
+                                  <th className="px-6 py-4 text-center">TOPSIS</th>
+                                  <th className="px-6 py-4 text-center">MULTIMOORA</th>
+                                  <th className="px-6 py-4 text-right">Aggregated Score</th>
+                              </tr>
+                          </thead>
+                          <tbody className="text-xs font-mono">
+                              {mcdmData.alternativeEvaluation.map((alt, i) => (
+                                  <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                      <td className="px-6 py-4 text-slate-200 font-bold">{alt.alternative}</td>
+                                      <td className="px-6 py-4 text-center"><span className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700">R-{alt.cocosoRank}</span></td>
+                                      <td className="px-6 py-4 text-center"><span className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700">R-{alt.topsisRank}</span></td>
+                                      <td className="px-6 py-4 text-center"><span className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700">R-{alt.multimooraRank}</span></td>
+                                      <td className="px-6 py-4 text-right text-purple-400 font-black">{(alt.aggregatedScore).toFixed(4)}</td>
+                                  </tr>
+                              ))}
+                          </tbody>
+                      </table>
+                  </div>
+              </div>
 
-                 <div>
-                     <h3 className="text-lg font-bold text-white mb-4 border-b border-purple-500/20 pb-2">Similarity Forecast</h3>
-                     <div className="bg-[#1e293b] p-3 rounded mb-4">
-                         <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Method: {fftsData.similarityAnalysis?.methodUsed}</div>
-                         <div className="flex justify-between items-center">
-                             <span className="text-xs text-slate-300">Distance from History</span>
-                             <span className="font-mono text-cyan-400 font-bold">{(fftsData.similarityAnalysis?.distanceValue || 0).toFixed(4)}</span>
-                         </div>
-                         <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2">
-                             <div className="bg-cyan-500 h-1.5 rounded-full" style={{width: `${Math.max(0, 1 - (fftsData.similarityAnalysis?.distanceValue || 0)) * 100}%`}}></div>
-                         </div>
-                         <div className="text-[10px] text-slate-500 mt-1 text-right">Matches Rule: {fftsData.similarityAnalysis?.closestHistoricalRuleId}</div>
-                     </div>
-                 </div>
-
-                 <div className="text-center">
-                     <div className="text-xs text-slate-400 uppercase tracking-widest mb-1">Predicted Direction</div>
-                     <div className={`text-3xl font-bold ${fftsData.forecast?.direction === 'Bullish' ? 'text-green-400' : fftsData.forecast?.direction === 'Bearish' ? 'text-red-400' : 'text-yellow-400'}`}>
-                         {fftsData.forecast?.direction || "Neutral"}
-                     </div>
-                     <div className="text-sm font-mono text-white mt-1">Target: ${fftsData.forecast?.priceTarget?.toFixed(2) || "0.00"}</div>
-                     <div className="text-xs text-slate-500 mt-1">Confidence: {fftsData.forecast?.confidence || 0}%</div>
-                 </div>
-             </div>
-             
-             {/* Summary */}
-             <div className="lg:col-span-3 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6">
-                 <h3 className="text-sm font-bold text-slate-400 uppercase mb-2">FFTS-PLPR Synthesis</h3>
-                 <p className="text-slate-200 text-sm leading-relaxed">{fftsData.summary}</p>
-             </div>
+              {/* PHASE 7: Final Decision */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  <div className="lg:col-span-8 bg-emerald-900/10 border border-emerald-500/20 p-6 rounded-2xl shadow-2xl">
+                      <h3 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-4">Final Peringkat & Keputusan Optimal</h3>
+                      <div className="space-y-4">
+                          {mcdmData.finalDecision.map((d, i) => (
+                              <div key={i} className={`flex items-start gap-6 p-4 rounded-xl border transition-all duration-300 ${i === 0 ? 'bg-emerald-500/20 border-emerald-500 shadow-lg shadow-emerald-900/20 scale-[1.02]' : 'bg-slate-900/40 border-white/5'}`}>
+                                  <div className={`text-2xl font-black ${i === 0 ? 'text-emerald-400' : 'text-slate-600'}`}>#{d.rank}</div>
+                                  <div className="flex-1">
+                                      <div className={`text-lg font-bold mb-1 ${i === 0 ? 'text-white' : 'text-slate-300'}`}>{d.alternative}</div>
+                                      <p className="text-xs text-slate-400 leading-relaxed italic">"{d.actionableIntel}"</p>
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+                  <div className="lg:col-span-4 bg-slate-900 border border-purple-500/20 p-6 rounded-2xl flex flex-col justify-center text-center shadow-2xl">
+                      <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Pipeline Executive Summary</h3>
+                      <p className="text-sm text-slate-300 leading-relaxed italic leading-relaxed font-serif">
+                          "{mcdmData.summary}"
+                      </p>
+                      <div className="mt-8 pt-6 border-t border-white/5 text-[9px] text-slate-600 font-mono">
+                          ENGINE_REL: 4.1.0-QS-FUZZY
+                      </div>
+                  </div>
+              </div>
           </div>
       )}
     </div>
