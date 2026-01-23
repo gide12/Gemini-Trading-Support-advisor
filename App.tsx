@@ -22,13 +22,15 @@ const App: React.FC = () => {
     return <LandingPage onStart={() => setIsStarted(true)} />;
   }
 
+  const isChartView = currentView === 'chart';
+
   return (
     <div className="min-h-screen bg-[#0B1221] text-slate-200 flex flex-col font-sans fade-in">
       <Header currentView={currentView} onViewChange={setCurrentView} />
       <StockTicker />
       <SentimentTicker />
       
-      <main className="flex-1 max-w-7xl mx-auto w-full p-6 lg:p-10">
+      <main className={`flex-1 w-full flex flex-col ${isChartView ? 'p-0 max-w-none' : 'max-w-7xl mx-auto p-6 lg:p-10'}`}>
         {currentView === 'analysis' && <AnalysisView />}
         {currentView === 'portfolio' && <PortfolioView />}
         {currentView === 'market' && <MarketDataView />}
@@ -39,9 +41,11 @@ const App: React.FC = () => {
         {currentView === 'fuzzy' && <FuzzyLogicView />}
       </main>
       
-      <footer className="py-6 text-center text-slate-600 text-sm border-t border-slate-900 mt-auto">
-        <p>© 2025 Gemini Trading Support. Powered by Google Gemini 2.5 Flash.</p>
-      </footer>
+      {!isChartView && (
+        <footer className="py-6 text-center text-slate-600 text-sm border-t border-slate-900 mt-auto">
+          <p>© 2025 Gemini Trading Support. Powered by Google Gemini 2.5 Flash.</p>
+        </footer>
+      )}
     </div>
   );
 };

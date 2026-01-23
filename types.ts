@@ -43,6 +43,13 @@ export interface TechnicalAnalysisData {
     label: string;
     dateIndex: number; 
   }[];
+  footprintProfile?: {
+    price: number;
+    bidVol: number;
+    askVol: number;
+    isPoc?: boolean;
+    isImbalance?: boolean;
+  }[];
   summary: string;
 }
 
@@ -137,7 +144,79 @@ export interface DeltaGammaHedgeResult { portfolioGreeks: any; hedgingActions: a
 export interface AdvancedPricingResult { ticker: string; bsm: any; heston: any; jumpDiffusion: any; localVol?: any; varianceSwap: any; summary: string; }
 export interface CAPMAPTResult { ticker: string; capm: any; apt: any; summary: string; }
 export interface InvestorView { type: "Absolute" | "Relative"; asset1: string; asset2?: string; expectedReturn: number; confidence: number; }
-export interface FuzzyAnalysisResult { ticker: string; marketMakerBehavior: any; whaleActivity: any; accumulation: any; summary: string; }
-export interface FFFCMGNNResult { ticker: string; famaFrenchFactors: any; fuzzyCognitiveMap: any; gnnPrediction: any; summary: string; }
-export interface OptimalFuzzyDesignResult { ticker: string; gfsAnalysis: any; nfsAnalysis: any; hfsAnalysis: any; efsAnalysis: any; mfsAnalysis: any; summary: string; }
-export interface FFTSPLPRResult { ticker: string; twoFactors: any; plprRules: any; similarityAnalysis: any; forecast: any; summary: string; }
+
+export interface FFFCMGNNResult {
+  ticker: string;
+  famaFrenchFactors: {
+    factor: string;
+    loading: number;
+    significance: "High" | "Med" | "Low";
+  }[];
+  fuzzyCognitiveMap: {
+    node: string;
+    influence: number;
+    target: string;
+    state: "Activated" | "Inhibited" | "Neutral";
+  }[];
+  gnnPrediction: {
+    layers: { name: string; activation: number; status: string }[];
+    latentForecast: number;
+    confidence: number;
+  };
+  summary: string;
+}
+
+export interface OptimalFuzzyDesignResult {
+  ticker: string;
+  systemType: "Mamdani" | "Sugeno";
+  membershipFunctions: {
+    variable: string;
+    sets: {
+      name: "Low" | "Mid" | "High";
+      points: number[];
+    }[];
+  }[];
+  ruleBase: {
+    if: string;
+    then: string;
+    weight: number;
+  }[];
+  defuzzification: {
+    method: string;
+    result: number;
+    label: string;
+  };
+  gfsAnalysis: {
+    generations: number;
+    bestFitness: number;
+  };
+  nfsAnalysis: {
+    neurons: number;
+    errorRate: number;
+  };
+  summary: string;
+}
+
+// Refined: FFTS-PLPR
+export interface FFTSPLPRResult {
+  ticker: string;
+  twoFactorGroups: {
+      group: string;
+      f1_state: string;
+      f2_state: string;
+      probability: number;
+      implication: string;
+  }[];
+  plprDistributions: {
+      term: string;
+      probability: number;
+      label: string;
+  }[];
+  forecast: {
+      linguisticValue: string;
+      numericalEstimate: number;
+      lowerBound: number;
+      upperBound: number;
+  };
+  summary: string;
+}
