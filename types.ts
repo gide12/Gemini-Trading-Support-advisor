@@ -7,7 +7,7 @@ export enum AnalysisType {
   Fundamental = "Fundamental Analysis",
   Technical = "Technical Analysis",
   Clustering = "Cluster Analysis",
-  TotalView = "Nasdaq TotalView",
+  PriceAction = "Price Action Advanced",
   Chart = "Chart",
   Quantum = "Quantum Forecast",
   Ideas = "Trade Ideas",
@@ -17,9 +17,44 @@ export enum AnalysisType {
 
 export type View = 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart';
 
-export interface ChartDataPoint {
-  date: string;
-  price: number;
+export interface PriceActionCandle {
+    time: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+    label?: "HH" | "HL" | "LH" | "LL" | "BOS" | "CHoCH";
+    breakLinePrice?: number;
+}
+
+export interface OrderBlock {
+    type: "Bullish" | "Bearish";
+    top: number;
+    bottom: number;
+    startIdx: number;
+    endIdx: number;
+    label: string;
+}
+
+export interface LiquiditySweep {
+    type: "Grab" | "Sweep";
+    top: number;
+    bottom: number;
+    startIdx: number;
+    endIdx: number;
+    label: string;
+}
+
+export interface PriceActionData {
+  candles: PriceActionCandle[];
+  orderBlocks: OrderBlock[];
+  liquiditySweeps: LiquiditySweep[];
+  targets: { price: number; label: string }[];
+  momentum: { startIdx: number; endIdx: number; direction: "Bullish" | "Bearish"; label: string }[];
+  marketRegime: string;
+  bias: "Bullish" | "Bearish" | "Neutral";
+  summary: string;
 }
 
 export interface TechnicalAnalysisData {
@@ -27,9 +62,12 @@ export interface TechnicalAnalysisData {
   dailyLogReturn?: number;
   trend: "Bullish" | "Bearish" | "Neutral";
   signalStrength: "Strong" | "Moderate" | "Weak";
+  priceHistory: { time: string; price: number; volume: number }[];
   indicators: {
     rsi: string;
+    rsiVal: number;
     macd: string;
+    macdVal: number;
     movingAverages: string;
     bollingerBands: string;
   };
@@ -41,7 +79,8 @@ export interface TechnicalAnalysisData {
     price: number;
     type: "Breakout" | "Breakdown";
     label: string;
-    dateIndex: number; 
+    time: string;
+    confidence: number;
   }[];
   footprintProfile?: {
     price: number;
@@ -56,47 +95,9 @@ export interface TechnicalAnalysisData {
 export interface BrokerIntelData {
     metrics: {
         brokerFlow: { netBuyRatio: number; flowConsistency: number; participantQuality: number; };
-        priceAction: { structureStrength: number; volatilityControl: number; reactionQuality: number; };
-        context: { trendAlignment: number; liquidityPresence: number; };
     };
-    systemStatus: { volumeThresholdMet: boolean; dataGapPercentage: number; noiseDetected: boolean; };
-    activity: string;
     dominantSide: "Net Buy" | "Net Sell" | "Neutral";
-    marketReaction: string;
-    traderBiasNote: string;
-    investorBiasNote: string;
-    dominantFactor: string;
-    summary: string;
-    advancedTable: { type: string; netBuy: string; days: number; impact: string; }[];
-}
-
-export interface QuantumMCDMResult {
-    ticker: string;
-    delphiValidation: { criteria: string; validationScore: number; status: string }[];
-    dematelAnalysis: {
-        criteria: string;
-        centrality: number; // (R+C)
-        causality: number;   // (R-C)
-        type: "Cause" | "Effect";
-    }[];
-    sphericalFuzzyModeling: {
-        membership: number;     // Alpha
-        nonMembership: number;  // Beta
-        hesitancy: number;      // Gamma
-        uncertaintyRadius: number;
-    };
-    alternativeEvaluation: {
-        alternative: string;
-        cocosoRank: number;
-        topsisRank: number;
-        multimooraRank: number;
-        aggregatedScore: number;
-    }[];
-    finalDecision: {
-        rank: number;
-        alternative: string;
-        actionableIntel: string;
-    }[];
+    brokerActivityHistory: { date: string; activity: number }[];
     summary: string;
 }
 
@@ -104,21 +105,10 @@ export interface AnalysisResult {
   ticker: string;
   type: AnalysisType;
   content: string;
-  sentiment?: "Bullish" | "Bearish" | "Neutral";
   sources?: { title: string; url: string }[];
-  financials?: Record<string, string>;
   technicalAnalysis?: TechnicalAnalysisData;
   brokerIntel?: BrokerIntelData;
-  quantumMCDM?: QuantumMCDMResult;
-}
-
-export interface MPTAnalysisResult {
-  currentMetrics: { sharpeRatio: number; expectedReturn: number; volatility: number };
-  optimalMetrics: { sharpeRatio: number; expectedReturn: number; volatility: number };
-  efficientFrontier: { risk: number; return: number }[];
-  suggestions: { ticker: string; action: "Buy" | "Sell" | "Hold"; amount: string; reason: string }[];
-  correlationMatrix: { ticker1: string; ticker2: string; value: number }[];
-  rebalancingContext?: { strategyUsed: string; notes: string; nextRebalanceDate: string };
+  priceAction?: PriceActionData;
 }
 
 export interface TabItem { id: AnalysisType; label: string; }
@@ -134,89 +124,65 @@ export interface BacktestResult {
     impliedVolatility: number;
     callOptionPrice: number;
     putOptionPrice: number;
-    greeks: { delta: number; gamma: number; theta: number; vega: number; rho: number; };
+    greeks?: {
+      delta: number;
+      gamma: number;
+      theta: number;
+      vega: number;
+      rho: number;
+    };
   };
 }
 
 export interface MLPredictionResult { ticker: string; currentPrice: number; predictedPrice: number; confidenceScore: number; volatility: string; modelUsed: string; featureImportance: { feature: string; score: number }[]; predictionPath: { date: string; price: number; upper: number; lower: number }[]; explanation: string; evaluationMetrics: any; tradingMetrics: any; }
 export interface ETFProfile { ticker: string; name: string; topHoldings: { ticker: string; name: string; weight: number; }[]; }
 export interface DeltaGammaHedgeResult { portfolioGreeks: any; hedgingActions: any; sensitivityPath: any; riskSummary: string; }
-export interface AdvancedPricingResult { ticker: string; bsm: any; heston: any; jumpDiffusion: any; localVol?: any; varianceSwap: any; summary: string; }
+export interface AdvancedPricingResult { ticker: string; bsm: any; heston: any; jumpDiffusion: any; varianceSwap: any; summary: string; }
 export interface CAPMAPTResult { ticker: string; capm: any; apt: any; summary: string; }
 export interface InvestorView { type: "Absolute" | "Relative"; asset1: string; asset2?: string; expectedReturn: number; confidence: number; }
 
+export interface MPTAnalysisResult {
+  currentMetrics: { sharpeRatio: number; expectedReturn: number; volatility: number; };
+  optimalMetrics: { sharpeRatio: number; expectedReturn: number; volatility: number; };
+  suggestions: { ticker: string; action: 'Buy' | 'Sell' | 'Hold'; amount: string; reason: string; }[];
+  efficientFrontier: { risk: number; return: number; }[];
+  correlationMatrix?: { ticker1: string; ticker2: string; value: number; }[];
+  rebalancingContext?: { strategyUsed: string; notes: string; nextRebalanceDate: string; };
+}
+
 export interface FFFCMGNNResult {
   ticker: string;
-  famaFrenchFactors: {
-    factor: string;
-    loading: number;
-    significance: "High" | "Med" | "Low";
-  }[];
-  fuzzyCognitiveMap: {
-    node: string;
-    influence: number;
-    target: string;
-    state: "Activated" | "Inhibited" | "Neutral";
-  }[];
-  gnnPrediction: {
-    layers: { name: string; activation: number; status: string }[];
-    latentForecast: number;
-    confidence: number;
-  };
+  famaFrenchFactors: { factor: string; loading: number; significance: "High" | "Med" | "Low"; }[];
+  fuzzyCognitiveMap: { node: string; influence: number; target: string; state: string; }[];
+  gnnPrediction: { layers: { name: string; activation: number; status: string }[]; latentForecast: number; confidence: number; };
   summary: string;
 }
 
 export interface OptimalFuzzyDesignResult {
   ticker: string;
   systemType: "Mamdani" | "Sugeno";
-  membershipFunctions: {
-    variable: string;
-    sets: {
-      name: "Low" | "Mid" | "High";
-      points: number[];
-    }[];
-  }[];
-  ruleBase: {
-    if: string;
-    then: string;
-    weight: number;
-  }[];
-  defuzzification: {
-    method: string;
-    result: number;
-    label: string;
-  };
-  gfsAnalysis: {
-    generations: number;
-    bestFitness: number;
-  };
-  nfsAnalysis: {
-    neurons: number;
-    errorRate: number;
-  };
+  membershipFunctions: { variable: string; sets: { name: "Low" | "Mid" | "High"; points: number[]; }[]; }[];
+  ruleBase: { if: string; then: string; weight: number; }[];
+  defuzzification: { method: string; result: number; label: string; };
+  gfsAnalysis: { generations: number; bestFitness: number; };
+  nfsAnalysis: { neurons: number; errorRate: number; };
   summary: string;
 }
 
-// Refined: FFTS-PLPR
 export interface FFTSPLPRResult {
   ticker: string;
-  twoFactorGroups: {
-      group: string;
-      f1_state: string;
-      f2_state: string;
-      probability: number;
-      implication: string;
-  }[];
-  plprDistributions: {
-      term: string;
-      probability: number;
-      label: string;
-  }[];
-  forecast: {
-      linguisticValue: string;
-      numericalEstimate: number;
-      lowerBound: number;
-      upperBound: number;
-  };
+  twoFactorGroups: { group: string; f1_state: string; f2_state: string; probability: number; implication: string; }[];
+  plprDistributions: { term: string; probability: number; label: string; }[];
+  forecast: { linguisticValue: string; numericalEstimate: number; lowerBound: number; upperBound: number; };
   summary: string;
+}
+
+export interface QuantumMCDMResult {
+    ticker: string;
+    delphiValidation: { criteria: string; validationScore: number; status: string }[];
+    dematelAnalysis: { criteria: string; centrality: number; causality: number; type: "Cause" | "Effect"; }[];
+    sphericalFuzzyModeling: { membership: number; nonMembership: number; hesitancy: number; uncertaintyRadius: number; };
+    alternativeEvaluation: { alternative: string; cocosoRank: number; topsisRank: number; multimooraRank: number; aggregatedScore: number; }[];
+    finalDecision: { rank: number; alternative: string; actionableIntel: string; }[];
+    summary: string;
 }

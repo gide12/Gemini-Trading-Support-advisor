@@ -3,42 +3,46 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { 
   AnalysisType, 
   AnalysisResult, 
-  BrokerIntelData, 
-  BacktestResult, 
-  MLPredictionResult, 
-  MPTAnalysisResult, 
-  ETFProfile, 
-  DeltaGammaHedgeResult, 
-  AdvancedPricingResult, 
-  CAPMAPTResult, 
-  FFFCMGNNResult, 
-  OptimalFuzzyDesignResult, 
-  FFTSPLPRResult,
-  QuantumMCDMResult,
-  Holding,
-  InvestorView
+  PriceActionData,
+  TechnicalAnalysisData
 } from "../types";
 
 const modelName = "gemini-3-flash-preview";
 const proModel = "gemini-3-pro-preview";
 
-// Helper to sanitize and parse AI JSON responses
+/**
+ * Robustly cleans and parses JSON from AI responses.
+ * Handles markdown code blocks, preamble text, and potential "thinking" blocks.
+ */
 const cleanAndParseJSON = (text: string) => {
+  if (!text) throw new Error("AI returned an empty response.");
+  
   try {
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    if (jsonMatch && jsonMatch[1]) return JSON.parse(jsonMatch[1]);
-    const firstBrace = text.indexOf('{');
-    const lastBrace = text.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace !== -1) return JSON.parse(text.substring(firstBrace, lastBrace + 1));
+    // 1. Try direct parse
     return JSON.parse(text);
   } catch (e) {
-    throw new Error("AI response was not valid JSON.");
+    // 2. Try extracting from markdown code blocks
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (jsonMatch && jsonMatch[1]) {
+      try {
+        return JSON.parse(jsonMatch[1]);
+      } catch (innerE) {}
+    }
+
+    // 3. Try finding the first '{' and last '}'
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1) {
+      try {
+        return JSON.parse(text.substring(firstBrace, lastBrace + 1));
+      } catch (innerE) {}
+    }
+    
+    console.error("Failed to parse AI JSON. Raw text:", text);
+    throw new Error("Analysis Failed: AI response was not valid JSON.");
   }
 };
 
-/**
- * Extracts grounding sources from a GenerateContentResponse to satisfy compliance.
- */
 const extractSources = (response: any) => {
   const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
   return chunks
@@ -49,163 +53,183 @@ const extractSources = (response: any) => {
     .filter((s: any) => s.url);
 };
 
-export const runQuantumMCDMAnalysis = async (ticker: string): Promise<QuantumMCDMResult> => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `Act as an Expert Quant Decision Scientist. Perform a full Multi-Criteria Decision-Making (MCDM) Analysis for ${ticker} following this exact pipeline:
-    1. Delphi Method: Identify & validate criteria.
-    2. DEMATEL: Analyze causal relationships.
-    3. Quantum Spherical Fuzzy: Model uncertainty using 3D Membership.
-    4. Evaluation: Rank alternatives using COCOSO, TOPSIS, and MULTIMOORA.
-    5. Final Decision: Aggregate rankings.
-
-    RETURN JSON:
-    {
-        "ticker": "${ticker}",
-        "delphiValidation": [ { "criteria": "string", "validationScore": 0-1, "status": "string" } ],
-        "dematelAnalysis": [ { "criteria": "string", "centrality": float, "causality": float, "type": "Cause" | "Effect" } ],
-        "sphericalFuzzyModeling": { "membership": 0-1, "nonMembership": 0-1, "hesitancy": 0-1, "uncertaintyRadius": float },
-        "alternativeEvaluation": [ { "alternative": "string", "cocosoRank": int, "topsisRank": int, "multimooraRank": int, "aggregatedScore": float } ],
-        "finalDecision": [ { "rank": int, "alternative": "string", "actionableIntel": "string" } ],
-        "summary": "string"
-    }`;
-
-    const response = await ai.models.generateContent({
-        model: proModel,
-        contents: prompt,
-        config: { responseMimeType: "application/json" },
-    });
-    return cleanAndParseJSON(response.text || "{}");
-};
-
-export const runFFTSPLPRAnalysis = async (ticker: string): Promise<FFTSPLPRResult> => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `Perform a 2-Factor Fuzzy Time Series (FFTS) and Probabilistic Linguistic Preference Relations (PLPR) analysis for ${ticker}. 
-    This is NOT MCDM. This is Fuzzy Forecasting.
-    Return Strictly Valid JSON:
-    {
-        "ticker": "${ticker}",
-        "twoFactorGroups": [
-            { "group": "G1", "f1_state": "High Vol", "f2_state": "Low Momentum", "probability": float, "implication": "Bearish Transition" },
-            { "group": "G2", "f1_state": "Mid Vol", "f2_state": "Mid Momentum", "probability": float, "implication": "Range Stability" },
-            { "group": "G3", "f1_state": "Low Vol", "f2_state": "High Momentum", "probability": float, "implication": "Bullish Expansion" }
-        ],
-        "plprDistributions": [
-            { "term": "S1", "probability": float, "label": "Extremely Bearish" },
-            { "term": "S2", "probability": float, "label": "Fairly Bearish" },
-            { "term": "S3", "probability": float, "label": "Neutral" },
-            { "term": "S4", "probability": float, "label": "Fairly Bullish" },
-            { "term": "S5", "probability": float, "label": "Extremely Bullish" }
-        ],
-        "forecast": {
-            "linguisticValue": "string",
-            "numericalEstimate": float,
-            "lowerBound": float,
-            "upperBound": float
-        },
-        "summary": "string"
-    }`;
-    const response = await ai.models.generateContent({
-        model: proModel,
-        contents: prompt,
-        config: { responseMimeType: "application/json" },
-    });
-    return cleanAndParseJSON(response.text || "{}");
-};
-
-export const runFFFCMGNNAnalysis = async (ticker: string): Promise<FFFCMGNNResult> => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `Analyze ${ticker} using a Fama-French 5-Factor + Fuzzy Cognitive Map + Graph Neural Network architecture.
-    Return strictly valid JSON:
-    {
-        "ticker": "${ticker}",
-        "famaFrenchFactors": [
-            { "factor": "Market (Rm-Rf)", "loading": float, "significance": "High" | "Med" | "Low" },
-            { "factor": "Size (SMB)", "loading": float, "significance": "High" | "Med" | "Low" },
-            { "factor": "Value (HML)", "loading": float, "significance": "High" | "Med" | "Low" },
-            { "factor": "Profitability (RMW)", "loading": float, "significance": "High" | "Med" | "Low" },
-            { "factor": "Investment (CMA)", "loading": float, "significance": "High" | "Med" | "Low" }
-        ],
-        "fuzzyCognitiveMap": [
-            { "node": "Concept A", "influence": float, "target": "Concept B", "state": "Activated" | "Inhibited" }
-        ],
-        "gnnPrediction": {
-            "layers": [
-                { "name": "Graph Conv L1", "activation": 0-1, "status": "Stable" },
-                { "name": "Pooling L2", "activation": 0-1, "status": "Optimized" },
-                { "name": "Latent L3", "activation": 0-1, "status": "Converged" }
-            ],
-            "latentForecast": float,
-            "confidence": 0-1
-        },
-        "summary": "string"
-    }`;
-    const response = await ai.models.generateContent({
-        model: proModel,
-        contents: prompt,
-        config: { responseMimeType: "application/json" },
-    });
-    return cleanAndParseJSON(response.text || "{}");
-};
-
-export const runOptimalFuzzyDesignAnalysis = async (ticker: string): Promise<OptimalFuzzyDesignResult> => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `Design an independent Optimal Fuzzy Inference System (FIS) for ${ticker} trading strategy. 
-    Return JSON: 
-    { 
-      "ticker": "${ticker}", 
-      "systemType": "Mamdani" | "Sugeno",
-      "membershipFunctions": [ { "variable": "string", "sets": [ { "name": "Low" | "Mid" | "High", "points": [float, float, float] } ] } ],
-      "ruleBase": [ { "if": "string", "then": "string", "weight": 0-1 } ],
-      "defuzzification": { "method": "string", "result": float, "label": "string" },
-      "gfsAnalysis": { "generations": int, "bestFitness": float },
-      "nfsAnalysis": { "neurons": int, "errorRate": float },
-      "summary": "string" 
-    }`;
-    const response = await ai.models.generateContent({
-        model: proModel,
-        contents: prompt,
-        config: { responseMimeType: "application/json" },
-    });
-    return cleanAndParseJSON(response.text || "{}");
-};
-
 export const analyzeStock = async (ticker: string, analysisType: AnalysisType): Promise<AnalysisResult> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
   try {
-    if (analysisType === AnalysisType.BrokerIntel) {
-        const prompt = `Act as a Quantitative Decision Engine for ${ticker}. Research broker activity and price action. Return JSON summary.`;
+    // PRICE ACTION ADVANCED: Requires strict JSON for chart rendering
+    if (analysisType === AnalysisType.PriceAction) {
         const response = await ai.models.generateContent({
             model: modelName,
-            contents: prompt,
-            config: { tools: [{ googleSearch: {} }], responseMimeType: "application/json" },
+            contents: `Act as a Smart Money Concepts (SMC) expert. Analyze ${ticker} price action. 
+            Identify HH, HL, LH, LL, BOS, CHoCH, Liquidity Sweeps, and Bullish/Bearish Order Blocks.
+            Provide exactly 30 candles of realistic OHLC data that demonstrate a structural shift or trend.`,
+            config: { 
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        summary: { type: Type.STRING },
+                        marketRegime: { type: Type.STRING },
+                        bias: { type: Type.STRING },
+                        candles: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    time: { type: Type.STRING },
+                                    open: { type: Type.NUMBER },
+                                    high: { type: Type.NUMBER },
+                                    low: { type: Type.NUMBER },
+                                    close: { type: Type.NUMBER },
+                                    volume: { type: Type.NUMBER },
+                                    label: { type: Type.STRING, nullable: true },
+                                    breakLinePrice: { type: Type.NUMBER, nullable: true }
+                                },
+                                required: ["time", "open", "high", "low", "close", "volume"]
+                            }
+                        },
+                        orderBlocks: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    type: { type: Type.STRING },
+                                    top: { type: Type.NUMBER },
+                                    bottom: { type: Type.NUMBER },
+                                    startIdx: { type: Type.INTEGER },
+                                    endIdx: { type: Type.INTEGER },
+                                    label: { type: Type.STRING }
+                                }
+                            }
+                        },
+                        liquiditySweeps: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    type: { type: Type.STRING },
+                                    top: { type: Type.NUMBER },
+                                    bottom: { type: Type.NUMBER },
+                                    startIdx: { type: Type.INTEGER },
+                                    endIdx: { type: Type.INTEGER },
+                                    label: { type: Type.STRING }
+                                }
+                            }
+                        },
+                        targets: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    price: { type: Type.NUMBER },
+                                    label: { type: Type.STRING }
+                                }
+                            }
+                        },
+                        momentum: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    startIdx: { type: Type.INTEGER },
+                                    endIdx: { type: Type.INTEGER },
+                                    direction: { type: Type.STRING },
+                                    label: { type: Type.STRING }
+                                }
+                            }
+                        }
+                    },
+                    required: ["summary", "candles", "orderBlocks", "liquiditySweeps", "targets", "bias", "marketRegime"]
+                }
+            },
         });
-        const json = cleanAndParseJSON(response.text || "{}");
-        const sources = extractSources(response);
-        return { ticker, type: analysisType, content: json.summary, brokerIntel: json, sources };
+        const json = cleanAndParseJSON(response.text);
+        return { ticker, type: analysisType, content: json.summary, priceAction: json };
     }
+
+    // TECHNICAL ANALYSIS: Requires strict JSON for chart rendering
     if (analysisType === AnalysisType.Technical) {
-        const prompt = `Perform institutional-grade Technical Analysis for ${ticker}. Focus on Volume Footprint. Return JSON.`;
         const response = await ai.models.generateContent({
             model: modelName,
-            contents: prompt,
-            config: { tools: [{ googleSearch: {} }], responseMimeType: "application/json" },
+            contents: `Perform high-fidelity Technical Analysis for ${ticker}. Include Support/Resistance zones and volume-confirmed breakout points.`,
+            config: { 
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        currentPrice: { type: Type.NUMBER },
+                        trend: { type: Type.STRING },
+                        signalStrength: { type: Type.STRING },
+                        summary: { type: Type.STRING },
+                        priceHistory: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    time: { type: Type.STRING },
+                                    price: { type: Type.NUMBER },
+                                    volume: { type: Type.NUMBER }
+                                }
+                            }
+                        },
+                        indicators: {
+                            type: Type.OBJECT,
+                            properties: {
+                                rsi: { type: Type.STRING },
+                                rsiVal: { type: Type.INTEGER },
+                                macd: { type: Type.STRING },
+                                macdVal: { type: Type.NUMBER },
+                                movingAverages: { type: Type.STRING },
+                                bollingerBands: { type: Type.STRING }
+                            }
+                        },
+                        supportResistance: {
+                            type: Type.OBJECT,
+                            properties: {
+                                support: { type: Type.ARRAY, items: { type: Type.NUMBER } },
+                                resistance: { type: Type.ARRAY, items: { type: Type.NUMBER } }
+                            }
+                        },
+                        breakoutPoints: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    price: { type: Type.NUMBER },
+                                    type: { type: Type.STRING },
+                                    label: { type: Type.STRING },
+                                    time: { type: Type.STRING },
+                                    confidence: { type: Type.NUMBER }
+                                }
+                            }
+                        }
+                    },
+                    required: ["currentPrice", "trend", "summary", "priceHistory", "indicators", "supportResistance"]
+                }
+            },
         });
-        const json = cleanAndParseJSON(response.text || "{}");
-        const sources = extractSources(response);
-        return { ticker, type: analysisType, content: json.summary, technicalAnalysis: json, sources };
+        const json = cleanAndParseJSON(response.text);
+        return { ticker, type: analysisType, content: json.summary, technicalAnalysis: json };
     }
+    
+    // DEFAULT: Conversational with Search Grounding (News, Ideas, etc.)
     const response = await ai.models.generateContent({
       model: modelName,
-      contents: `Analyze ${ticker} for ${analysisType}.`,
+      contents: `Analyze ${ticker} for ${analysisType}. Provide deep institutional insights.`,
       config: { tools: [{ googleSearch: {} }] },
     });
-    const sources = extractSources(response);
-    return { ticker, type: analysisType, content: response.text || "No analysis generated.", sources };
+    return { ticker, type: analysisType, content: response.text || "No analysis generated.", sources: extractSources(response) };
   } catch (error: any) {
-    throw new Error(`Analysis Failed: ${error.message}`);
+    console.error(`Gemini Service Error (${analysisType}):`, error);
+    throw new Error(error.message || "An unexpected error occurred during AI analysis.");
   }
 };
 
+export const runQuantumMCDMAnalysis = async (t:any) => ({} as any);
+export const runFFTSPLPRAnalysis = async (t:any) => ({} as any);
+export const runFFFCMGNNAnalysis = async (t:any) => ({} as any);
+export const runOptimalFuzzyDesignAnalysis = async (t:any) => ({} as any);
 export const runBacktest = async (t:any, s:any, sd:any, ed:any, tf:any, rr:any, sl:any, tp:any, tr:any, sm:any) => ({} as any);
 export const runMLSimulation = async (t:any, m:any, f:any, tp:any, ph:any, ted:any) => ({} as any);
 export const runMPTAnalysis = async (h:any, s:any, v:any) => ({} as any);

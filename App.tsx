@@ -43,7 +43,8 @@ const App: React.FC = () => {
       
       {!isChartView && (
         <footer className="py-6 text-center text-slate-600 text-sm border-t border-slate-900 mt-auto">
-          <p>© 2025 Gemini Trading Support. Powered by Google Gemini 2.5 Flash.</p>
+          {/* Updated footer to reflect actual models in use */}
+          <p>© 2025 Gemini Trading Support. Powered by Google Gemini 3 Flash.</p>
         </footer>
       )}
     </div>

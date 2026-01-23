@@ -21,7 +21,7 @@ const groups = [
     title: "Analytics",
     items: [
       { id: AnalysisType.Technical, label: "Technical", icon: "T" },
-      { id: AnalysisType.TotalView, label: "TotalView L2", icon: "L" },
+      { id: AnalysisType.PriceAction, label: "Price Action Adv", icon: "P" },
       { id: AnalysisType.Clustering, label: "Regime Cluster", icon: "R" },
     ]
   },
