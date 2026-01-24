@@ -12,24 +12,21 @@ const BacktestView: React.FC = () => {
   const [startDate, setStartDate] = useState("2023-01-01");
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   
-  // Risk Management State
   const [riskUnit, setRiskUnit] = useState("1");
   const [rewardUnit, setRewardUnit] = useState("2");
-  
-  // New Exit Parameters
   const [stopLoss, setStopLoss] = useState("2%");
   const [takeProfit, setTakeProfit] = useState("5%");
   const [trailingStop, setTrailingStop] = useState("1.5%");
-  
-  // Simulation Model
   const [simulationModel, setSimulationModel] = useState("Standard (Historical)");
 
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<BacktestResult | null>(null);
 
   const handleRun = async () => {
     setIsLoading(true);
     setResult(null);
+    setError(null);
     try {
         const riskRewardString = `${riskUnit}:${rewardUnit}`;
         const data = await runBacktest(
@@ -44,9 +41,14 @@ const BacktestView: React.FC = () => {
             trailingStop,
             simulationModel
         );
-        setResult(data);
-    } catch (e) {
-        console.error(e);
+        
+        if (!data.trades || data.trades.length === 0) {
+            setError("No Trade Executions Found: Your strategy logic yielded 0 outcomes for this period.");
+        } else {
+            setResult(data);
+        }
+    } catch (e: any) {
+        setError(e.message || "Simulation Failed");
     } finally {
         setIsLoading(false);
     }
@@ -56,12 +58,38 @@ const BacktestView: React.FC = () => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Configuration Panel */}
         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg h-fit">
-            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-red-500">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zm-7.518-.267A8.25 8.25 0 1120.25 10.5M8.288 14.212A5.25 5.25 0 1117.25 10.5" />
-                </svg>
-                Strategy Configuration
-            </h2>
+            <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-8 border-b border-white/5 pb-4">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-red-500">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zm-7.518-.267A8.25 8.25 0 1120.25 10.5M8.288 14.212A5.25 5.25 0 1117.25 10.5" />
+                    </svg>
+                    Strategy Configuration
+                </h2>
+                
+                <div className="bg-[#131b2e] border border-cyan-500/20 rounded-lg p-3 max-w-xs shadow-inner">
+                    <div className="flex items-center gap-1.5 mb-2 text-cyan-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse"></span>
+                        <span className="text-[10px] font-black uppercase tracking-widest">US Market Protocol</span>
+                    </div>
+                    <ul className="space-y-1.5 text-[9px] font-bold text-slate-400">
+                        <li className="flex justify-between border-b border-white/5 pb-1">
+                            <span>Open (9:30–10:30)</span>
+                            <span className="text-amber-500 uppercase">High Vol</span>
+                        </li>
+                        <li className="flex justify-between border-b border-white/5 pb-1">
+                            <span>Lunch (11:30–1:30)</span>
+                            <span className="text-blue-400 uppercase">Sideways</span>
+                        </li>
+                        <li className="flex justify-between border-b border-white/5 pb-1">
+                            <span>Power Hour (3:00–4:00)</span>
+                            <span className="text-emerald-400 uppercase">Trend Path</span>
+                        </li>
+                    </ul>
+                    <div className="mt-2 pt-2 border-t border-white/5 text-[8px] text-slate-500 italic leading-tight">
+                        📌 Don't use formulas without checking market hours.
+                    </div>
+                </div>
+            </div>
             
             <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -102,6 +130,7 @@ const BacktestView: React.FC = () => {
                         <option value="Standard (Historical)">Standard (Historical)</option>
                         <option value="Monte Carlo Simulation">Monte Carlo Simulation</option>
                         <option value="Black-Scholes Model">Black-Scholes Model</option>
+                        <option value="Gordon Constant Growth Model">Gordon Constant Growth Model</option>
                     </select>
                 </div>
 
@@ -121,54 +150,25 @@ const BacktestView: React.FC = () => {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs text-slate-500 mb-1">Risk Unit (R)</label>
-                                <input 
-                                    type="number" 
-                                    value={riskUnit}
-                                    onChange={(e) => setRiskUnit(e.target.value)}
-                                    className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white focus:border-purple-500 outline-none text-sm transition-colors"
-                                />
+                                <input type="number" value={riskUnit} onChange={(e) => setRiskUnit(e.target.value)} className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white outline-none text-sm" />
                             </div>
                             <div>
                                 <label className="block text-xs text-slate-500 mb-1">Reward Unit (R)</label>
-                                 <input 
-                                    type="number" 
-                                    value={rewardUnit}
-                                    onChange={(e) => setRewardUnit(e.target.value)}
-                                    className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white focus:border-purple-500 outline-none text-sm transition-colors"
-                                />
+                                 <input type="number" value={rewardUnit} onChange={(e) => setRewardUnit(e.target.value)} className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white outline-none text-sm" />
                             </div>
                         </div>
-
                         <div className="grid grid-cols-3 gap-3 pt-2 border-t border-purple-500/10">
                             <div>
                                 <label className="block text-xs text-slate-500 mb-1">Stop Loss</label>
-                                <input 
-                                    type="text" 
-                                    value={stopLoss}
-                                    onChange={(e) => setStopLoss(e.target.value)}
-                                    placeholder="2%"
-                                    className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white focus:border-purple-500 outline-none text-sm transition-colors"
-                                />
+                                <input type="text" value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} placeholder="2%" className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white outline-none text-sm" />
                             </div>
                             <div>
                                 <label className="block text-xs text-slate-500 mb-1">Take Profit</label>
-                                <input 
-                                    type="text" 
-                                    value={takeProfit}
-                                    onChange={(e) => setTakeProfit(e.target.value)}
-                                    placeholder="5%"
-                                    className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white focus:border-purple-500 outline-none text-sm transition-colors"
-                                />
+                                <input type="text" value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} placeholder="5%" className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white outline-none text-sm" />
                             </div>
                             <div>
                                 <label className="block text-xs text-slate-500 mb-1">Trailing Stop</label>
-                                <input 
-                                    type="text" 
-                                    value={trailingStop}
-                                    onChange={(e) => setTrailingStop(e.target.value)}
-                                    placeholder="1.5%"
-                                    className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white focus:border-purple-500 outline-none text-sm transition-colors"
-                                />
+                                <input type="text" value={trailingStop} onChange={(e) => setTrailingStop(e.target.value)} placeholder="1.5%" className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white outline-none text-sm" />
                             </div>
                         </div>
                     </div>
@@ -177,21 +177,11 @@ const BacktestView: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-slate-400 mb-1">Start Date</label>
-                        <input 
-                            type="date" 
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white focus:border-purple-500 outline-none text-sm transition-colors"
-                        />
+                        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white outline-none text-sm" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-slate-400 mb-1">End Date</label>
-                        <input 
-                            type="date" 
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white focus:border-purple-500 outline-none text-sm transition-colors"
-                        />
+                        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full bg-[#1e293b] border border-purple-500/30 rounded p-2 text-white outline-none text-sm" />
                     </div>
                 </div>
 
@@ -207,26 +197,58 @@ const BacktestView: React.FC = () => {
 
         {/* Results Panel */}
         <div className="lg:col-span-2 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg min-h-[500px]">
-            {!result && !isLoading && (
-                <div className="h-full flex flex-col items-center justify-center text-slate-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor" className="w-16 h-16 mb-4 opacity-50 text-purple-500/30">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
-                    </svg>
-                    <p>Configure settings and run backtest to see results.</p>
+            {!result && !isLoading && !error && (
+                <div className="h-full flex flex-col items-center justify-center text-slate-500 p-10 text-center">
+                    <div className="w-24 h-24 mb-6 border-2 border-dashed border-slate-700 rounded-full flex items-center justify-center opacity-30 animate-pulse">
+                        <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                    </div>
+                    <h3 className="text-white font-bold text-lg mb-2">Simulation Engine Idle</h3>
+                    <p className="max-w-md text-sm leading-relaxed">Select an asset and define your strategy logic to initialize the pathway calculation engine. Ensure your entry rules align with US Market session volatility.</p>
                 </div>
             )}
             
             {isLoading && (
-                <div className="h-full flex items-center justify-center">
-                     <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
+                <div className="h-full flex flex-col items-center justify-center">
+                     <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mb-4"></div>
+                     <span className="text-[10px] font-black text-cyan-400 uppercase tracking-[0.4em]">Crunching Historical Nodes...</span>
+                </div>
+            )}
+
+            {error && (
+                <div className="h-full flex flex-col items-center justify-center animate-fade-in">
+                    <div className="bg-rose-950/20 border border-rose-500/30 rounded-2xl p-8 max-w-lg">
+                        <div className="flex items-center gap-3 text-rose-500 mb-4">
+                            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <h3 className="text-xl font-bold uppercase tracking-tight">Strategy Execution Void</h3>
+                        </div>
+                        <p className="text-sm text-slate-300 leading-relaxed mb-6">
+                            The simulation engine processed the dataset but found <strong>zero outcomes</strong> matching your current criteria. This often happens when logic is too restrictive or if the asset remained in a "Sideways" regime during your target timeframe.
+                        </p>
+                        <div className="bg-black/30 p-4 rounded-xl space-y-3">
+                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Diagnostic Pathway Check:</h4>
+                            <div className="flex items-center gap-3 text-xs">
+                                <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                                <span className="text-slate-400 italic">Check if strategy logic requires volatility only available at <strong>Market Open</strong>.</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs">
+                                <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+                                <span className="text-slate-400 italic">Are indicators flatlined during the <strong>Lunch Session</strong>?</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs">
+                                <div className="w-2 h-2 rounded-full bg-purple-400"></div>
+                                <span className="text-slate-400 italic">Try relaxing your <strong>Timeframe</strong> or <strong>Stop Loss</strong> parameters.</span>
+                            </div>
+                        </div>
+                        <button onClick={handleRun} className="mt-8 w-full py-2 bg-slate-800 hover:bg-slate-700 text-white rounded font-bold transition-all border border-slate-700">Re-Initialize Path</button>
+                    </div>
                 </div>
             )}
 
             {result && (
-                <div className="space-y-8">
+                <div className="space-y-8 animate-fade-in">
                     <div className="flex justify-between items-center border-b border-purple-500/20 pb-4">
                         <h3 className="text-lg font-bold text-white">Simulation Results</h3>
-                        <span className="px-3 py-1 rounded-full bg-cyan-900/30 text-cyan-400 text-xs font-bold border border-cyan-500/30">
+                        <span className="px-3 py-1 rounded-full bg-cyan-900/30 text-cyan-400 text-xs font-bold border border-cyan-500/30 uppercase">
                             {simulationModel}
                         </span>
                     </div>
@@ -242,7 +264,7 @@ const BacktestView: React.FC = () => {
                         </div>
                         <div className="bg-slate-800/50 p-4 rounded border border-purple-500/20">
                             <div className="text-slate-400 text-xs uppercase">Max Drawdown</div>
-                            <div className="text-2xl font-mono font-bold text-red-400">{result.metrics?.maxDrawdown || "0%"}</div>
+                            <div className={`text-2xl font-mono font-bold ${(result.metrics?.maxDrawdown || "").includes('-') ? 'text-red-400' : 'text-slate-200'}`}>{result.metrics?.maxDrawdown || "0%"}</div>
                         </div>
                         <div className="bg-slate-800/50 p-4 rounded border border-purple-500/20">
                             <div className="text-slate-400 text-xs uppercase">Trades</div>
@@ -250,89 +272,44 @@ const BacktestView: React.FC = () => {
                         </div>
                     </div>
 
-                    {result.blackScholesMetrics && (
-                        <div className="bg-slate-800/30 border border-purple-500/30 rounded-xl p-5 animate-fade-in">
-                             <div className="flex justify-between items-center mb-4">
-                                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-purple-400">
-                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                     </svg>
-                                     Black-Scholes Pricing & Greeks
-                                 </h3>
-                                 <div className="text-xs bg-slate-900 px-2 py-1 rounded text-slate-400 border border-slate-700">
-                                     IV: {((result.blackScholesMetrics.impliedVolatility || 0) * 100).toFixed(1)}%
-                                 </div>
-                             </div>
-
-                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                 <div className="md:col-span-1 space-y-3">
-                                     <div className="bg-[#1e293b] p-3 rounded border border-purple-500/20">
-                                         <div className="text-[10px] text-green-400 uppercase font-bold mb-1">Call Price</div>
-                                         <div className="text-xl font-mono text-white">${(result.blackScholesMetrics.callOptionPrice || 0).toFixed(2)}</div>
-                                     </div>
-                                     <div className="bg-[#1e293b] p-3 rounded border border-purple-500/20">
-                                         <div className="text-[10px] text-red-400 uppercase font-bold mb-1">Put Price</div>
-                                         <div className="text-xl font-mono text-white">${(result.blackScholesMetrics.putOptionPrice || 0).toFixed(2)}</div>
-                                     </div>
-                                 </div>
-
-                                 <div className="md:col-span-2 grid grid-cols-2 gap-3">
-                                     <div className="bg-[#1e293b] p-2 rounded flex justify-between items-center">
-                                         <span className="text-xs text-slate-400 uppercase">Delta (Δ)</span>
-                                         <span className="font-mono text-cyan-300">{(result.blackScholesMetrics.greeks?.delta || 0).toFixed(3)}</span>
-                                     </div>
-                                     <div className="bg-[#1e293b] p-2 rounded flex justify-between items-center">
-                                         <span className="text-xs text-slate-400 uppercase">Gamma (Γ)</span>
-                                         <span className="font-mono text-purple-300">{(result.blackScholesMetrics.greeks?.gamma || 0).toFixed(3)}</span>
-                                     </div>
-                                     <div className="bg-[#1e293b] p-2 rounded flex justify-between items-center">
-                                         <span className="text-xs text-slate-400 uppercase">Theta (Θ)</span>
-                                         <span className="font-mono text-red-300">{(result.blackScholesMetrics.greeks?.theta || 0).toFixed(3)}</span>
-                                     </div>
-                                     <div className="bg-[#1e293b] p-2 rounded flex justify-between items-center">
-                                         <span className="text-xs text-slate-400 uppercase">Vega (ν)</span>
-                                         <span className="font-mono text-green-300">{(result.blackScholesMetrics.greeks?.vega || 0).toFixed(3)}</span>
-                                     </div>
-                                     <div className="col-span-2 bg-[#1e293b] p-2 rounded flex justify-between items-center">
-                                         <span className="text-xs text-slate-400 uppercase">Rho (ρ)</span>
-                                         <span className="font-mono text-blue-300">{(result.blackScholesMetrics.greeks?.rho || 0).toFixed(3)}</span>
-                                     </div>
-                                 </div>
-                             </div>
-                        </div>
-                    )}
-
                     {/* Equity Curve */}
                     <div className="h-64 w-full">
                          <h3 className="text-sm font-semibold text-slate-400 mb-4">Equity Curve</h3>
                          <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={result.equityCurve || []}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                              <XAxis dataKey="date" stroke="#64748b" tick={{fontSize: 10}} />
-                              <YAxis stroke="#64748b" tick={{fontSize: 10}} domain={['auto', 'auto']} />
+                              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                              <XAxis dataKey="date" stroke="#64748b" tick={{fontSize: 10}} hide />
+                              <YAxis stroke="#64748b" tick={{fontSize: 10, fontFamily: 'monospace'}} domain={['auto', 'auto']} axisLine={false} />
                               <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155' }} />
-                              <Line type="monotone" dataKey="value" stroke="#06b6d4" strokeWidth={2} dot={false} />
+                              <Line type="monotone" dataKey="value" stroke="#06b6d4" strokeWidth={3} dot={{r: 4, fill: '#06b6d4'}} activeDot={{r: 6, stroke: '#fff', strokeWidth: 2}} />
                             </LineChart>
                          </ResponsiveContainer>
                     </div>
 
                     {/* Summary & Trade Log */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <h3 className="text-sm font-semibold text-slate-400 mb-2">AI Analysis</h3>
-                            <div className="text-sm text-slate-300 prose prose-invert">
+                        <div className="bg-black/20 p-4 rounded-xl border border-white/5">
+                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
+                                Pathway Insight
+                            </h3>
+                            <div className="text-sm text-slate-300 italic leading-relaxed">
                                 {result.summary}
                             </div>
                         </div>
                         <div>
-                            <h3 className="text-sm font-semibold text-slate-400 mb-2">Key Trades</h3>
+                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Recent Executions</h3>
                             <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
                                 {(result.trades || []).map((t, i) => (
-                                    <div key={i} className="flex justify-between text-sm bg-slate-800/30 p-2 rounded border border-purple-500/10">
-                                        <span className="text-slate-400">{t.date}</span>
-                                        <span className={`font-bold ${t.type === 'Buy' ? 'text-green-400' : 'text-red-400'}`}>{t.type}</span>
-                                        <span className="text-slate-200">@ {t.price}</span>
-                                        <span className="font-mono text-slate-300">{t.result}</span>
+                                    <div key={i} className="flex justify-between items-center text-xs bg-slate-800/30 p-2.5 rounded border border-purple-500/10 hover:border-purple-500/30 transition-colors">
+                                        <div className="flex flex-col">
+                                            <span className="text-slate-500 font-bold">{t.date}</span>
+                                            <span className={`font-black uppercase ${t.type === 'Buy' ? 'text-green-400' : 'text-rose-400'}`}>{t.type}</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-white font-mono font-bold">${t.price.toFixed(2)}</div>
+                                            <div className="text-[10px] font-bold text-slate-500">{t.result}</div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

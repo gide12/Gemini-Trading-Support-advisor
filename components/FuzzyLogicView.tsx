@@ -7,7 +7,8 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, Scatte
 
 type FuzzyModelType = 'ff-fcm-gnn' | 'optimal-fis' | 'ffts-plpr' | 'quantum-mcdm';
 
-const PipelineNode = ({ title, sub, icon, active = false, color = "emerald" }: { title: string, sub: string, icon: React.ReactNode, active?: boolean, color?: string }) => {
+// Fix: Correctly typing components to avoid 'key' prop issues in JSX
+const PipelineNode: React.FC<{ title: string, sub: string, icon: React.ReactNode, active?: boolean, color?: string }> = ({ title, sub, icon, active = false, color = "emerald" }) => {
     const activeClass = color === "emerald" 
         ? "bg-emerald-500/20 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)] text-emerald-400"
         : color === "purple"
@@ -29,7 +30,8 @@ const PipelineNode = ({ title, sub, icon, active = false, color = "emerald" }: {
     );
 };
 
-const PipelineConnector = ({ active = false, color = "emerald" }: { active?: boolean, color?: string }) => {
+// Fix: Correctly typing components to avoid 'key' prop issues in JSX
+const PipelineConnector: React.FC<{ active?: boolean, color?: string }> = ({ active = false, color = "emerald" }) => {
     const activeClass = color === "emerald" ? "from-emerald-500 to-emerald-400" : color === "purple" ? "from-purple-500 to-purple-400" : color === "blue" ? "from-blue-500 to-blue-400" : "from-amber-500 to-amber-400";
     return (
         <div className="flex-1 flex justify-center py-2">
@@ -38,7 +40,8 @@ const PipelineConnector = ({ active = false, color = "emerald" }: { active?: boo
     );
 };
 
-const MembershipFunctionChart = ({ variable, sets }: { variable: string, sets: any[] }) => {
+// Fix: Correctly typing components to avoid 'key' prop issues in JSX
+const MembershipFunctionChart: React.FC<{ variable: string, sets: any[] }> = ({ variable, sets }) => {
     const data = useMemo(() => {
         const points = [];
         for (let i = 0; i <= 100; i += 2) {
