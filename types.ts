@@ -9,13 +9,12 @@ export enum AnalysisType {
   Clustering = "Cluster Analysis",
   PriceAction = "Price Action Advanced",
   Chart = "Chart",
-  Quantum = "Quantum Forecast",
   Ideas = "Trade Ideas",
   OptionsExpert = "Options Expert Analysis",
   BrokerIntel = "Broker Intelligence"
 }
 
-export type View = 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart';
+export type View = 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum';
 
 export interface PriceActionCandle {
     time: string;
@@ -185,4 +184,18 @@ export interface QuantumMCDMResult {
     alternativeEvaluation: { alternative: string; cocosoRank: number; topsisRank: number; multimooraRank: number; aggregatedScore: number; }[];
     finalDecision: { rank: number; alternative: string; actionableIntel: string; }[];
     summary: string;
+}
+
+export interface QuantumResult {
+  ticker: string;
+  model: "Standard Quantum Path" | "Quantum Attention Deep Q-Network (QADQN)";
+  expectedPrice: number;
+  entanglementScore: number;
+  decoherenceRisk: string;
+  distribution: { price: string; probability: number }[];
+  summary: string;
+  // QADQN specific
+  agentPolicy?: { action: string; qValue: number; probability: number }[];
+  attentionMap?: { head: string; weight: number }[];
+  rewardExpectation?: number;
 }

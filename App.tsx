@@ -10,6 +10,7 @@ import BacktestView from "./components/BacktestView";
 import MLView from "./components/MLView";
 import CommunityView from "./components/CommunityView";
 import FuzzyLogicView from "./components/FuzzyLogicView";
+import QuantumView from "./components/QuantumView";
 import ChartView from "./components/ChartView";
 import LandingPage from "./components/LandingPage";
 import { View } from "./types";
@@ -39,11 +40,11 @@ const App: React.FC = () => {
         {currentView === 'backtest' && <BacktestView />}
         {currentView === 'community' && <CommunityView />}
         {currentView === 'fuzzy' && <FuzzyLogicView />}
+        {currentView === 'quantum' && <QuantumView />}
       </main>
       
       {!isChartView && (
         <footer className="py-6 text-center text-slate-600 text-sm border-t border-slate-900 mt-auto">
-          {/* Updated footer to reflect actual models in use */}
           <p>© 2025 Gemini Trading Support. Powered by Google Gemini 3 Flash.</p>
         </footer>
       )}

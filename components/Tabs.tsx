@@ -30,7 +30,6 @@ const groups = [
     items: [
       { id: AnalysisType.YahooFinance, label: "Financials", icon: "F" },
       { id: AnalysisType.Fundamental, label: "Fundamental", icon: "D" },
-      { id: AnalysisType.Quantum, label: "Quantum Sim", icon: "Q" },
     ]
   }
 ];
