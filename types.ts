@@ -16,6 +16,15 @@ export enum AnalysisType {
 
 export type View = 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum';
 
+export interface NewsItem {
+    title: string;
+    url: string;
+    source: "Bloomberg" | "Financial Times" | "Wall Street Journal" | "Yahoo Finance" | "Other";
+    snippet: string;
+    time: string;
+    sentiment: "Positive" | "Negative" | "Neutral";
+}
+
 export interface PriceActionCandle {
     time: string;
     open: number;
@@ -108,6 +117,7 @@ export interface AnalysisResult {
   technicalAnalysis?: TechnicalAnalysisData;
   brokerIntel?: BrokerIntelData;
   priceAction?: PriceActionData;
+  newsItems?: NewsItem[];
 }
 
 export interface TabItem { id: AnalysisType; label: string; }

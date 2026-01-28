@@ -1,6 +1,6 @@
 
-import React, { useMemo } from "react";
-import { AnalysisResult, AnalysisType, PriceActionData, PriceActionCandle, TechnicalAnalysisData } from "../types";
+import React, { useMemo, useState } from "react";
+import { AnalysisResult, AnalysisType, PriceActionData, PriceActionCandle, TechnicalAnalysisData, NewsItem } from "../types";
 import { 
     ComposedChart, ReferenceLine, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar, Cell, CartesianGrid, ReferenceArea, Area, BarChart, Line, Scatter, ScatterChart, ZAxis
 } from "recharts";
@@ -10,6 +10,121 @@ interface ResultsDisplayProps {
   isLoading: boolean;
   activeTab: AnalysisType;
 }
+
+const NewsThumbnail = ({ source }: { source: string }) => {
+    const [imgError, setImgError] = useState(false);
+    const s = source.toLowerCase();
+    let domain = "";
+    let accentColor = "border-slate-700";
+    let brandColor = "bg-slate-800";
+    let shortName = source.substring(0, 1);
+
+    if (s.includes("bloomberg")) {
+        domain = "bloomberg.com";
+        accentColor = "border-blue-600";
+        brandColor = "bg-blue-600";
+        shortName = "B";
+    } else if (s.includes("financial times") || s.includes("ft")) {
+        domain = "ft.com";
+        accentColor = "border-[#ff7500]";
+        brandColor = "bg-[#fff1e5]"; // FT Salmon
+        shortName = "FT";
+    } else if (s.includes("wall street journal") || s.includes("wsj")) {
+        domain = "wsj.com";
+        accentColor = "border-slate-400";
+        brandColor = "bg-white";
+        shortName = "WSJ";
+    } else if (s.includes("yahoo finance")) {
+        domain = "yahoo.com";
+        accentColor = "border-[#7e00ff]";
+        brandColor = "bg-[#400090]";
+        shortName = "Y!";
+    }
+
+    const logoUrl = domain ? `https://logo.clearbit.com/${domain}?size=128` : "";
+
+    return (
+        <div className={`w-full h-full bg-[#0B1221] ${accentColor} border-r-2 flex items-center justify-center p-3 overflow-hidden relative group-hover:bg-slate-800/20 transition-all duration-500`}>
+            {!imgError && logoUrl ? (
+                <img 
+                    src={logoUrl} 
+                    alt={source} 
+                    className="w-full max-h-12 object-contain transition-transform duration-500 group-hover:scale-110 drop-shadow-xl"
+                    onError={() => setImgError(true)}
+                    loading="lazy"
+                />
+            ) : (
+                <div className={`w-10 h-10 rounded flex items-center justify-center ${brandColor} shadow-lg shadow-black/50`}>
+                    <span className={`text-xs font-black tracking-tighter ${s.includes("ft") || s.includes("wsj") ? 'text-black' : 'text-white'}`}>
+                        {shortName}
+                    </span>
+                </div>
+            )}
+            
+            {/* Tech-inspired decorative overlay */}
+            <div className="absolute top-1 left-1 opacity-20">
+                <div className="w-1 h-1 bg-white rounded-full"></div>
+            </div>
+            <div className="absolute bottom-1 right-1 opacity-10">
+                <div className="w-4 h-px bg-white"></div>
+            </div>
+            
+            {/* Subtle grid pattern */}
+            <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:8px_8px]"></div>
+        </div>
+    );
+};
+
+const NewsDashboard = ({ items, summary }: { items: NewsItem[], summary: string }) => {
+    return (
+        <div className="space-y-6 animate-fade-in">
+            {/* Context Summary */}
+            <div className="bg-[#1e293b]/40 p-5 rounded-xl border border-white/5 flex items-start gap-4">
+                <div className="w-10 h-10 rounded bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20 shrink-0 mt-1 shadow-lg shadow-emerald-900/10">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>
+                </div>
+                <div>
+                    <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1 block">Global Intelligence Brief</span>
+                    <p className="text-sm text-slate-300 italic leading-relaxed">"{summary}"</p>
+                </div>
+            </div>
+
+            {/* News Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {items.map((item, i) => (
+                    <a 
+                        key={i} 
+                        href={item.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="group bg-[#0f172a] border border-slate-800 rounded-xl overflow-hidden hover:border-purple-500/50 transition-all flex h-32 hover:shadow-2xl hover:shadow-purple-900/20"
+                    >
+                        <div className="w-28 shrink-0">
+                            <NewsThumbnail source={item.source} />
+                        </div>
+                        <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
+                            <div>
+                                <div className="flex justify-between items-start gap-2 mb-1">
+                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter truncate max-w-[120px]">{item.source}</span>
+                                    <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase ${item.sentiment === 'Positive' ? 'bg-emerald-900/30 text-emerald-400' : item.sentiment === 'Negative' ? 'bg-rose-900/30 text-rose-400' : 'bg-slate-800 text-slate-400'}`}>
+                                        {item.sentiment}
+                                    </span>
+                                </div>
+                                <h4 className="text-xs font-bold text-white leading-tight line-clamp-2 group-hover:text-purple-300 transition-colors">{item.title}</h4>
+                            </div>
+                            <div className="flex justify-between items-center mt-2">
+                                <span className="text-[9px] text-slate-600 font-mono tracking-tighter uppercase">{item.time}</span>
+                                <div className="flex items-center gap-1 text-[9px] font-black text-purple-500 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
+                                    INSIGHTS <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                ))}
+            </div>
+        </div>
+    );
+};
 
 const Candlestick = (props: any) => {
     const { x, y, width, open, close, high, low, candleWidth } = props;
@@ -181,8 +296,8 @@ const TechnicalAnalysisDashboard = ({ data }: { data: TechnicalAnalysisData }) =
         <div className="space-y-6 animate-fade-in">
             {/* Summary Banner */}
             <div className="bg-slate-900/40 p-5 rounded-xl border border-white/5 flex items-start gap-4">
-                <div className="w-10 h-10 rounded bg-cyan-500/10 flex items-center justify-center text-cyan-400 border border-cyan-500/20 shrink-0 mt-1">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <div className="w-10 h-10 rounded bg-cyan-500/10 flex items-center justify-center text-cyan-400 border border-cyan-500/20 shrink-0 mt-1 shadow-lg shadow-cyan-900/10">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 </div>
                 <p className="text-sm text-slate-300 italic leading-relaxed">"{data.summary}"</p>
             </div>
@@ -283,7 +398,7 @@ const TechnicalAnalysisDashboard = ({ data }: { data: TechnicalAnalysisData }) =
 const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isLoading, activeTab }) => {
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-[500px] text-slate-400 bg-[#0b0e14] rounded-xl border border-slate-800">
+      <div className="flex flex-col items-center justify-center h-[500px] text-slate-400 bg-[#0b0e14] rounded-xl border border-slate-800 shadow-inner">
         <div className="w-12 h-12 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mb-4"></div>
         <p className="font-bold uppercase tracking-[0.3em] text-[9px] font-mono animate-pulse">Synchronizing Market Geometry...</p>
       </div>
@@ -305,6 +420,10 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isLoading, acti
         </div>
       </div>
 
+      {activeTab === AnalysisType.News && result.newsItems && (
+          <NewsDashboard items={result.newsItems} summary={result.content} />
+      )}
+
       {activeTab === AnalysisType.PriceAction && result.priceAction && (
         <div className="animate-fade-in">
           <PriceActionChart data={result.priceAction} />
@@ -315,7 +434,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isLoading, acti
           <TechnicalAnalysisDashboard data={result.technicalAnalysis} />
       )}
 
-      {activeTab !== AnalysisType.PriceAction && activeTab !== AnalysisType.Technical && (
+      {activeTab !== AnalysisType.PriceAction && activeTab !== AnalysisType.Technical && activeTab !== AnalysisType.News && (
           <div className="p-4 text-slate-300 font-mono text-sm leading-relaxed whitespace-pre-wrap bg-black/20 rounded-lg border border-white/5">
               {result.content}
           </div>

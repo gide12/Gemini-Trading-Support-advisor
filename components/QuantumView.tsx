@@ -87,7 +87,12 @@ const QuantumView: React.FC = () => {
         <div className="space-y-8 fade-in">
             <div className="bg-[#0f172a] rounded-xl border border-cyan-500/30 p-8 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-                     <svg className="w-64 h-64 text-cyan-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20M7 7l10 10M7 17l10-10"/></svg>
+                     <svg className="w-64 h-64 text-cyan-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.5">
+                        <circle cx="12" cy="12" r="3" />
+                        <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(45 12 12)" />
+                        <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(-45 12 12)" />
+                        <circle cx="12" cy="12" r="11" strokeDasharray="2 4" />
+                     </svg>
                 </div>
                 <div className="relative z-10">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">

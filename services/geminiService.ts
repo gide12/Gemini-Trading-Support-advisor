@@ -41,6 +41,42 @@ const extractSources = (response: any) => {
 export const analyzeStock = async (ticker: string, analysisType: AnalysisType): Promise<AnalysisResult> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
+    if (analysisType === AnalysisType.News) {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: `Search for the latest financial news regarding ${ticker}. Focus specifically on major publishers like Bloomberg, Financial Times, Wall Street Journal, and Yahoo Finance. 
+            Return a detailed summary and a structured list of at least 5 news items.`,
+            config: { 
+                tools: [{ googleSearch: {} }],
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        summary: { type: Type.STRING },
+                        newsItems: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    title: { type: Type.STRING },
+                                    url: { type: Type.STRING },
+                                    source: { type: Type.STRING, description: "Choose from: Bloomberg, Financial Times, Wall Street Journal, Yahoo Finance, or Other" },
+                                    snippet: { type: Type.STRING },
+                                    time: { type: Type.STRING },
+                                    sentiment: { type: Type.STRING, description: "Positive, Negative, or Neutral" }
+                                },
+                                required: ["title", "url", "source", "snippet", "time", "sentiment"]
+                            }
+                        }
+                    },
+                    required: ["summary", "newsItems"]
+                }
+            }
+        });
+        const json = cleanAndParseJSON(response.text);
+        return { ticker, type: analysisType, content: json.summary, newsItems: json.newsItems, sources: extractSources(response) };
+    }
+
     if (analysisType === AnalysisType.PriceAction) {
         const response = await ai.models.generateContent({
             model: modelName,
