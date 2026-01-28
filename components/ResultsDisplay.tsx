@@ -13,7 +13,7 @@ interface ResultsDisplayProps {
 
 const Candlestick = (props: any) => {
     const { x, y, width, open, close, high, low, candleWidth } = props;
-    if (x === undefined || y === undefined) return null;
+    if (x === undefined || y === undefined || isNaN(x) || isNaN(y)) return null;
     const isBullish = close >= open;
     const color = isBullish ? "#26a69a" : "#ef5350";
     const bodyHeight = Math.abs(close - open);
@@ -29,7 +29,7 @@ const Candlestick = (props: any) => {
 
 const PriceActionChart = ({ data }: { data: PriceActionData }) => {
   const chartData = useMemo(() => {
-    if (!data.candles) return [];
+    if (!data || !data.candles || data.candles.length < 5) return [];
     return data.candles.map((c, i) => ({
       ...c,
       index: i,
@@ -37,15 +37,25 @@ const PriceActionChart = ({ data }: { data: PriceActionData }) => {
   }, [data]);
 
   const yDomain = useMemo(() => {
-    if (!data.candles || data.candles.length === 0) return [0, 100];
-    const allPrices = data.candles.flatMap(c => [c.high, c.low]);
+    if (!chartData.length) return [0, 100];
+    const allPrices = chartData.flatMap(c => [c.high, c.low]);
     const min = Math.min(...allPrices);
     const max = Math.max(...allPrices);
-    const pad = (max - min) * 0.2;
+    const pad = (max - min) * 0.2 || 1;
     return [min - pad, max + pad];
-  }, [data]);
+  }, [chartData]);
 
-  if (!chartData.length) return <div className="p-10 text-center text-slate-500 font-mono">Insufficient data for chart rendering.</div>;
+  if (!chartData.length) {
+    return (
+      <div className="p-10 text-center bg-[#0b0e14] border border-slate-800 rounded-xl">
+        <div className="text-amber-500 mb-2">⚠️ Structural Data Mismatch</div>
+        <p className="text-slate-500 text-xs font-mono leading-relaxed">
+          The AI analysis for this asset returned an incomplete price action model. <br/>
+          This happens when liquidity history is fragmented. Please try a major index or high-cap stock.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#131722] border border-slate-800 rounded-xl p-6 relative overflow-hidden group shadow-2xl flex flex-col gap-0">
@@ -163,7 +173,7 @@ const TechnicalAnalysisDashboard = ({ data }: { data: TechnicalAnalysisData }) =
         const prices = data.priceHistory.map(p => p.price);
         const min = Math.min(...prices);
         const max = Math.max(...prices);
-        const pad = (max - min) * 0.25;
+        const pad = (max - min) * 0.25 || 1;
         return [min - pad, max + pad];
     }, [data]);
 
@@ -193,8 +203,8 @@ const TechnicalAnalysisDashboard = ({ data }: { data: TechnicalAnalysisData }) =
                     </div>
                 </div>
                 <div className="bg-[#1c202b] p-4 rounded-xl border border-white/5">
-                    <span className="text-[10px] text-slate-500 uppercase font-black block mb-1 tracking-widest">Active Alerts</span>
-                    <div className="text-lg font-bold text-amber-400 font-mono">{(data.breakoutPoints?.length || 0).toString().padStart(2, '0')}</div>
+                    <span className="text-[10px] text-slate-500 uppercase font-black block mb-1 tracking-widest">Active Status</span>
+                    <div className="text-lg font-bold text-amber-400 font-mono tracking-tighter uppercase">Calculated</div>
                 </div>
             </div>
 
@@ -212,9 +222,6 @@ const TechnicalAnalysisDashboard = ({ data }: { data: TechnicalAnalysisData }) =
                             ))}
                             {data.supportResistance?.resistance?.map((lvl, i) => (
                                 <ReferenceLine key={`res-${i}`} y={lvl} stroke="#f43f5e" strokeDasharray="3 3" strokeWidth={1} label={{ value: `RESISTANCE`, position: 'insideBottomLeft', fill: '#f43f5e', fontSize: 8, fontWeight: 'black', fontFamily: 'monospace' }} />
-                            ))}
-                            {data.breakoutPoints?.map((p, i) => (
-                                <ReferenceArea key={`brk-${i}`} x1={p.time} x2={p.time} y1={yDomain[0]} y2={yDomain[1]} fill={p.type === 'Breakout' ? '#10b981' : '#f43f5e'} fillOpacity={0.05} label={{ value: `! ${p.type.toUpperCase()}`, position: 'top', fill: p.type === 'Breakout' ? '#10b981' : '#f43f5e', fontSize: 9, fontWeight: 'black', fontFamily: 'monospace' }} />
                             ))}
 
                             <Area type="monotone" dataKey="price" stroke="#a855f7" strokeWidth={2} fill="url(#colorPrice)" fillOpacity={1} />

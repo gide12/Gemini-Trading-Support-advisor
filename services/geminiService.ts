@@ -44,24 +44,135 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
     if (analysisType === AnalysisType.PriceAction) {
         const response = await ai.models.generateContent({
             model: modelName,
-            contents: `Analyze ${ticker} using SMC. Provide 30 candles JSON.`,
-            config: { responseMimeType: "application/json" }
+            contents: `Act as a Senior Quant. Analyze ${ticker} using Smart Money Concepts (SMC). 
+            Generate exactly 30 candles of OHLC data. Identify Break of Structure (BOS), Change of Character (CHoCH), 
+            Bullish/Bearish Order Blocks, and Liquidity Sweeps.`,
+            config: { 
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        summary: { type: Type.STRING },
+                        marketRegime: { type: Type.STRING },
+                        bias: { type: Type.STRING },
+                        candles: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    time: { type: Type.STRING },
+                                    open: { type: Type.NUMBER },
+                                    high: { type: Type.NUMBER },
+                                    low: { type: Type.NUMBER },
+                                    close: { type: Type.NUMBER },
+                                    volume: { type: Type.NUMBER },
+                                    label: { type: Type.STRING, nullable: true },
+                                    breakLinePrice: { type: Type.NUMBER, nullable: true }
+                                },
+                                required: ["time", "open", "high", "low", "close", "volume"]
+                            }
+                        },
+                        orderBlocks: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    type: { type: Type.STRING },
+                                    top: { type: Type.NUMBER },
+                                    bottom: { type: Type.NUMBER },
+                                    startIdx: { type: Type.NUMBER },
+                                    endIdx: { type: Type.NUMBER },
+                                    label: { type: Type.STRING }
+                                }
+                            }
+                        },
+                        liquiditySweeps: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    type: { type: Type.STRING },
+                                    top: { type: Type.NUMBER },
+                                    bottom: { type: Type.NUMBER },
+                                    startIdx: { type: Type.NUMBER },
+                                    endIdx: { type: Type.NUMBER },
+                                    label: { type: Type.STRING }
+                                }
+                            }
+                        },
+                        targets: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    price: { type: Type.NUMBER },
+                                    label: { type: Type.STRING }
+                                }
+                            }
+                        }
+                    },
+                    required: ["summary", "candles", "orderBlocks", "liquiditySweeps", "targets", "bias", "marketRegime"]
+                }
+            }
         });
         const json = cleanAndParseJSON(response.text);
         return { ticker, type: analysisType, content: json.summary, priceAction: json };
     }
+    
     if (analysisType === AnalysisType.Technical) {
         const response = await ai.models.generateContent({
             model: modelName,
-            contents: `Analyze ${ticker} technically. Provide S/R and historical price JSON.`,
-            config: { responseMimeType: "application/json" }
+            contents: `Analyze ${ticker} using Technical Indicators. Include Support/Resistance and price history.`,
+            config: { 
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        currentPrice: { type: Type.NUMBER },
+                        trend: { type: Type.STRING },
+                        signalStrength: { type: Type.STRING },
+                        summary: { type: Type.STRING },
+                        priceHistory: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    time: { type: Type.STRING },
+                                    price: { type: Type.NUMBER },
+                                    volume: { type: Type.NUMBER }
+                                }
+                            }
+                        },
+                        indicators: {
+                            type: Type.OBJECT,
+                            properties: {
+                                rsi: { type: Type.STRING },
+                                rsiVal: { type: Type.NUMBER },
+                                macd: { type: Type.STRING },
+                                macdVal: { type: Type.NUMBER },
+                                movingAverages: { type: Type.STRING },
+                                bollingerBands: { type: Type.STRING }
+                            }
+                        },
+                        supportResistance: {
+                            type: Type.OBJECT,
+                            properties: {
+                                support: { type: Type.ARRAY, items: { type: Type.NUMBER } },
+                                resistance: { type: Type.ARRAY, items: { type: Type.NUMBER } }
+                            }
+                        }
+                    },
+                    required: ["currentPrice", "trend", "summary", "priceHistory", "indicators", "supportResistance"]
+                }
+            }
         });
         const json = cleanAndParseJSON(response.text);
         return { ticker, type: analysisType, content: json.summary, technicalAnalysis: json };
     }
+    
     const response = await ai.models.generateContent({
       model: modelName,
-      contents: `Analyze ${ticker} for ${analysisType}.`,
+      contents: `Analyze ${ticker} for ${analysisType}. Provide detailed institutional insights.`,
       config: { tools: [{ googleSearch: {} }] },
     });
     return { ticker, type: analysisType, content: response.text || "No analysis generated.", sources: extractSources(response) };
@@ -87,7 +198,10 @@ export const runBacktest = async (
     Strategy: ${strategy}
     Timeframe: ${timeframe}
     Risk Params: RR ${riskReward}, SL ${stopLoss}, TP ${takeProfit}, Trailing ${trailingStop}
-    Simulation Model: ${simulationModel} (Note: If Gordon Constant Growth is selected, focus on intrinsic value pathways and dividend growth compounding).
+    Simulation Model: ${simulationModel}. 
+    
+    Note: If "Gordon Constant Growth Model" is selected, evaluate the ticker based on its dividend payout ratio, 
+    required rate of return, and dividend growth rate to determine intrinsic value pathways.
 
     Return JSON matching this structure:
     {
