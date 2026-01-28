@@ -100,7 +100,9 @@ export interface TechnicalAnalysisData {
   summary: string;
 }
 
+// Added analystSynthesis to fix Property 'analystSynthesis' does not exist on type 'BrokerIntelData'
 export interface BrokerIntelData {
+    analystSynthesis: string;
     metrics: {
         brokerFlow: { netBuyRatio: number; flowConsistency: number; participantQuality: number; };
     };

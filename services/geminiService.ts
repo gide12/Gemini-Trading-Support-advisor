@@ -5,7 +5,8 @@ import {
   AnalysisResult, 
   PriceActionData,
   TechnicalAnalysisData,
-  BacktestResult
+  BacktestResult,
+  BrokerIntelData
 } from "../types";
 
 const modelName = "gemini-3-flash-preview";
@@ -22,7 +23,7 @@ const cleanAndParseJSON = (text: string) => {
     const firstBrace = text.indexOf('{');
     const lastBrace = text.lastIndexOf('}');
     if (firstBrace !== -1 && lastBrace !== -1) {
-      try { return JSON.parse(text.substring(firstBrace, lastBrace + 1)); } catch (innerE) {}
+      try { return JSON.parse(lastBrace > firstBrace ? text.substring(firstBrace, lastBrace + 1) : text.substring(firstBrace)); } catch (innerE) {}
     }
     throw new Error("Analysis Failed: AI response was not valid JSON.");
   }
@@ -75,6 +76,53 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
         });
         const json = cleanAndParseJSON(response.text);
         return { ticker, type: analysisType, content: json.summary, newsItems: json.newsItems, sources: extractSources(response) };
+    }
+
+    if (analysisType === AnalysisType.BrokerIntel) {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: `Act as a Senior Institutional Data Analyst. Provide Broker Intelligence for ${ticker}. 
+            Analyze institutional flow, net buy ratios, and broker activity trends. 
+            Include a "Data Analyst Synthesis" (at least 2 paragraphs) summarizing the high-level positioning.`,
+            config: { 
+                tools: [{ googleSearch: {} }],
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        analystSynthesis: { type: Type.STRING, description: "Professional data analyst summary of broker trends." },
+                        dominantSide: { type: Type.STRING, description: "Net Buy, Net Sell, or Neutral" },
+                        metrics: {
+                            type: Type.OBJECT,
+                            properties: {
+                                brokerFlow: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        netBuyRatio: { type: Type.NUMBER, description: "0.0 to 1.0" },
+                                        flowConsistency: { type: Type.NUMBER, description: "0.0 to 1.0" },
+                                        participantQuality: { type: Type.NUMBER, description: "0.0 to 1.0 (Higher means more Institutional)" }
+                                    }
+                                }
+                            }
+                        },
+                        brokerActivityHistory: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    date: { type: Type.STRING },
+                                    activity: { type: Type.NUMBER }
+                                }
+                            }
+                        },
+                        summary: { type: Type.STRING, description: "Short footer summary." }
+                    },
+                    required: ["analystSynthesis", "dominantSide", "metrics", "brokerActivityHistory", "summary"]
+                }
+            }
+        });
+        const json = cleanAndParseJSON(response.text);
+        return { ticker, type: analysisType, content: json.analystSynthesis, brokerIntel: json };
     }
 
     if (analysisType === AnalysisType.PriceAction) {
