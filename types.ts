@@ -188,7 +188,7 @@ export interface QuantumMCDMResult {
 
 export interface QuantumResult {
   ticker: string;
-  model: "Standard Quantum Path" | "Quantum Attention Deep Q-Network (QADQN)";
+  model: "Standard Quantum Path" | "Quantum Attention Deep Q-Network (QADQN)" | "Quantum Graph Neural Network (QGNN)";
   expectedPrice: number;
   entanglementScore: number;
   decoherenceRisk: string;
@@ -198,4 +198,8 @@ export interface QuantumResult {
   agentPolicy?: { action: string; qValue: number; probability: number }[];
   attentionMap?: { head: string; weight: number }[];
   rewardExpectation?: number;
+  // QGNN specific
+  graphTopology?: { node: string; neighbor: string; weight: number }[];
+  benchmarks?: { metric: string; classical: number; quantum: number }[];
+  circuitComplexity?: number;
 }
