@@ -7,7 +7,12 @@ import {
   TechnicalAnalysisData,
   BacktestResult,
   BrokerIntelData,
-  MLPredictionResult
+  MLPredictionResult,
+  FTSLFIGResult,
+  FFFCMGNNResult,
+  OptimalFuzzyDesignResult,
+  FFTSPLPRResult,
+  QuantumMCDMResult
 } from "../types";
 
 const modelName = "gemini-3-flash-preview";
@@ -232,6 +237,7 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
                                 rsi: { type: Type.STRING },
                                 rsiVal: { type: Type.NUMBER },
                                 macd: { type: Type.STRING },
+                                macdVal: { type: Type.NUMBER },
                                 movingAverages: { type: Type.STRING },
                                 bollingerBands: { type: Type.STRING }
                             }
@@ -329,11 +335,71 @@ export const runMLSimulation = async (
     }
 };
 
-export const runQuantumMCDMAnalysis = async (t:any) => ({} as any);
-export const runFFTSPLPRAnalysis = async (t:any) => ({} as any);
-export const runFFFCMGNNAnalysis = async (t:any) => ({} as any);
-export const runOptimalFuzzyDesignAnalysis = async (t:any) => ({} as any);
-export const runMPTAnalysis = async (h:any, s:any, v:any) => ({} as any);
+export const runFTSLFIGAnalysis = async (ticker: string): Promise<FTSLFIGResult> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const prompt = `Perform a Fuzzy Time Series (FTS) analysis for ${ticker} integrated with Linear Fuzzy Information Granule (LFIG) method.
+    Return structured JSON:
+    {
+        "ticker": "string",
+        "granules": [ { "time": "string", "lower": number, "center": number, "upper": number, "label": "string" } ],
+        "transitions": [ { "from": "string", "to": "string", "probability": number } ],
+        "forecast": { "linguisticValue": "string", "numericalEstimate": number },
+        "summary": "string"
+    }`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        });
+        return cleanAndParseJSON(response.text);
+    } catch (e) {
+        throw new Error("FTS-LFIG Model failed to generate.");
+    }
+};
+
+export const runQuantumMCDMAnalysis = async (ticker: string): Promise<QuantumMCDMResult> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const response = await ai.models.generateContent({
+        model: modelName,
+        contents: `Run Quantum MCDM Analysis for ${ticker}. Return JSON.`,
+        config: { responseMimeType: "application/json" }
+    });
+    return cleanAndParseJSON(response.text);
+};
+
+export const runFFTSPLPRAnalysis = async (ticker: string): Promise<FFTSPLPRResult> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const response = await ai.models.generateContent({
+        model: modelName,
+        contents: `Run FFTS-PLPR Analysis for ${ticker}. Return JSON.`,
+        config: { responseMimeType: "application/json" }
+    });
+    return cleanAndParseJSON(response.text);
+};
+
+export const runFFFCMGNNAnalysis = async (ticker: string): Promise<FFFCMGNNResult> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const response = await ai.models.generateContent({
+        model: modelName,
+        contents: `Run FF-FCM-GNN Analysis for ${ticker}. Return JSON.`,
+        config: { responseMimeType: "application/json" }
+    });
+    return cleanAndParseJSON(response.text);
+};
+
+export const runOptimalFuzzyDesignAnalysis = async (ticker: string): Promise<OptimalFuzzyDesignResult> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const response = await ai.models.generateContent({
+        model: modelName,
+        contents: `Run Optimal Fuzzy FIS Design for ${ticker}. Return JSON.`,
+        config: { responseMimeType: "application/json" }
+    });
+    return cleanAndParseJSON(response.text);
+};
+
+export const runMPTAnalysis = async (holdings: any, strategy: any, views: any) => ({} as any);
 export const getETFProfile = async (t:any) => ({} as any);
 export const runHedgeAnalysis = async (h:any) => ({} as any);
 export const runAdvancedPricingAnalysis = async (t:any) => ({} as any);

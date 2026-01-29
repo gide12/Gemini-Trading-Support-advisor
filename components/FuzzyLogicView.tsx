@@ -1,13 +1,28 @@
 
 import React, { useState, useMemo } from "react";
-import { runFFFCMGNNAnalysis, runOptimalFuzzyDesignAnalysis, runFFTSPLPRAnalysis, runQuantumMCDMAnalysis } from "../services/geminiService";
-import { FFFCMGNNResult, OptimalFuzzyDesignResult, FFTSPLPRResult, QuantumMCDMResult } from "../types";
+import { 
+    runFFFCMGNNAnalysis, 
+    runOptimalFuzzyDesignAnalysis, 
+    runFFTSPLPRAnalysis, 
+    runQuantumMCDMAnalysis,
+    runFTSLFIGAnalysis
+} from "../services/geminiService";
+import { 
+    FFFCMGNNResult, 
+    OptimalFuzzyDesignResult, 
+    FFTSPLPRResult, 
+    QuantumMCDMResult,
+    FTSLFIGResult
+} from "../types";
 import SearchBar from "./SearchBar";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ScatterChart, Scatter, ZAxis, Legend, CartesianGrid, LineChart, Line, AreaChart, Area, PieChart, Pie } from "recharts";
+import { 
+    ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, 
+    ScatterChart, Scatter, ZAxis, Legend, CartesianGrid, LineChart, 
+    Line, AreaChart, Area, PieChart, Pie, ComposedChart 
+} from "recharts";
 
-type FuzzyModelType = 'ff-fcm-gnn' | 'optimal-fis' | 'ffts-plpr' | 'quantum-mcdm';
+type FuzzyModelType = 'ff-fcm-gnn' | 'optimal-fis' | 'ffts-plpr' | 'quantum-mcdm' | 'fts-lfig';
 
-// Fix: Correctly typing components to avoid 'key' prop issues in JSX
 const PipelineNode: React.FC<{ title: string, sub: string, icon: React.ReactNode, active?: boolean, color?: string }> = ({ title, sub, icon, active = false, color = "emerald" }) => {
     const activeClass = color === "emerald" 
         ? "bg-emerald-500/20 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)] text-emerald-400"
@@ -15,7 +30,9 @@ const PipelineNode: React.FC<{ title: string, sub: string, icon: React.ReactNode
         ? "bg-purple-500/20 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.3)] text-purple-400"
         : color === "blue"
         ? "bg-blue-500/20 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)] text-blue-400"
-        : "bg-amber-500/20 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)] text-amber-400";
+        : color === "amber"
+        ? "bg-amber-500/20 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)] text-amber-400"
+        : "bg-cyan-500/20 border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.3)] text-cyan-400";
     
     return (
         <div className={`flex flex-col items-center group transition-all duration-500 ${active ? 'scale-110' : 'opacity-60'}`}>
@@ -30,9 +47,8 @@ const PipelineNode: React.FC<{ title: string, sub: string, icon: React.ReactNode
     );
 };
 
-// Fix: Correctly typing components to avoid 'key' prop issues in JSX
 const PipelineConnector: React.FC<{ active?: boolean, color?: string }> = ({ active = false, color = "emerald" }) => {
-    const activeClass = color === "emerald" ? "from-emerald-500 to-emerald-400" : color === "purple" ? "from-purple-500 to-purple-400" : color === "blue" ? "from-blue-500 to-blue-400" : "from-amber-500 to-amber-400";
+    const activeClass = color === "emerald" ? "from-emerald-500 to-emerald-400" : color === "purple" ? "from-purple-500 to-purple-400" : color === "blue" ? "from-blue-500 to-blue-400" : color === "amber" ? "from-amber-500 to-amber-400" : "from-cyan-500 to-cyan-400";
     return (
         <div className="flex-1 flex justify-center py-2">
             <div className={`w-px h-8 transition-all duration-1000 ${active ? `bg-gradient-to-b ${activeClass} shadow-[0_0_8px_rgba(16,185,129,0.5)]` : 'bg-slate-800'}`}></div>
@@ -40,7 +56,6 @@ const PipelineConnector: React.FC<{ active?: boolean, color?: string }> = ({ act
     );
 };
 
-// Fix: Correctly typing components to avoid 'key' prop issues in JSX
 const MembershipFunctionChart: React.FC<{ variable: string, sets: any[] }> = ({ variable, sets }) => {
     const data = useMemo(() => {
         const points = [];
@@ -88,16 +103,18 @@ const FuzzyLogicView: React.FC = () => {
   const [optimalFisData, setOptimalFisData] = useState<OptimalFuzzyDesignResult | null>(null);
   const [fftsData, setFftsData] = useState<FFTSPLPRResult | null>(null);
   const [mcdmData, setMcdmData] = useState<QuantumMCDMResult | null>(null);
+  const [ftsLfigData, setFtsLfigData] = useState<FTSLFIGResult | null>(null);
 
   const handleSearch = async (searchTerm: string) => {
     setTicker(searchTerm);
     setIsLoading(true);
-    setAdvancedData(null); setOptimalFisData(null); setFftsData(null); setMcdmData(null);
+    setAdvancedData(null); setOptimalFisData(null); setFftsData(null); setMcdmData(null); setFtsLfigData(null);
     try {
       if (activeModel === 'ff-fcm-gnn') setAdvancedData(await runFFFCMGNNAnalysis(searchTerm));
       else if (activeModel === 'optimal-fis') setOptimalFisData(await runOptimalFuzzyDesignAnalysis(searchTerm));
       else if (activeModel === 'ffts-plpr') setFftsData(await runFFTSPLPRAnalysis(searchTerm));
       else if (activeModel === 'quantum-mcdm') setMcdmData(await runQuantumMCDMAnalysis(searchTerm));
+      else if (activeModel === 'fts-lfig') setFtsLfigData(await runFTSLFIGAnalysis(searchTerm));
     } catch (error) {
       console.error(error);
     } finally {
@@ -105,7 +122,7 @@ const FuzzyLogicView: React.FC = () => {
     }
   };
 
-  const isIdle = !mcdmData && !advancedData && !optimalFisData && !fftsData && !isLoading;
+  const isIdle = !mcdmData && !advancedData && !optimalFisData && !fftsData && !ftsLfigData && !isLoading;
 
   return (
     <div className="fade-in space-y-8 pb-10">
@@ -121,7 +138,7 @@ const FuzzyLogicView: React.FC = () => {
             <p className="text-slate-400 text-xs mt-1 uppercase tracking-[0.2em]">Architecture: {activeModel.replace('-', ' ').toUpperCase()}</p>
           </div>
           <div className="flex bg-slate-900/50 p-1 rounded-lg border border-slate-800 overflow-x-auto gap-1">
-             {['quantum-mcdm', 'ffts-plpr', 'optimal-fis', 'ff-fcm-gnn'].map((m: any) => (
+             {['quantum-mcdm', 'fts-lfig', 'ffts-plpr', 'optimal-fis', 'ff-fcm-gnn'].map((m: any) => (
                  <button 
                     key={m} 
                     onClick={() => setActiveModel(m)}
@@ -158,17 +175,71 @@ const FuzzyLogicView: React.FC = () => {
           </div>
       )}
 
-      {isIdle && activeModel === 'ffts-plpr' && (
+      {isIdle && activeModel === 'fts-lfig' && (
           <div className="animate-fade-in flex flex-col items-center py-10">
-              <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.4em] mb-10">FFTS-PLPR Pipeline Architecture</span>
+              <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.4em] mb-10">FTS-LFIG Pipeline Architecture</span>
               <div className="max-w-md w-full">
-                  <PipelineNode title="Factor State" sub="2D State Universe" icon="◰" active={true} color="amber" />
-                  <PipelineConnector active={true} color="amber" />
-                  <PipelineNode title="Fuzzy Groups" sub="Relationship Matrix" icon="≣" color="amber" />
-                  <PipelineConnector color="amber" />
-                  <PipelineNode title="PLPR Engine" sub="Preference Vector" icon="⊲" color="amber" />
-                  <PipelineConnector color="amber" />
-                  <PipelineNode title="Synthesis" sub="Linguistic Forecast" icon="≋" color="amber" />
+                  <PipelineNode title="Granulation" sub="Information Granules" icon="░" active={true} color="cyan" />
+                  <PipelineConnector active={true} color="cyan" />
+                  <PipelineNode title="FTS Model" sub="Fuzzy Time Series" icon="〰" color="cyan" />
+                  <PipelineConnector color="cyan" />
+                  <PipelineNode title="Linear FIS" sub="LFIG Mapping" icon="◿" color="cyan" />
+                  <PipelineConnector color="cyan" />
+                  <PipelineNode title="Inference" sub="Granular Output" icon="⊚" color="cyan" />
+              </div>
+          </div>
+      )}
+
+      {/* RESULTS: FTS-LFIG */}
+      {activeModel === 'fts-lfig' && ftsLfigData && (
+          <div className="animate-fade-in space-y-8">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  <div className="lg:col-span-8 bg-[#0b0e14] border border-cyan-500/20 p-6 rounded-2xl shadow-2xl">
+                      <h3 className="text-[10px] font-black text-cyan-500 uppercase tracking-widest mb-6">Phase 1: Linear Fuzzy Information Granules (LFIG)</h3>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <ComposedChart data={ftsLfigData.granules}>
+                                <defs>
+                                    <linearGradient id="granuleSpan" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.2}/>
+                                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.05}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#2a2e39" vertical={false} opacity={0.3} />
+                                <XAxis dataKey="time" stroke="#475569" tick={{fontSize: 9}} />
+                                <YAxis stroke="#475569" tick={{fontSize: 9, fontFamily: 'monospace'}} domain={['auto', 'auto']} axisLine={false} />
+                                <Tooltip contentStyle={{backgroundColor: '#0f172a', border: '1px solid #1e293b'}} />
+                                <Area type="monotone" dataKey="upper" stroke="transparent" fill="transparent" />
+                                <Area type="monotone" dataKey="lower" stroke="#06b6d4" strokeDasharray="3 3" fill="url(#granuleSpan)" />
+                                <Line type="monotone" dataKey="center" stroke="#22d3ee" strokeWidth={3} dot={{r: 4}} />
+                            </ComposedChart>
+                        </ResponsiveContainer>
+                      </div>
+                  </div>
+                  <div className="lg:col-span-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl flex flex-col">
+                      <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Phase 2: State Transitions</h3>
+                      <div className="flex-1 space-y-3 overflow-y-auto custom-scrollbar pr-2">
+                          {ftsLfigData.transitions.map((t, i) => (
+                              <div key={i} className="flex items-center justify-between p-2 bg-slate-800/40 rounded border border-white/5">
+                                  <div className="text-[10px]">
+                                      <span className="text-slate-400 font-bold">{t.from}</span>
+                                      <span className="mx-2 text-cyan-500">→</span>
+                                      <span className="text-white font-bold">{t.to}</span>
+                                  </div>
+                                  <div className="text-[10px] font-mono font-bold text-cyan-400">{(t.probability * 100).toFixed(1)}%</div>
+                              </div>
+                          ))}
+                      </div>
+                      <div className="mt-6 pt-4 border-t border-white/5">
+                          <span className="text-[9px] text-slate-500 uppercase font-black block mb-2">Model Inference</span>
+                          <div className="text-2xl font-black text-white">{ftsLfigData.forecast.numericalEstimate.toFixed(2)}%</div>
+                          <div className="text-[10px] font-bold text-cyan-500 uppercase">{ftsLfigData.forecast.linguisticValue}</div>
+                      </div>
+                  </div>
+              </div>
+              <div className="bg-gradient-to-br from-[#0f172a] to-[#164e63] border border-cyan-500/20 p-8 rounded-2xl shadow-2xl">
+                  <h4 className="text-[10px] font-black text-cyan-400 uppercase tracking-[0.3em] mb-4">LFIG Integrated Synthesis</h4>
+                  <p className="text-sm text-slate-300 italic leading-relaxed">"{ftsLfigData.summary}"</p>
               </div>
           </div>
       )}

@@ -188,6 +188,27 @@ export interface FFTSPLPRResult {
   summary: string;
 }
 
+export interface FTSLFIGResult {
+    ticker: string;
+    granules: {
+        time: string;
+        lower: number;
+        center: number;
+        upper: number;
+        label: string;
+    }[];
+    transitions: {
+        from: string;
+        to: string;
+        probability: number;
+    }[];
+    forecast: {
+        linguisticValue: string;
+        numericalEstimate: number;
+    };
+    summary: string;
+}
+
 export interface QuantumMCDMResult {
     ticker: string;
     delphiValidation: { criteria: string; validationScore: number; status: string }[];
