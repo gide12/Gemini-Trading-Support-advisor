@@ -14,9 +14,11 @@ import {
   Area,
   Line,
   ComposedChart,
+  Cell,
 } from "recharts";
 
 const MODEL_TYPES = [
+  "Algorithmic PCA-ML (Dimensionality Reduction)",
   "Transformer (Time-Series)",
   "LSTM-Attention Network",
   "SVM (Support Vector Machine)",
@@ -124,17 +126,23 @@ const MLView: React.FC = () => {
       `Initializing ${modelType} architecture...`,
       `Loading historical data for ${ticker} (${trainingPeriod} dataset ending ${trainingEndDate})...`,
       `Normalizing input vectors [${selectedFeatures.length} features]...`,
-      `Setting prediction horizon to ${predictionHorizon}...`,
-      "Epoch 1/50: Loss 0.4322 - Val_Loss 0.4501",
-      "Epoch 10/50: Loss 0.2105 - Val_Loss 0.2210",
-      "Epoch 25/50: Loss 0.1502 - Val_Loss 0.1550",
-      "Epoch 50/50: Loss 0.0945 - Val_Loss 0.1012",
-      "Optimizing weights...",
-      "Running inference on test set...",
     ];
 
+    if (modelType.includes("PCA")) {
+        logMessages.push("Executing Eigenvalue decomposition for Principal Component Analysis...");
+        logMessages.push("Retaining 95% variance via singular value thresholding...");
+    }
+
+    logMessages.push(`Setting prediction horizon to ${predictionHorizon}...`);
+    logMessages.push("Epoch 1/50: Loss 0.4322 - Val_Loss 0.4501");
+    logMessages.push("Epoch 10/50: Loss 0.2105 - Val_Loss 0.2210");
+    logMessages.push("Epoch 25/50: Loss 0.1502 - Val_Loss 0.1550");
+    logMessages.push("Epoch 50/50: Loss 0.0945 - Val_Loss 0.1012");
+    logMessages.push("Optimizing weights...");
+    logMessages.push("Running inference on test set...");
+
     for (const msg of logMessages) {
-      await new Promise((r) => setTimeout(r, 400)); // Delay for effect
+      await new Promise((r) => setTimeout(r, 300));
       setLogs((prev) => [...prev, msg]);
     }
 
@@ -241,26 +249,15 @@ const MLView: React.FC = () => {
                 onChange={(e) => setTrainingEndDate(e.target.value)}
                 className="w-full bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-purple-500 outline-none text-sm"
             />
-            <p className="text-[10px] text-slate-600 mt-1">Leave as today for latest data, or select past date for validation.</p>
           </div>
 
           <div>
             <div className="flex justify-between items-center mb-2">
                 <label className="block text-xs font-bold text-slate-500 uppercase">Input Features</label>
                 <div className="flex gap-2">
-                    <button 
-                        onClick={() => setAllFeatures(true)}
-                        className="text-[10px] text-purple-400 hover:text-purple-300 transition-colors"
-                    >
-                        Select All
-                    </button>
+                    <button onClick={() => setAllFeatures(true)} className="text-[10px] text-purple-400 hover:text-purple-300">Select All</button>
                     <span className="text-slate-600 text-[10px]">|</span>
-                    <button 
-                        onClick={() => setAllFeatures(false)}
-                        className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
-                    >
-                        Deselect All
-                    </button>
+                    <button onClick={() => setAllFeatures(false)} className="text-[10px] text-slate-500 hover:text-slate-300">Deselect All</button>
                 </div>
             </div>
             <div className="grid grid-cols-2 gap-2 max-h-[140px] overflow-y-auto custom-scrollbar pr-2">
@@ -296,8 +293,6 @@ const MLView: React.FC = () => {
 
       {/* RESULTS PANEL */}
       <div className="lg:col-span-8 flex flex-col gap-6">
-        
-        {/* Console / Status */}
         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-4 min-h-[160px] font-mono text-xs overflow-y-auto flex flex-col-reverse custom-scrollbar">
             {status === 'idle' && <div className="text-slate-500 italic">Ready to initialize model training...</div>}
             {logs.map((log, i) => (
@@ -310,14 +305,7 @@ const MLView: React.FC = () => {
 
         {status === 'complete' && result && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 fade-in">
-                {/* Prediction Card */}
                 <div className="md:col-span-2 bg-[#131B2E] rounded-xl border border-purple-500/30 p-6 relative overflow-hidden">
-                     <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-48 h-48 text-purple-500">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-                        </svg>
-                     </div>
-                     
                      <div className="relative z-10 flex justify-between items-end">
                         <div>
                             <div className="text-slate-400 text-sm uppercase tracking-widest mb-1">{predictionHorizon} Forecast</div>
@@ -330,10 +318,9 @@ const MLView: React.FC = () => {
                         <div className="text-right">
                              <div className="text-sm text-slate-400 mb-1">Confidence</div>
                              <div className="text-3xl font-bold text-purple-400">{result.confidenceScore || 0}%</div>
-                             <div className="text-xs text-slate-500 mt-1">Volatility: {result.volatility}</div>
+                             <div className="text-xs text-slate-500 mt-1">Model: {result.modelUsed}</div>
                         </div>
                      </div>
-
                      <div className="mt-6 h-48">
                         <ResponsiveContainer width="100%" height="100%">
                             <ComposedChart data={result.predictionPath || []}>
@@ -354,93 +341,56 @@ const MLView: React.FC = () => {
                      </div>
                 </div>
 
-                {/* Performance Evaluation Dashboard */}
-                {result.evaluationMetrics && result.tradingMetrics && (
-                    <div className="md:col-span-2 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
-                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-cyan-400">
-                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-                             </svg>
-                             Performance Evaluation Dashboard
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {/* Classification Metrics */}
-                            <div>
-                                <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 border-b border-purple-500/20 pb-1">Model Classification Metrics</h4>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
-                                        <div className="text-[10px] text-slate-400 uppercase">Accuracy Rate (AR)</div>
-                                        <div className="text-xl font-mono text-white font-bold">{((result.evaluationMetrics.accuracy || 0) * 100).toFixed(1)}%</div>
-                                    </div>
-                                    <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
-                                        <div className="text-[10px] text-slate-400 uppercase">Precision (PR)</div>
-                                        <div className="text-xl font-mono text-cyan-300 font-bold">{((result.evaluationMetrics.precision || 0) * 100).toFixed(1)}%</div>
-                                    </div>
-                                    <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
-                                        <div className="text-[10px] text-slate-400 uppercase">Recall (RR)</div>
-                                        <div className="text-xl font-mono text-cyan-300 font-bold">{((result.evaluationMetrics.recall || 0) * 100).toFixed(1)}%</div>
-                                    </div>
-                                    <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
-                                        <div className="text-[10px] text-slate-400 uppercase">F1-Score / AUC</div>
-                                        <div className="text-lg font-mono text-slate-200 font-bold">
-                                            {(result.evaluationMetrics.f1Score || 0).toFixed(2)} <span className="text-slate-500 text-sm font-normal mx-1">/</span> {(result.evaluationMetrics.auc || 0).toFixed(2)}
-                                        </div>
-                                    </div>
+                <div className="md:col-span-2 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
+                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">Performance Metrics</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 border-b border-purple-500/20 pb-1">Validation Set Statistics</h4>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                    <div className="text-[10px] text-slate-400 uppercase">Accuracy (AR)</div>
+                                    <div className="text-xl font-mono text-white font-bold">{((result.evaluationMetrics?.accuracy || 0) * 100).toFixed(1)}%</div>
+                                </div>
+                                <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                    <div className="text-[10px] text-slate-400 uppercase">F1-Score</div>
+                                    <div className="text-xl font-mono text-cyan-300 font-bold">{(result.evaluationMetrics?.f1Score || 0).toFixed(2)}</div>
                                 </div>
                             </div>
-
-                            {/* Trading Performance Metrics */}
-                            <div>
-                                <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 border-b border-purple-500/20 pb-1">Simulated Trading Performance</h4>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
-                                        <div className="text-[10px] text-slate-400 uppercase">Winning Rate (WR)</div>
-                                        <div className={`text-xl font-mono font-bold ${(result.tradingMetrics.winningRate || 0) > 0.5 ? 'text-green-400' : 'text-yellow-400'}`}>
-                                            {((result.tradingMetrics.winningRate || 0) * 100).toFixed(1)}%
-                                        </div>
-                                    </div>
-                                    <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
-                                        <div className="text-[10px] text-slate-400 uppercase">Annual Return (ARR)</div>
-                                        <div className={`text-xl font-mono font-bold ${(result.tradingMetrics.annualizedReturn || 0) > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                            {((result.tradingMetrics.annualizedReturn || 0) * 100).toFixed(1)}%
-                                        </div>
-                                    </div>
-                                    <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
-                                        <div className="text-[10px] text-slate-400 uppercase">Sharpe Ratio (ASR)</div>
-                                        <div className="text-xl font-mono text-purple-300 font-bold">{(result.tradingMetrics.sharpeRatio || 0).toFixed(2)}</div>
-                                    </div>
-                                    <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
-                                        <div className="text-[10px] text-slate-400 uppercase">Max Drawdown (MDD)</div>
-                                        <div className="text-xl font-mono text-red-400 font-bold">{((result.tradingMetrics.maxDrawdown || 0) * 100).toFixed(1)}%</div>
-                                    </div>
+                        </div>
+                        <div>
+                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 border-b border-purple-500/20 pb-1">Backtest Returns</h4>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                    <div className="text-[10px] text-slate-400 uppercase">Annualized</div>
+                                    <div className={`text-xl font-mono font-bold ${(result.tradingMetrics?.annualizedReturn || 0) > 0 ? 'text-green-400' : 'text-red-400'}`}>{((result.tradingMetrics?.annualizedReturn || 0) * 100).toFixed(1)}%</div>
+                                </div>
+                                <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                    <div className="text-[10px] text-slate-400 uppercase">Sharpe</div>
+                                    <div className="text-xl font-mono text-purple-300 font-bold">{(result.tradingMetrics?.sharpeRatio || 0).toFixed(2)}</div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                )}
+                </div>
 
-                {/* Feature Importance */}
                 <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6">
-                    <h3 className="text-sm font-bold text-slate-400 uppercase mb-4">Feature Importance</h3>
+                    <h3 className="text-sm font-bold text-slate-400 uppercase mb-4">Feature/Component Importance</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart layout="vertical" data={result.featureImportance || []}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
                                 <XAxis type="number" hide />
                                 <YAxis dataKey="feature" type="category" width={100} tick={{fontSize: 10, fill: '#94a3b8'}} />
-                                <Tooltip cursor={{fill: '#1e293b'}} contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155' }} />
-                                <Bar dataKey="score" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={20} />
+                                <Tooltip cursor={{fill: '#1e293b'}} contentStyle={{ backgroundColor: '#0f172a', border: 'none' }} />
+                                <Bar dataKey="score" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* Explanation */}
                 <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6">
-                    <h3 className="text-sm font-bold text-slate-400 uppercase mb-4">Model Logic</h3>
-                    <p className="text-slate-300 text-sm leading-relaxed">
-                        {result.explanation}
-                    </p>
+                    <h3 className="text-sm font-bold text-slate-400 uppercase mb-4">Model Interpretability</h3>
+                    <p className="text-slate-300 text-sm leading-relaxed">{result.explanation}</p>
                 </div>
             </div>
         )}

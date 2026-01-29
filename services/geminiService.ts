@@ -6,7 +6,8 @@ import {
   PriceActionData,
   TechnicalAnalysisData,
   BacktestResult,
-  BrokerIntelData
+  BrokerIntelData,
+  MLPredictionResult
 } from "../types";
 
 const modelName = "gemini-3-flash-preview";
@@ -90,17 +91,17 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        analystSynthesis: { type: Type.STRING, description: "Professional data analyst summary of broker trends." },
-                        dominantSide: { type: Type.STRING, description: "Net Buy, Net Sell, or Neutral" },
+                        analystSynthesis: { type: Type.STRING },
+                        dominantSide: { type: Type.STRING },
                         metrics: {
                             type: Type.OBJECT,
                             properties: {
                                 brokerFlow: {
                                     type: Type.OBJECT,
                                     properties: {
-                                        netBuyRatio: { type: Type.NUMBER, description: "0.0 to 1.0" },
-                                        flowConsistency: { type: Type.NUMBER, description: "0.0 to 1.0" },
-                                        participantQuality: { type: Type.NUMBER, description: "0.0 to 1.0 (Higher means more Institutional)" }
+                                        netBuyRatio: { type: Type.NUMBER },
+                                        flowConsistency: { type: Type.NUMBER },
+                                        participantQuality: { type: Type.NUMBER }
                                     }
                                 }
                             }
@@ -115,7 +116,7 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
                                 }
                             }
                         },
-                        summary: { type: Type.STRING, description: "Short footer summary." }
+                        summary: { type: Type.STRING }
                     },
                     required: ["analystSynthesis", "dominantSide", "metrics", "brokerActivityHistory", "summary"]
                 }
@@ -152,8 +153,7 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
                                     volume: { type: Type.NUMBER },
                                     label: { type: Type.STRING, nullable: true },
                                     breakLinePrice: { type: Type.NUMBER, nullable: true }
-                                },
-                                required: ["time", "open", "high", "low", "close", "volume"]
+                                }
                             }
                         },
                         orderBlocks: {
@@ -194,8 +194,7 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
                                 }
                             }
                         }
-                    },
-                    required: ["summary", "candles", "orderBlocks", "liquiditySweeps", "targets", "bias", "marketRegime"]
+                    }
                 }
             }
         });
@@ -233,7 +232,6 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
                                 rsi: { type: Type.STRING },
                                 rsiVal: { type: Type.NUMBER },
                                 macd: { type: Type.STRING },
-                                macdVal: { type: Type.NUMBER },
                                 movingAverages: { type: Type.STRING },
                                 bollingerBands: { type: Type.STRING }
                             }
@@ -245,8 +243,7 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
                                 resistance: { type: Type.ARRAY, items: { type: Type.NUMBER } }
                             }
                         }
-                    },
-                    required: ["currentPrice", "trend", "summary", "priceHistory", "indicators", "supportResistance"]
+                    }
                 }
             }
         });
@@ -278,24 +275,8 @@ export const runBacktest = async (
     simulationModel: string
 ): Promise<BacktestResult> => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `Perform a financial backtest simulation for ${ticker} from ${startDate} to ${endDate}.
-    Strategy: ${strategy}
-    Timeframe: ${timeframe}
-    Risk Params: RR ${riskReward}, SL ${stopLoss}, TP ${takeProfit}, Trailing ${trailingStop}
-    Simulation Model: ${simulationModel}. 
-    
-    Note: If "Gordon Constant Growth Model" is selected, evaluate the ticker based on its dividend payout ratio, 
-    required rate of return, and dividend growth rate to determine intrinsic value pathways.
-
-    Return JSON matching this structure:
-    {
-        "metrics": { "totalReturn": "string %", "maxDrawdown": "string %", "winRate": "string %", "tradesCount": int },
-        "equityCurve": [ { "date": "string", "value": number } ],
-        "trades": [ { "date": "string", "type": "Buy"|"Sell", "price": number, "result": "string" } ],
-        "summary": "AI breakdown of the simulation pathways.",
-        "blackScholesMetrics": { "impliedVolatility": number, "callOptionPrice": number, "putOptionPrice": number } 
-    }
-    IMPORTANT: Generate exactly 20-30 data points for the equity curve.`;
+    const prompt = `Perform a financial backtest simulation for ${ticker} from ${startDate} to ${endDate}. Strategy: ${strategy}. Simulation Model: ${simulationModel}. 
+    Return JSON matching the expected structure.`;
 
     try {
         const response = await ai.models.generateContent({
@@ -305,8 +286,46 @@ export const runBacktest = async (
         });
         return cleanAndParseJSON(response.text);
     } catch (e: any) {
-        console.error(e);
-        throw new Error("Simulation Engine Offline: Failed to compute pathways.");
+        throw new Error("Simulation Engine Offline.");
+    }
+};
+
+export const runMLSimulation = async (
+    ticker: string, 
+    modelType: string, 
+    features: string[], 
+    trainingPeriod: string, 
+    predictionHorizon: string, 
+    endDate: string
+): Promise<MLPredictionResult> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const prompt = `Perform a Machine Learning simulation for ${ticker} using the ${modelType} architecture.
+    Features: ${features.join(", ")}. Training: ${trainingPeriod} ending ${endDate}. Prediction: ${predictionHorizon}.
+    If model is "PCA-ML", emphasize the extraction of principal components and dimensionality reduction impact.
+    Return JSON:
+    {
+        "ticker": "string",
+        "currentPrice": number,
+        "predictedPrice": number,
+        "confidenceScore": number,
+        "volatility": "string",
+        "modelUsed": "string",
+        "featureImportance": [ { "feature": "string", "score": number } ],
+        "predictionPath": [ { "date": "string", "price": number, "upper": number, "lower": number } ],
+        "explanation": "string describing model logic and PCA components if applicable",
+        "evaluationMetrics": { "accuracy": number, "f1Score": number },
+        "tradingMetrics": { "annualizedReturn": number, "sharpeRatio": number }
+    }`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        });
+        return cleanAndParseJSON(response.text);
+    } catch (e: any) {
+        throw new Error("ML Engine Convergence Failure.");
     }
 };
 
@@ -314,7 +333,6 @@ export const runQuantumMCDMAnalysis = async (t:any) => ({} as any);
 export const runFFTSPLPRAnalysis = async (t:any) => ({} as any);
 export const runFFFCMGNNAnalysis = async (t:any) => ({} as any);
 export const runOptimalFuzzyDesignAnalysis = async (t:any) => ({} as any);
-export const runMLSimulation = async (t:any, m:any, f:any, tp:any, ph:any, ted:any) => ({} as any);
 export const runMPTAnalysis = async (h:any, s:any, v:any) => ({} as any);
 export const getETFProfile = async (t:any) => ({} as any);
 export const runHedgeAnalysis = async (h:any) => ({} as any);
