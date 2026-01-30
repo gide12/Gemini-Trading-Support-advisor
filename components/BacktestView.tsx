@@ -131,7 +131,13 @@ const BacktestView: React.FC = () => {
                         <option value="Monte Carlo Simulation">Monte Carlo Simulation</option>
                         <option value="Black-Scholes Model">Black-Scholes Model</option>
                         <option value="Gordon Constant Growth Model">Gordon Constant Growth Model</option>
+                        <option value="Λ-Vol (Volatility Frameworks)">Λ-Vol (Volatility Frameworks)</option>
                     </select>
+                    {simulationModel === "Λ-Vol (Volatility Frameworks)" && (
+                        <p className="mt-2 text-[10px] text-purple-400 italic">
+                            The Λ-Vol engine is part of a broader series of advanced Volatility Frameworks focusing on non-linear variance pathways.
+                        </p>
+                    )}
                 </div>
 
                 <div>

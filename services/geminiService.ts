@@ -281,8 +281,30 @@ export const runBacktest = async (
     simulationModel: string
 ): Promise<BacktestResult> => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `Perform a financial backtest simulation for ${ticker} from ${startDate} to ${endDate}. Strategy: ${strategy}. Simulation Model: ${simulationModel}. 
-    Return JSON matching the expected structure.`;
+    
+    let modelGuidance = "";
+    if (simulationModel.includes("Λ-Vol")) {
+        modelGuidance = `
+            The user has selected the "Λ-Vol (Volatility Frameworks)" model. 
+            This is part of an advanced series of Volatility Frameworks. 
+            Focus on modeling non-linear variance pathways, volatility clustering, and the impact of tail-risk events on strategy execution.
+        `;
+    }
+
+    const prompt = `Perform a financial backtest simulation for ${ticker} from ${startDate} to ${endDate}. 
+    Strategy: ${strategy}. 
+    Simulation Model: ${simulationModel}. 
+    ${modelGuidance}
+    Risk Params: RR ${riskReward}, SL ${stopLoss}, TP ${takeProfit}, Trailing ${trailingStop}.
+    Return JSON matching this structure:
+    {
+        "metrics": { "totalReturn": "string %", "maxDrawdown": "string %", "winRate": "string %", "tradesCount": int },
+        "equityCurve": [ { "date": "string", "value": number } ],
+        "trades": [ { "date": "string", "type": "Buy"|"Sell", "price": number, "result": "string" } ],
+        "summary": "AI breakdown of the simulation pathways.",
+        "blackScholesMetrics": { "impliedVolatility": number, "callOptionPrice": number, "putOptionPrice": number } 
+    }
+    IMPORTANT: Generate exactly 20-30 data points for the equity curve.`;
 
     try {
         const response = await ai.models.generateContent({
@@ -292,7 +314,7 @@ export const runBacktest = async (
         });
         return cleanAndParseJSON(response.text);
     } catch (e: any) {
-        throw new Error("Simulation Engine Offline.");
+        throw new Error("Simulation Engine Offline: Failed to compute pathways.");
     }
 };
 
