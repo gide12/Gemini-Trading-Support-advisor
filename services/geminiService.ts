@@ -84,6 +84,51 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
         return { ticker, type: analysisType, content: json.summary, newsItems: json.newsItems, sources: extractSources(response) };
     }
 
+    if (analysisType === AnalysisType.Ideas) {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: `Act as a Head of Research at a top Quant Hedge Fund. Generate a specific high-probability Trade Idea for ${ticker}. 
+            Consider macro factors, technical breakouts, and recent institutional flow.
+            Provide precise entry levels, stop loss, and multiple take profit targets.`,
+            config: { 
+                tools: [{ googleSearch: {} }],
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        bias: { type: Type.STRING, description: "Bullish, Bearish, or Neutral" },
+                        timeframe: { type: Type.STRING, description: "Intraday, Swing (1-2 weeks), or Long-term" },
+                        conviction: { type: Type.NUMBER, description: "Confidence score 0-100" },
+                        entryRange: {
+                            type: Type.OBJECT,
+                            properties: {
+                                low: { type: Type.NUMBER },
+                                high: { type: Type.NUMBER }
+                            }
+                        },
+                        stopLoss: { type: Type.NUMBER },
+                        targets: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    price: { type: Type.NUMBER },
+                                    label: { type: Type.STRING }
+                                }
+                            }
+                        },
+                        catalysts: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        riskRewardRatio: { type: Type.STRING, description: "e.g. 1:3" },
+                        rationale: { type: Type.STRING, description: "Detailed 2-3 paragraph explanation" }
+                    },
+                    required: ["bias", "timeframe", "conviction", "entryRange", "stopLoss", "targets", "catalysts", "riskRewardRatio", "rationale"]
+                }
+            }
+        });
+        const json = cleanAndParseJSON(response.text);
+        return { ticker, type: analysisType, content: json.rationale, tradeIdea: json, sources: extractSources(response) };
+    }
+
     if (analysisType === AnalysisType.BrokerIntel) {
         const response = await ai.models.generateContent({
             model: modelName,

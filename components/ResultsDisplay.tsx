@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState } from "react";
-import { AnalysisResult, AnalysisType, PriceActionData, PriceActionCandle, TechnicalAnalysisData, NewsItem, BrokerIntelData } from "../types";
+import { AnalysisResult, AnalysisType, PriceActionData, PriceActionCandle, TechnicalAnalysisData, NewsItem, BrokerIntelData, TradeIdeaData } from "../types";
 import { 
     ComposedChart, ReferenceLine, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar, Cell, CartesianGrid, ReferenceArea, Area, BarChart, Line, Scatter, ScatterChart, ZAxis
 } from "recharts";
@@ -114,6 +114,126 @@ const NewsDashboard = ({ items, summary }: { items: NewsItem[], summary: string 
                         </div>
                     </a>
                 ))}
+            </div>
+        </div>
+    );
+};
+
+const TradeIdeasDashboard = ({ data }: { data: TradeIdeaData }) => {
+    const isBullish = data.bias === "Bullish";
+    const accentColor = isBullish ? "text-emerald-400" : data.bias === "Bearish" ? "text-rose-400" : "text-amber-400";
+    const bgColor = isBullish ? "bg-emerald-500/10" : data.bias === "Bearish" ? "bg-rose-500/10" : "bg-amber-500/10";
+    const borderColor = isBullish ? "border-emerald-500/30" : data.bias === "Bearish" ? "border-rose-500/30" : "border-amber-500/30";
+    const glowShadow = isBullish ? "shadow-[0_0_20px_rgba(16,185,129,0.2)]" : data.bias === "Bearish" ? "shadow-[0_0_20px_rgba(244,63,94,0.2)]" : "";
+
+    return (
+        <div className="space-y-8 animate-fade-in font-sans">
+            {/* SIGNAL TOP BAR */}
+            <div className={`${bgColor} ${borderColor} ${glowShadow} border rounded-2xl p-8 relative overflow-hidden`}>
+                <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none select-none">
+                    <svg className={`w-32 h-32 ${accentColor}`} fill="currentColor" viewBox="0 0 24 24">
+                        {isBullish ? <path d="M7 14l5-5 5 5H7z" /> : <path d="M7 10l5 5 5-5H7z" />}
+                    </svg>
+                </div>
+                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div>
+                        <div className="flex items-center gap-3 mb-2">
+                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Institutional Signal</span>
+                             <span className="h-px w-8 bg-slate-700"></span>
+                             <span className="text-[10px] font-bold text-slate-400 uppercase">{data.timeframe} Setup</span>
+                        </div>
+                        <h2 className={`text-6xl font-black italic tracking-tighter uppercase ${accentColor}`}>
+                            {data.bias}
+                        </h2>
+                    </div>
+                    <div className="bg-black/40 backdrop-blur-md border border-white/5 p-4 rounded-xl flex items-center gap-6">
+                        <div className="text-center">
+                            <div className="text-[9px] font-black text-slate-500 uppercase mb-1">Conviction</div>
+                            <div className={`text-2xl font-mono font-bold ${accentColor}`}>{data.conviction}%</div>
+                        </div>
+                        <div className="h-10 w-px bg-slate-800"></div>
+                        <div className="text-center">
+                            <div className="text-[9px] font-black text-slate-500 uppercase mb-1">R:R Ratio</div>
+                            <div className="text-2xl font-mono font-bold text-white">{data.riskRewardRatio}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* PRICE LEVELS GRID */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-[#1c202b] p-6 rounded-2xl border border-white/5 shadow-xl relative group">
+                    <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                    <span className="text-[10px] text-slate-500 uppercase font-black block mb-4 tracking-widest">Entry Range</span>
+                    <div className="text-3xl font-black text-white font-mono tracking-tighter">
+                        ${data.entryRange.low.toFixed(2)} <span className="text-slate-600 text-lg mx-1">—</span> ${data.entryRange.high.toFixed(2)}
+                    </div>
+                    <div className="mt-4 text-[10px] text-blue-400 font-bold uppercase tracking-tighter">Institutional Accumulation Zone</div>
+                </div>
+
+                <div className="bg-[#1c202b] p-6 rounded-2xl border border-white/5 shadow-xl relative">
+                    <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-rose-500"></div>
+                    <span className="text-[10px] text-slate-500 uppercase font-black block mb-4 tracking-widest">Hard Stop</span>
+                    <div className="text-3xl font-black text-rose-500 font-mono tracking-tighter">
+                        ${data.stopLoss.toFixed(2)}
+                    </div>
+                    <div className="mt-4 text-[10px] text-rose-900 font-bold uppercase tracking-tighter">Risk Invalidation Point</div>
+                </div>
+
+                <div className="bg-[#1c202b] p-6 rounded-2xl border border-white/5 shadow-xl relative">
+                    <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <span className="text-[10px] text-slate-500 uppercase font-black block mb-4 tracking-widest">Primary Target</span>
+                    <div className="text-3xl font-black text-emerald-400 font-mono tracking-tighter">
+                        ${data.targets[0].price.toFixed(2)}
+                    </div>
+                    <div className="mt-4 text-[10px] text-emerald-900 font-bold uppercase tracking-tighter">{data.targets[0].label}</div>
+                </div>
+            </div>
+
+            {/* RATIONALE & CATALYSTS */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="bg-[#131722] border border-slate-800 rounded-2xl p-8 shadow-2xl">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
+                        Strategic Rationale
+                    </h3>
+                    <div className="text-slate-300 text-sm leading-relaxed space-y-4 font-serif italic">
+                        {data.rationale}
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    <div className="bg-[#131722] border border-slate-800 rounded-2xl p-8 shadow-2xl">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full"></div>
+                            Key Catalysts
+                        </h3>
+                        <div className="space-y-4">
+                            {data.catalysts.map((c, i) => (
+                                <div key={i} className="flex gap-4 items-start group">
+                                    <span className="text-cyan-500 font-mono text-xs mt-0.5">0{i+1}</span>
+                                    <p className="text-xs text-slate-400 font-bold uppercase leading-tight group-hover:text-white transition-colors">{c}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="bg-[#131722] border border-slate-800 rounded-2xl p-8 shadow-2xl">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">Extended Profit Targets</h3>
+                        <div className="space-y-3">
+                            {data.targets.slice(1).map((t, i) => (
+                                <div key={i} className="flex justify-between items-center bg-black/20 p-3 rounded-lg border border-white/5">
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">{t.label}</span>
+                                    <span className="text-sm font-mono font-bold text-emerald-400">${t.price.toFixed(2)}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="p-4 bg-slate-900/40 rounded-xl border border-white/5 text-[9px] text-slate-600 text-center uppercase tracking-[0.4em] font-black">
+                Alpha Source: Q-SYS Institutional Intelligence Node • 0.2ms Latency
             </div>
         </div>
     );
@@ -437,6 +557,10 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isLoading, acti
           <NewsDashboard items={result.newsItems} summary={result.content} />
       )}
 
+      {activeTab === AnalysisType.Ideas && result.tradeIdea && (
+          <TradeIdeasDashboard data={result.tradeIdea} />
+      )}
+
       {activeTab === AnalysisType.BrokerIntel && result.brokerIntel && (
           <BrokerIntelDashboard data={result.brokerIntel} />
       )}
@@ -451,7 +575,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isLoading, acti
           <TechnicalAnalysisDashboard data={result.technicalAnalysis} />
       )}
 
-      {activeTab !== AnalysisType.PriceAction && activeTab !== AnalysisType.Technical && activeTab !== AnalysisType.News && activeTab !== AnalysisType.BrokerIntel && (
+      {activeTab !== AnalysisType.PriceAction && activeTab !== AnalysisType.Technical && activeTab !== AnalysisType.News && activeTab !== AnalysisType.BrokerIntel && activeTab !== AnalysisType.Ideas && (
           <div className="p-6 text-slate-200 font-sans text-sm leading-relaxed whitespace-pre-wrap bg-black/40 rounded-xl border border-white/5 shadow-inner">
               {result.content}
           </div>

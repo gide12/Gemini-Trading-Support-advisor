@@ -100,7 +100,6 @@ export interface TechnicalAnalysisData {
   summary: string;
 }
 
-// Added analystSynthesis to fix Property 'analystSynthesis' does not exist on type 'BrokerIntelData'
 export interface BrokerIntelData {
     analystSynthesis: string;
     metrics: {
@@ -109,6 +108,18 @@ export interface BrokerIntelData {
     dominantSide: "Net Buy" | "Net Sell" | "Neutral";
     brokerActivityHistory: { date: string; activity: number }[];
     summary: string;
+}
+
+export interface TradeIdeaData {
+    bias: "Bullish" | "Bearish" | "Neutral";
+    timeframe: string;
+    conviction: number; // 0 to 100
+    entryRange: { low: number; high: number };
+    stopLoss: number;
+    targets: { price: number; label: string }[];
+    catalysts: string[];
+    riskRewardRatio: string;
+    rationale: string;
 }
 
 export interface AnalysisResult {
@@ -120,6 +131,7 @@ export interface AnalysisResult {
   brokerIntel?: BrokerIntelData;
   priceAction?: PriceActionData;
   newsItems?: NewsItem[];
+  tradeIdea?: TradeIdeaData;
 }
 
 export interface TabItem { id: AnalysisType; label: string; }
