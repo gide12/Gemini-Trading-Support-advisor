@@ -12,7 +12,10 @@ import {
   FFFCMGNNResult,
   OptimalFuzzyDesignResult,
   FFTSPLPRResult,
-  QuantumMCDMResult
+  QuantumMCDMResult,
+  AdvancedPricingResult,
+  DeltaGammaHedgeResult,
+  Holding
 } from "../types";
 
 const modelName = "gemini-3-flash-preview";
@@ -43,6 +46,51 @@ const extractSources = (response: any) => {
       url: chunk.web?.uri || chunk.maps?.uri || ""
     }))
     .filter((s: any) => s.url);
+};
+
+export const runHedgeAnalysis = async (holdings: Holding[]): Promise<DeltaGammaHedgeResult> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const prompt = `
+    Act as a sophisticated financial analysis AI at an institutional hedge fund.
+    Perform a comprehensive hedging diagnostics for the following portfolio: ${JSON.stringify(holdings)}.
+    
+    OBJECTIVES:
+    1. Evaluate Effectiveness: Quantify risk reduction (Variance reduction, Value-at-Risk reduction).
+    2. Cost vs Benefit: Analyze the drag of hedging costs against P&L protection.
+    3. Residual Exposure: Identify assets with high tails or uncovered beta.
+    4. Suggest Improvements: Recommend specific adjustments to option strikes or delta-offsets.
+    
+    Structure the response in JSON:
+    {
+        "summary": "Concise summary for a Portfolio Manager.",
+        "metrics": {
+            "hedgingEfficiency": number, "varianceReduction": number,
+            "unhedgedBeta": number, "hedgedBeta": number,
+            "unhedgedVaR": number, "hedgedVaR": number,
+            "unhedgedCVaR": number, "hedgedCVaR": number
+        },
+        "exposures": [
+            { "asset": "string", "grossExposure": number, "netExposure": number, "hedgingCoverage": number, "costOfHedge": number }
+        ],
+        "pnlComparison": [
+            { "time": "T-30 to Present", "unhedgedPnl": number, "hedgedPnl": number }
+        ],
+        "recommendations": [
+            { "priority": "High"|"Med"|"Low", "title": "string", "action": "string" }
+        ]
+    }
+    IMPORTANT: Provide 20 data points for pnlComparison representing the last 30 trading days.`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        });
+        return cleanAndParseJSON(response.text);
+    } catch (e) {
+        throw new Error("Hedging Engine Offline.");
+    }
 };
 
 export const analyzeStock = async (ticker: string, analysisType: AnalysisType): Promise<AnalysisResult> => {
@@ -402,6 +450,49 @@ export const runMLSimulation = async (
     }
 };
 
+export const runAdvancedPricingAnalysis = async (ticker: string): Promise<AdvancedPricingResult> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const prompt = `
+    Act as a Senior Quant Researcher at a Hedge Fund. Perform a diagnostic multi-model derivatives analysis for ${ticker}.
+    MODELS: BSM, Heston Stochastic Vol, Merton Jump Diffusion, Variance Swap.
+    
+    DIAGNOSTIC TASKS:
+    1. Check Spot Price availability.
+    2. Assess Option Chain liquidity/depth.
+    3. Evaluate Yield Curve and Dividend yield data.
+    4. If data is missing or invalid, report it in 'diagnostics' and set values to 0. 
+    5. Return a "Quant Analyst Synthesis" explaining failures or analytical results.
+    
+    Structure the response in JSON exactly:
+    {
+        "ticker": "${ticker}",
+        "bsm": { "fairValue": number, "impliedVol": number, "greeks": { "delta": number, "gamma": number, "theta": number, "vega": number, "rho": number } },
+        "heston": { "surfaceStatus": "string", "description": "string", "parameters": { "v0": number, "kappa": number, "theta": number, "sigma": number, "rho": number } },
+        "jumpDiffusion": { "jumpProbability": number, "description": "string", "parameters": { "lambda": number, "mu": number, "delta": number } },
+        "varianceSwap": { "fairVarianceStrike": number, "payoffDescription": "string" },
+        "diagnostics": {
+            "spotPrice": "OK"|"MISSING"|"STALE",
+            "optionChain": "OK"|"THIN"|"EMPTY",
+            "yieldCurve": "OK"|"INVERTED"|"MISSING",
+            "dividendYield": "OK"|"ASSUMED"|"MISSING",
+            "calibrationStatus": "string",
+            "failureRootCause": "string if applicable"
+        },
+        "summary": "Detailed 2-paragraph Quant Audit summary."
+    }`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        });
+        return cleanAndParseJSON(response.text);
+    } catch (e) {
+        throw new Error("Quant Engine Connection Interrupted.");
+    }
+};
+
 export const runFTSLFIGAnalysis = async (ticker: string): Promise<FTSLFIGResult> => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const prompt = `Perform a Fuzzy Time Series (FTS) analysis for ${ticker} integrated with Linear Fuzzy Information Granule (LFIG) method.
@@ -468,6 +559,4 @@ export const runOptimalFuzzyDesignAnalysis = async (ticker: string): Promise<Opt
 
 export const runMPTAnalysis = async (holdings: any, strategy: any, views: any) => ({} as any);
 export const getETFProfile = async (t:any) => ({} as any);
-export const runHedgeAnalysis = async (h:any) => ({} as any);
-export const runAdvancedPricingAnalysis = async (t:any) => ({} as any);
 export const runCAPMAPTAnalysis = async (t:any, r:any, m:any) => ({} as any);

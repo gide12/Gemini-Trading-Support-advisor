@@ -170,9 +170,55 @@ export interface BacktestResult {
 
 export interface MLPredictionResult { ticker: string; currentPrice: number; predictedPrice: number; confidenceScore: number; volatility: string; modelUsed: string; featureImportance: { feature: string; score: number }[]; predictionPath: { date: string; price: number; upper: number; lower: number }[]; explanation: string; evaluationMetrics: any; tradingMetrics: any; }
 export interface ETFProfile { ticker: string; name: string; topHoldings: { ticker: string; name: string; weight: number; }[]; }
-export interface DeltaGammaHedgeResult { portfolioGreeks: any; hedgingActions: any; sensitivityPath: any; riskSummary: string; }
-export interface AdvancedPricingResult { ticker: string; bsm: any; heston: any; jumpDiffusion: any; varianceSwap: any; summary: string; }
-export interface AdvancedPricingResult { ticker: string; bsm: any; heston: any; jumpDiffusion: any; varianceSwap: any; summary: string; }
+
+export interface DeltaGammaHedgeResult { 
+    summary: string;
+    metrics: {
+        hedgingEfficiency: number; // 0-100%
+        varianceReduction: number; // 0-100%
+        unhedgedBeta: number;
+        hedgedBeta: number;
+        unhedgedVaR: number; // 95% 1-Day
+        hedgedVaR: number;
+        unhedgedCVaR: number;
+        hedgedCVaR: number;
+    };
+    exposures: {
+        asset: string;
+        grossExposure: number;
+        netExposure: number;
+        hedgingCoverage: number; // 0-100%
+        costOfHedge: number;
+    }[];
+    pnlComparison: {
+        time: string;
+        unhedgedPnl: number;
+        hedgedPnl: number;
+    }[];
+    recommendations: {
+        priority: "High" | "Med" | "Low";
+        title: string;
+        action: string;
+    }[];
+}
+
+export interface AdvancedPricingResult { 
+    ticker: string; 
+    bsm: any; 
+    heston: any; 
+    jumpDiffusion: any; 
+    varianceSwap: any; 
+    summary: string;
+    diagnostics: {
+        spotPrice: "OK" | "MISSING" | "STALE";
+        optionChain: "OK" | "THIN" | "EMPTY";
+        yieldCurve: "OK" | "INVERTED" | "MISSING";
+        dividendYield: "OK" | "ASSUMED" | "MISSING";
+        calibrationStatus: string;
+        failureRootCause?: string;
+    };
+}
+
 export interface CAPMAPTResult { ticker: string; capm: any; apt: any; summary: string; }
 export interface InvestorView { type: "Absolute" | "Relative"; asset1: string; asset2?: string; expectedReturn: number; confidence: number; }
 

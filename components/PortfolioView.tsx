@@ -5,7 +5,7 @@ import { getInitialHoldings, getPortfolioHistory } from "../services/marketDataS
 import { runMPTAnalysis, getETFProfile, runHedgeAnalysis, runAdvancedPricingAnalysis, runCAPMAPTAnalysis } from "../services/geminiService";
 import { 
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    ComposedChart, Line, Scatter, ScatterChart, ZAxis, Cell, BarChart, Bar
+    ComposedChart, Line, Scatter, ScatterChart, ZAxis, Cell, BarChart, Bar, Legend
 } from 'recharts';
 
 const AssetIcon = ({ ticker }: { ticker: string }) => {
@@ -27,6 +27,21 @@ const AssetIcon = ({ ticker }: { ticker: string }) => {
                 className="w-full h-full object-contain p-1"
                 onError={() => setError(true)}
             />
+        </div>
+    );
+};
+
+const DiagnosticBadge = ({ label, status }: { label: string, status: "OK" | "MISSING" | "STALE" | "EMPTY" | "THIN" | "INVERTED" | "ASSUMED" | string }) => {
+    const isOk = status === "OK" || status === "ASSUMED";
+    const isWarning = status === "STALE" || status === "THIN" || status === "INVERTED";
+    
+    return (
+        <div className="flex items-center gap-2 bg-slate-900/50 p-2 rounded border border-white/5">
+            <div className={`w-1.5 h-1.5 rounded-full ${isOk ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : isWarning ? 'bg-amber-500 shadow-[0_0_8px_#f59e0b]' : 'bg-rose-500 shadow-[0_0_8px_#f43f5e]'}`}></div>
+            <div className="flex flex-col">
+                <span className="text-[8px] text-slate-500 uppercase font-black tracking-widest">{label}</span>
+                <span className={`text-[10px] font-bold ${isOk ? 'text-emerald-400' : isWarning ? 'text-amber-400' : 'text-rose-400'}`}>{status}</span>
+            </div>
         </div>
     );
 };
@@ -198,12 +213,11 @@ const PortfolioView: React.FC = () => {
             const index = next.findIndex(h => h.ticker === suggestion.ticker);
             const holding = next[index];
 
-            // Helper to extract a number from strings like "$1,200", "50 shares", "20%"
             const parseAmount = (str: string, basePrice: number) => {
                 const numeric = parseFloat(str.replace(/[^0-9.]/g, ''));
                 if (str.includes('%')) return (totalValue * (numeric / 100)) / basePrice;
                 if (str.includes('$')) return numeric / basePrice;
-                return numeric; // Default to shares
+                return numeric;
             };
 
             const price = holding ? holding.currentPrice : (Math.random() * 200 + 50);
@@ -254,7 +268,6 @@ const PortfolioView: React.FC = () => {
         return next;
     });
 
-    // Reset view
     setMptResult(null);
     setShowConfirmRebalance(false);
   };
@@ -328,13 +341,10 @@ const PortfolioView: React.FC = () => {
     if (isNaN(baseCap)) return;
 
     const totalCap = baseCap * leverage;
-
-    // We will replace current holdings with ETF allocation
     const newHoldings: Holding[] = [];
 
     etfResult.topHoldings.forEach(holding => {
         const allocationAmount = totalCap * (holding.weight / 100);
-        // Simulate a "Buy Price" (roughly around $100-$300 for generic mock)
         const mockPrice = Math.random() * 200 + 50; 
         const qty = allocationAmount / mockPrice;
 
@@ -342,7 +352,7 @@ const PortfolioView: React.FC = () => {
             ticker: holding.ticker,
             quantity: qty,
             avgBuyPrice: mockPrice,
-            currentPrice: mockPrice, // Assume bought just now
+            currentPrice: mockPrice,
             marketValue: allocationAmount,
             pl: 0,
             plPercent: 0,
@@ -354,7 +364,7 @@ const PortfolioView: React.FC = () => {
     });
 
     setHoldings(newHoldings);
-    setEtfResult(null); // Close the panel/reset
+    setEtfResult(null);
     setEtfTicker("");
   };
   
@@ -385,7 +395,6 @@ const PortfolioView: React.FC = () => {
                 </div>
              </div>
              
-             {/* Net Gain Card */}
              <div className="bg-[#1e293b]/50 border border-purple-500/20 rounded-lg p-3 min-w-[200px]">
                 <h3 className="text-xs font-bold text-slate-400 uppercase mb-1">Portfolio Net Gain</h3>
                 <div className={`text-2xl font-bold font-mono ${totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -425,48 +434,146 @@ const PortfolioView: React.FC = () => {
           </div>
         </div>
 
-        {/* Add/Edit Asset Form */}
-        <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
-            <h3 className="text-lg font-bold text-white mb-4">Manage Portfolio</h3>
-            <form onSubmit={handleAddOrUpdate} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        {/* Portfolio Hedging & Risk Diagnostics */}
+        <div className="bg-[#0f172a] rounded-xl border border-pink-500/30 p-6 shadow-lg shadow-pink-900/10">
+            <div className="flex justify-between items-center mb-6">
                 <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1">Ticker Symbol</label>
-                    <input 
-                        type="text" 
-                        value={tickerInput}
-                        onChange={(e) => setTickerInput(e.target.value)}
-                        placeholder="e.g. TSLA"
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-purple-500 outline-none uppercase"
-                    />
-                </div>
-                <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1">Quantity</label>
-                    <input 
-                        type="number" 
-                        value={sharesInput}
-                        onChange={(e) => setSharesInput(e.target.value)}
-                        placeholder="0"
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-purple-500 outline-none"
-                    />
-                </div>
-                <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1">Avg Buy Price ($)</label>
-                    <input 
-                        type="number" 
-                        value={costInput}
-                        onChange={(e) => setCostInput(e.target.value)}
-                        placeholder="0.00"
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-purple-500 outline-none"
-                    />
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <svg className="w-6 h-6 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                        Portfolio Hedging & Risk Diagnostics
+                    </h3>
+                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mt-1">Multi-Asset Protection Assessment</p>
                 </div>
                 <button 
-                    type="submit"
-                    disabled={!tickerInput || !sharesInput || !costInput}
-                    className="bg-purple-600 hover:bg-purple-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-medium py-2 px-4 rounded transition-colors"
+                    onClick={handleRunHedge}
+                    disabled={hedgeLoading || holdings.length === 0}
+                    className="bg-pink-600 hover:bg-pink-500 text-white text-xs font-black uppercase px-6 py-2.5 rounded-full transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-pink-900/40"
                 >
-                    Add / Update
+                    {hedgeLoading ? 'Analyzing Performance...' : 'Run Diagnostics'}
                 </button>
-            </form>
+            </div>
+
+            {hedgeResult ? (
+                <div className="animate-fade-in space-y-8">
+                    {/* Top Level Quant Metrics */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="bg-[#1e293b]/50 border border-pink-500/10 p-4 rounded-2xl flex flex-col items-center text-center">
+                            <span className="text-[9px] text-slate-500 font-black uppercase mb-2">Hedging Efficiency</span>
+                            <div className="text-2xl font-black text-pink-400">{hedgeResult.metrics.hedgingEfficiency}%</div>
+                            <div className="w-full h-1 bg-slate-800 rounded-full mt-2">
+                                <div className="h-full bg-pink-500" style={{width: `${hedgeResult.metrics.hedgingEfficiency}%`}}></div>
+                            </div>
+                        </div>
+                        <div className="bg-[#1e293b]/50 border border-emerald-500/10 p-4 rounded-2xl flex flex-col items-center text-center">
+                            <span className="text-[9px] text-slate-500 font-black uppercase mb-2">Beta Reduction</span>
+                            <div className="text-2xl font-black text-emerald-400">
+                                {hedgeResult.metrics.unhedgedBeta.toFixed(2)} <span className="text-slate-600 text-sm">→</span> {hedgeResult.metrics.hedgedBeta.toFixed(2)}
+                            </div>
+                            <span className="text-[8px] text-slate-500 mt-1 uppercase font-bold">Systemic Offset</span>
+                        </div>
+                        <div className="bg-[#1e293b]/50 border border-cyan-500/10 p-4 rounded-2xl flex flex-col items-center text-center">
+                            <span className="text-[9px] text-slate-500 font-black uppercase mb-2">VaR Reduction (95%)</span>
+                            <div className="text-2xl font-black text-cyan-400">
+                                {hedgeResult.metrics.varianceReduction}%
+                            </div>
+                            <span className="text-[8px] text-slate-500 mt-1 uppercase font-bold">Tail Mitigation</span>
+                        </div>
+                        <div className="bg-[#1e293b]/50 border border-amber-500/10 p-4 rounded-2xl flex flex-col items-center text-center">
+                            <span className="text-[9px] text-slate-500 font-black uppercase mb-2">CVaR (Hedged)</span>
+                            <div className="text-2xl font-black text-amber-400">
+                                ${(hedgeResult.metrics.hedgedCVaR || 0).toLocaleString()}
+                            </div>
+                            <span className="text-[8px] text-slate-500 mt-1 uppercase font-bold">Expectation of Tail</span>
+                        </div>
+                    </div>
+
+                    {/* Historical Comparison Chart */}
+                    <div className="bg-[#0b0e14] p-6 rounded-2xl border border-white/5">
+                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Historical Comparison: Unhedged vs. Hedged P&L</h4>
+                        <div className="h-64 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <ComposedChart data={hedgeResult.pnlComparison}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} opacity={0.3} />
+                                    <XAxis dataKey="time" hide />
+                                    <YAxis stroke="#475569" tick={{fontSize: 9, fontFamily: 'monospace'}} axisLine={false} />
+                                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px' }} />
+                                    <Legend iconType="circle" wrapperStyle={{fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold'}} />
+                                    <Line type="monotone" name="Unhedged Strategy" dataKey="unhedgedPnl" stroke="#ef4444" strokeWidth={1} dot={false} strokeDasharray="5 5" />
+                                    <Area type="monotone" name="Hedged Portfolio" dataKey="hedgedPnl" stroke="#ec4899" strokeWidth={3} fill="#ec4899" fillOpacity={0.1} dot={{r: 2}} />
+                                </ComposedChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Asset Exposure Table */}
+                    <div className="bg-[#0b0e14] rounded-2xl border border-white/5 overflow-hidden">
+                        <div className="px-6 py-4 bg-slate-900/50 border-b border-white/5">
+                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Residual Exposure & Coverage Diagnostics</h4>
+                        </div>
+                        <table className="w-full text-left">
+                            <thead className="text-[9px] font-black text-slate-500 uppercase tracking-tighter border-b border-white/5 bg-black/20">
+                                <tr>
+                                    <th className="px-6 py-3">Asset Instance</th>
+                                    <th className="px-6 py-3 text-right">Gross Exp.</th>
+                                    <th className="px-6 py-3 text-right">Net Exp.</th>
+                                    <th className="px-6 py-3 text-center">Hedge Coverage</th>
+                                    <th className="px-6 py-3 text-right">Carry Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5 text-[11px]">
+                                {hedgeResult.exposures.map((ex, i) => (
+                                    <tr key={i} className="hover:bg-pink-500/5 transition-colors">
+                                        <td className="px-6 py-3 font-bold text-white uppercase">{ex.asset}</td>
+                                        <td className="px-6 py-3 text-right text-slate-400 font-mono">${ex.grossExposure.toLocaleString()}</td>
+                                        <td className="px-6 py-3 text-right text-white font-mono font-bold">${ex.netExposure.toLocaleString()}</td>
+                                        <td className="px-6 py-3 text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <div className="w-12 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-pink-500" style={{width: `${ex.hedgingCoverage}%`}}></div>
+                                                </div>
+                                                <span className="font-mono text-slate-400">{ex.hedgingCoverage}%</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-3 text-right text-rose-400 font-mono">-${ex.costOfHedge.toFixed(2)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Recommendations */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-slate-900/40 p-6 rounded-2xl border border-pink-500/10">
+                            <h4 className="text-[10px] font-black text-pink-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <div className="w-1 h-3 bg-pink-500"></div>
+                                Risk Desk Synthesis
+                            </h4>
+                            <p className="text-sm text-slate-300 italic leading-relaxed">"{hedgeResult.summary}"</p>
+                        </div>
+                        <div className="space-y-3">
+                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Actionable Optimization Insights</h4>
+                            {hedgeResult.recommendations.map((rec, i) => (
+                                <div key={i} className="bg-[#131b2e] border border-white/5 p-4 rounded-xl flex gap-4 items-start group hover:border-pink-500/30 transition-all">
+                                    <div className={`mt-1 text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${rec.priority === 'High' ? 'bg-rose-500 text-white' : 'bg-slate-800 text-slate-500'}`}>
+                                        {rec.priority}
+                                    </div>
+                                    <div>
+                                        <div className="text-[11px] font-bold text-white mb-1 group-hover:text-pink-300 transition-colors">{rec.title}</div>
+                                        <p className="text-[10px] text-slate-500 leading-snug">{rec.action}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="h-96 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-3xl group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.05)_0,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <svg className="w-16 h-16 text-slate-800 mb-4 group-hover:text-pink-900 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                    <span className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-700 mb-2">Initialize Risk Audit</span>
+                    <p className="text-[10px] text-slate-500 max-w-xs text-center leading-relaxed">Quant engine requires portfolio composition to perform variance-reduction analysis and VaR modeling.</p>
+                </div>
+            )}
         </div>
 
         {/* Capital Asset Modeling (CAPM & APT) */}
@@ -521,45 +628,43 @@ const PortfolioView: React.FC = () => {
             {capmResult ? (
                 <div className="animate-fade-in space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* CAPM Dashboard */}
                         <div className="bg-[#1e293b]/50 border border-indigo-500/20 p-5 rounded-xl">
                             <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-4">CAPM Performance</h4>
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div className="text-center bg-slate-900/50 p-2 rounded border border-slate-700">
                                     <div className="text-[10px] text-slate-500 uppercase">Expected Return (Ke)</div>
-                                    <div className="text-lg font-mono text-white">{(capmResult.capm.expectedReturn).toFixed(2)}%</div>
+                                    <div className="text-lg font-mono text-white">{(capmResult.capm?.expectedReturn || 0).toFixed(2)}%</div>
                                 </div>
                                 <div className="text-center bg-slate-900/50 p-2 rounded border border-slate-700">
                                     <div className="text-[10px] text-slate-500 uppercase">Beta (β)</div>
-                                    <div className="text-lg font-mono text-white">{(capmResult.capm.beta).toFixed(2)}</div>
+                                    <div className="text-lg font-mono text-white">{(capmResult.capm?.beta || 0).toFixed(2)}</div>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="flex justify-between text-xs px-2">
                                     <span className="text-slate-500">Alpha (α)</span>
-                                    <span className={`font-bold ${capmResult.capm.alpha >= 0 ? 'text-green-400' : 'text-red-400'}`}>{capmResult.capm.alpha.toFixed(2)}%</span>
+                                    <span className={`font-bold ${(capmResult.capm?.alpha || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>{(capmResult.capm?.alpha || 0).toFixed(2)}%</span>
                                 </div>
                                 <div className="flex justify-between text-xs px-2">
                                     <span className="text-slate-500">SML Status</span>
-                                    <span className={`font-bold ${capmResult.capm.securityMarketLineStatus === 'Above' ? 'text-green-400' : 'text-amber-400'}`}>{capmResult.capm.securityMarketLineStatus}</span>
+                                    <span className={`font-bold ${capmResult.capm?.securityMarketLineStatus === 'Above' ? 'text-green-400' : 'text-amber-400'}`}>{capmResult.capm?.securityMarketLineStatus || 'N/A'}</span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* APT Factors */}
                         <div className="bg-[#1e293b]/50 border border-emerald-500/20 p-5 rounded-xl">
                             <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-4">APT Factor Sensitivities</h4>
                             <div className="space-y-3">
-                                {(capmResult.apt.factors || []).map((f, i) => (
+                                {(capmResult.apt?.factors || []).map((f: any, i: number) => (
                                     <div key={i}>
                                         <div className="flex justify-between text-[10px] mb-1">
                                             <span className="text-slate-400 font-bold uppercase">{f.name}</span>
-                                            <span className="text-emerald-300 font-mono">β: {f.beta.toFixed(2)}</span>
+                                            <span className="text-emerald-300 font-mono">β: {(f.beta || 0).toFixed(2)}</span>
                                         </div>
                                         <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
                                             <div 
                                                 className={`h-full ${f.beta > 1 ? 'bg-emerald-500' : f.beta > 0 ? 'bg-emerald-400' : 'bg-red-400'}`} 
-                                                style={{ width: `${Math.min(Math.abs(f.beta) * 50, 100)}%` }}
+                                                style={{ width: `${Math.min(Math.abs(f.beta || 0) * 50, 100)}%` }}
                                             ></div>
                                         </div>
                                     </div>
@@ -567,7 +672,7 @@ const PortfolioView: React.FC = () => {
                             </div>
                             <div className="mt-4 pt-3 border-t border-slate-700/50 flex justify-between items-center">
                                 <span className="text-[10px] text-slate-500 uppercase font-bold">Total Macro Expectation</span>
-                                <span className="text-sm font-mono font-bold text-white">{capmResult.apt.totalExpectedReturn.toFixed(2)}%</span>
+                                <span className="text-sm font-mono font-bold text-white">{(capmResult.apt?.totalExpectedReturn || 0).toFixed(2)}%</span>
                             </div>
                         </div>
                     </div>
@@ -585,15 +690,15 @@ const PortfolioView: React.FC = () => {
             )}
         </div>
 
-        {/* Advanced Pricing Engine */}
-        <div className="bg-[#0f172a] rounded-xl border border-cyan-500/30 p-6 shadow-lg shadow-cyan-900/10">
-            <div className="flex justify-between items-center mb-6">
+        {/* Advanced Quant Pricing Engine */}
+        <div className="bg-[#0f172a] rounded-xl border border-cyan-500/30 p-6 shadow-lg shadow-cyan-900/10 relative overflow-hidden">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-6 relative z-10">
                 <div>
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
                         <svg className="w-6 h-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                         Advanced Quant Pricing Engine
                     </h3>
-                    <p className="text-xs text-slate-400">Institutional derivatives modeling: BSM, Heston, Jump Diffusion, and Var Swaps.</p>
+                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mt-1">Multi-Model Calibration Suite</p>
                 </div>
                 <div className="flex gap-2">
                     <select 
@@ -606,196 +711,116 @@ const PortfolioView: React.FC = () => {
                     <button 
                         onClick={handleRunAdvancedPricing}
                         disabled={pricingLoading || !pricingTicker}
-                        className="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold px-4 py-2 rounded transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-cyan-900/40"
+                        className="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-black uppercase px-4 py-2 rounded transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-cyan-900/40"
                     >
-                        {pricingLoading ? 'Calculating...' : 'Run Analysis'}
+                        {pricingLoading ? 'Recalibrating...' : 'Start Audit'}
                     </button>
                 </div>
             </div>
 
             {pricingResult ? (
-                <div className="animate-fade-in space-y-6">
+                <div className="animate-fade-in space-y-6 relative z-10">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <DiagnosticBadge label="S₀ Spot" status={pricingResult.diagnostics.spotPrice} />
+                        <DiagnosticBadge label="Option Chain" status={pricingResult.diagnostics.optionChain} />
+                        <DiagnosticBadge label="Yield Curve" status={pricingResult.diagnostics.yieldCurve} />
+                        <DiagnosticBadge label="Dividends" status={pricingResult.diagnostics.dividendYield} />
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Black-Scholes-Merton */}
-                        <div className="bg-[#1e293b]/50 border border-cyan-500/20 p-5 rounded-xl">
-                            <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-widest mb-4">Black-Scholes-Merton (BSM)</h4>
+                        <div className={`bg-[#1e293b]/50 border p-5 rounded-xl transition-all ${pricingResult.bsm?.fairValue === 0 ? 'border-rose-500/20 grayscale opacity-60' : 'border-cyan-500/20 shadow-lg shadow-cyan-950/20'}`}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-widest">BSM Analytic</h4>
+                                {pricingResult.bsm?.fairValue === 0 && <span className="text-[8px] px-1.5 py-0.5 rounded bg-rose-500 text-white font-black uppercase">Failure</span>}
+                            </div>
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div className="text-center bg-slate-900/50 p-2 rounded border border-slate-700">
                                     <div className="text-[10px] text-slate-500 uppercase">FAIR VALUE</div>
-                                    <div className="text-lg font-mono text-white">${(pricingResult.bsm.fairValue as number).toFixed(2)}</div>
+                                    <div className="text-lg font-mono text-white">${(pricingResult.bsm?.fairValue || 0).toFixed(2)}</div>
                                 </div>
                                 <div className="text-center bg-slate-900/50 p-2 rounded border border-slate-700">
                                     <div className="text-[10px] text-slate-500 uppercase">IMPLIED VOL (σ)</div>
-                                    <div className="text-lg font-mono text-white">{(pricingResult.bsm.impliedVol * 100).toFixed(1)}%</div>
+                                    <div className="text-lg font-mono text-white">{((pricingResult.bsm?.impliedVol || 0) * 100).toFixed(1)}%</div>
                                 </div>
                             </div>
                             <div className="grid grid-cols-5 gap-2 text-center">
-                                {Object.entries(pricingResult.bsm.greeks).map(([name, val]) => (
+                                {pricingResult.bsm?.greeks && Object.entries(pricingResult.bsm.greeks).map(([name, val]) => (
                                     <div key={name}>
                                         <div className="text-[8px] text-slate-600 uppercase font-black">{name}</div>
-                                        <div className="text-[10px] font-mono text-cyan-300">{(val as number).toFixed(3)}</div>
+                                        <div className="text-[10px] font-mono text-cyan-300">{(val as number || 0).toFixed(3)}</div>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Heston Stochastic Vol */}
-                        <div className="bg-[#1e293b]/50 border border-purple-500/20 p-5 rounded-xl">
-                            <h4 className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-4">Heston Stochastic Volatility</h4>
+                        <div className={`bg-[#1e293b]/50 border p-5 rounded-xl transition-all ${pricingResult.heston?.surfaceStatus === "N/A" ? 'border-rose-500/20 grayscale opacity-60' : 'border-purple-500/20 shadow-lg shadow-purple-950/20'}`}>
+                            <h4 className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-4">Heston Stochastic Vol</h4>
                             <div className="grid grid-cols-3 gap-2 mb-4">
-                                {Object.entries(pricingResult.heston.parameters).map(([key, val]) => (
+                                {pricingResult.heston?.parameters && Object.entries(pricingResult.heston.parameters).map(([key, val]) => (
                                     <div key={key} className="bg-slate-900/50 p-1.5 rounded text-center border border-slate-700/50">
                                         <div className="text-[8px] text-slate-500 font-bold uppercase">{key}</div>
-                                        <div className="text-xs font-mono text-purple-300">{(val as number).toFixed(3)}</div>
+                                        <div className="text-xs font-mono text-purple-300">{(val as number || 0).toFixed(3)}</div>
                                     </div>
                                 ))}
                             </div>
                             <div className="text-xs bg-purple-900/10 p-2 rounded border border-purple-500/10">
-                                <span className="font-bold text-purple-400">Skew/Smile:</span> {pricingResult.heston.surfaceStatus}
-                                <p className="text-[10px] text-slate-400 mt-1 leading-tight">{pricingResult.heston.description}</p>
+                                <span className="font-bold text-purple-400">Skew/Smile:</span> {pricingResult.heston?.surfaceStatus || 'N/A'}
+                                <p className="text-[10px] text-slate-400 mt-1 leading-tight">{pricingResult.heston?.description}</p>
                             </div>
                         </div>
 
-                        {/* Jump Diffusion */}
-                        <div className="bg-[#1e293b]/50 border border-amber-500/20 p-5 rounded-xl">
+                        <div className={`bg-[#1e293b]/50 border p-5 rounded-xl transition-all ${pricingResult.jumpDiffusion?.jumpProbability === 0 ? 'border-rose-500/20 grayscale opacity-60' : 'border-amber-500/20 shadow-lg shadow-amber-950/20'}`}>
                             <h4 className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-4">Merton Jump Diffusion</h4>
                             <div className="flex items-center gap-6 mb-4">
                                 <div className="flex-1">
                                     <div className="flex justify-between text-[10px] mb-1">
                                         <span className="text-slate-500 uppercase">Jump Probability</span>
-                                        <span className="text-amber-300 font-bold">{(pricingResult.jumpDiffusion.jumpProbability * 100).toFixed(1)}%</span>
+                                        <span className="text-amber-300 font-bold">{((pricingResult.jumpDiffusion?.jumpProbability || 0) * 100).toFixed(1)}%</span>
                                     </div>
                                     <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                                        <div className="h-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" style={{width: `${pricingResult.jumpDiffusion.jumpProbability * 100}%`}}></div>
+                                        <div className="h-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" style={{width: `${(pricingResult.jumpDiffusion?.jumpProbability || 0) * 100}%`}}></div>
                                     </div>
                                 </div>
                                 <div className="text-center">
                                     <div className="text-[8px] text-slate-600 font-bold uppercase">λ (Lambda)</div>
-                                    <div className="text-lg font-mono text-white">{pricingResult.jumpDiffusion.parameters.lambda.toFixed(2)}</div>
+                                    <div className="text-lg font-mono text-white">{(pricingResult.jumpDiffusion?.parameters?.lambda || 0).toFixed(2)}</div>
                                 </div>
                             </div>
-                            <p className="text-[10px] text-slate-400 italic leading-snug">{pricingResult.jumpDiffusion.description}</p>
+                            <p className="text-[10px] text-slate-400 italic leading-snug">{pricingResult.jumpDiffusion?.description}</p>
                         </div>
 
-                        {/* Variance Swap */}
-                        <div className="bg-[#1e293b]/50 border border-green-500/20 p-5 rounded-xl">
-                            <h4 className="text-xs font-bold text-green-400 uppercase tracking-widest mb-4">Variance Swap Pricing</h4>
+                        <div className={`bg-[#1e293b]/50 border p-5 rounded-xl transition-all ${pricingResult.varianceSwap?.fairVarianceStrike === 0 ? 'border-rose-500/20 grayscale opacity-60' : 'border-green-500/20 shadow-lg shadow-green-950/20'}`}>
+                            <h4 className="text-xs font-bold text-green-400 uppercase tracking-widest mb-4">Variance Swap Strike</h4>
                             <div className="bg-slate-900/50 p-3 rounded border border-slate-700 mb-3">
                                 <div className="flex justify-between items-center">
                                     <span className="text-xs text-slate-500 uppercase">Fair Variance Strike</span>
-                                    <span className="text-xl font-mono text-green-400 font-bold">{pricingResult.varianceSwap.fairVarianceStrike.toFixed(4)}</span>
+                                    <span className="text-xl font-mono text-green-400 font-bold">{(pricingResult.varianceSwap?.fairVarianceStrike || 0).toFixed(4)}</span>
                                 </div>
                             </div>
                             <div className="text-[10px] text-slate-400 leading-tight">
-                                <div className="font-bold text-slate-500 mb-1">PAYOFF REGIME</div>
-                                {pricingResult.varianceSwap.payoffDescription}
+                                <div className="font-bold text-slate-500 mb-1 uppercase tracking-tighter">Payoff Topology</div>
+                                {pricingResult.varianceSwap?.payoffDescription || 'N/A'}
                             </div>
                         </div>
                     </div>
                     
-                    {/* Summary Inference */}
-                    <div className="bg-gradient-to-r from-cyan-900/20 to-transparent p-5 rounded-xl border border-cyan-500/10">
-                        <h4 className="text-xs font-bold text-cyan-500 uppercase mb-2">Quant Analyst Synthesis</h4>
-                        <p className="text-sm text-slate-300 italic leading-relaxed">"{pricingResult.summary}"</p>
+                    <div className="bg-gradient-to-r from-[#020617] to-cyan-900/10 p-8 rounded-2xl border border-white/5 relative">
+                        <div className="absolute top-4 right-8 text-[10px] font-black text-slate-800 uppercase tracking-[0.5em] select-none">Hedge Fund Audit</div>
+                        <h4 className="text-xs font-black text-cyan-400 uppercase mb-4 flex items-center gap-2">
+                             <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse"></div>
+                             Quant Audit Synthesis
+                        </h4>
+                        <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap italic opacity-90 border-l border-white/10 pl-6">
+                            {pricingResult.summary}
+                        </div>
                     </div>
                 </div>
             ) : (
-                <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-xl">
-                    <svg className="w-12 h-12 text-slate-700 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-                    <p className="text-sm text-slate-600">Select a portfolio asset to run institutional-grade pricing and volatility models.</p>
-                </div>
-            )}
-        </div>
-
-        {/* Option Delta-Gamma Hedging Dashboard */}
-        <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg shadow-purple-900/10">
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-                        Option Delta-Gamma Hedging
-                    </h3>
-                    <p className="text-xs text-slate-400">Simulated Greeks analysis for market-neutral positioning.</p>
-                </div>
-                <button 
-                    onClick={handleRunHedge}
-                    disabled={hedgeLoading || holdings.length === 0}
-                    className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-4 py-2 rounded transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-purple-900/40"
-                >
-                    {hedgeLoading ? 'Analyzing Greeks...' : 'Calculate Hedge'}
-                </button>
-            </div>
-
-            {hedgeResult ? (
-                <div className="animate-fade-in space-y-6">
-                    {/* Neutrality Meters */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-[#1e293b]/50 border border-purple-500/20 p-4 rounded-lg">
-                            <div className="flex justify-between text-xs mb-2">
-                                <span className="text-slate-400 uppercase font-bold tracking-widest">Portfolio Delta (Δ)</span>
-                                <span className={`font-mono font-bold ${hedgeResult.portfolioGreeks.netDelta > 0 ? 'text-green-400' : 'text-red-400'}`}>{hedgeResult.portfolioGreeks.netDelta.toFixed(2)}</span>
-                            </div>
-                            <div className="relative h-2 bg-slate-700 rounded-full overflow-hidden">
-                                <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-full bg-slate-500 z-10"></div>
-                                <div className={`absolute h-full transition-all duration-1000 ${hedgeResult.portfolioGreeks.netDelta > 0 ? 'bg-green-500 left-1/2' : 'bg-red-500 right-1/2'}`} style={{ width: `${Math.min(Math.abs(hedgeResult.portfolioGreeks.netDelta) * 5, 50)}%` }}></div>
-                            </div>
-                        </div>
-                        <div className="bg-[#1e293b]/50 border border-purple-500/20 p-4 rounded-lg">
-                            <div className="flex justify-between text-xs mb-2">
-                                <span className="text-slate-400 uppercase font-bold tracking-widest">Portfolio Gamma (Γ)</span>
-                                <span className={`font-mono font-bold ${hedgeResult.portfolioGreeks.netGamma > 0 ? 'text-cyan-400' : 'text-amber-400'}`}>{hedgeResult.portfolioGreeks.netGamma.toFixed(4)}</span>
-                            </div>
-                            <div className="relative h-2 bg-slate-700 rounded-full overflow-hidden">
-                                <div className={`h-full transition-all duration-1000 ${hedgeResult.portfolioGreeks.netGamma > 0 ? 'bg-cyan-500' : 'bg-amber-500'}`} style={{ width: `${Math.min(Math.abs(hedgeResult.portfolioGreeks.netGamma) * 1000, 100)}%` }}></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Sensitivity Path Chart */}
-                    <div className="bg-[#131B2E] p-4 rounded-lg border border-purple-500/10">
-                        <h4 className="text-[10px] font-bold text-slate-500 uppercase mb-4 tracking-widest">P&L Sensitivity vs Price Shift</h4>
-                        <div className="h-40 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <ComposedChart data={hedgeResult.sensitivityPath}>
-                                    <XAxis dataKey="priceShift" hide />
-                                    <YAxis hide />
-                                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#7e22ce' }} />
-                                    <Area type="monotone" dataKey="pnlImpact" stroke="#a855f7" fill="#a855f7" fillOpacity={0.1} />
-                                    <Line type="monotone" dataKey="pnlImpact" stroke="#a855f7" strokeWidth={2} dot={false} />
-                                </ComposedChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    {/* Hedging Actions */}
-                    <div className="space-y-3">
-                        <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Recommended Neutralizing Actions</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {hedgeResult.hedgingActions.map((h, i) => (
-                                <div key={i} className="bg-slate-800/40 p-3 rounded border border-purple-500/10 flex items-center gap-4">
-                                    <div className={`p-2 rounded-lg ${h.type === 'Delta-Neutral' ? 'bg-green-500/10 text-green-400' : 'bg-cyan-500/10 text-cyan-400'}`}>
-                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="text-[10px] text-slate-500 font-bold uppercase">{h.type}</div>
-                                        <div className="text-sm font-bold text-white">{h.action}</div>
-                                        <div className="text-[10px] text-slate-400 italic mt-0.5">{h.impact}</div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="bg-purple-900/10 p-4 rounded border border-purple-500/10">
-                        <p className="text-xs text-slate-300 italic leading-relaxed">
-                            <span className="font-bold text-purple-400">Risk Desk Note:</span> {hedgeResult.riskSummary}
-                        </p>
-                    </div>
-                </div>
-            ) : (
-                <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-xl">
-                    <svg className="w-12 h-12 text-slate-700 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
-                    <p className="text-sm text-slate-600">Run analysis to compute portfolio-wide Greeks and hedging offsets.</p>
+                <div className="h-96 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-3xl group relative">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.05)_0,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <svg className="w-16 h-16 text-slate-800 mb-4 group-hover:text-cyan-900 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                    <span className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-700 mb-2">Initialize Model Simulation</span>
+                    <p className="text-[10px] text-slate-500 max-w-xs text-center leading-relaxed">System requires valid spot prices and yield curve specification to perform risk-neutral valuation.</p>
                 </div>
             )}
         </div>
@@ -804,9 +829,7 @@ const PortfolioView: React.FC = () => {
         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 overflow-hidden shadow-lg">
             <div className="p-6 border-b border-purple-500/20 flex flex-col md:flex-row justify-between items-center gap-4">
                 <h3 className="text-xl font-semibold text-white">Current Holdings</h3>
-                
                 <div className="flex gap-2 w-full md:w-auto">
-                    {/* Rebalancing Strategy Selector */}
                     <select 
                         value={rebalanceStrategy}
                         onChange={(e) => setRebalanceStrategy(e.target.value)}
@@ -818,132 +841,15 @@ const PortfolioView: React.FC = () => {
                         <option value="Hybrid">Hybrid</option>
                         <option value="Black-Litterman Model">Black-Litterman Model</option>
                     </select>
-
                     <button 
                         onClick={handleRunMPT}
                         disabled={mptLoading || holdings.length < 2}
-                        className={`
-                            text-xs font-bold uppercase tracking-wide px-4 py-2 rounded transition-all border whitespace-nowrap
-                            ${(mptLoading || holdings.length < 2) ? 'bg-slate-800 text-slate-500 border-transparent cursor-not-allowed' : 'bg-purple-900/20 text-purple-400 border-purple-500/50 hover:bg-purple-900/40 hover:text-purple-200'}
-                        `}
+                        className={`text-xs font-bold uppercase tracking-wide px-4 py-2 rounded transition-all border whitespace-nowrap ${(mptLoading || holdings.length < 2) ? 'bg-slate-800 text-slate-500 border-transparent cursor-not-allowed' : 'bg-purple-900/20 text-purple-400 border-purple-500/50 hover:bg-purple-900/40 hover:text-purple-200'}`}
                     >
-                        {mptLoading ? (
-                            <div className="flex items-center gap-2">
-                                 <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                 Running Strategy...
-                            </div>
-                        ) : "Run Strategy"}
+                        {mptLoading ? "Running Strategy..." : "Run Strategy"}
                     </button>
                 </div>
             </div>
-
-            {/* Black-Litterman Views Configuration Section */}
-            {rebalanceStrategy === "Black-Litterman Model" && (
-                <div className="p-6 bg-indigo-900/10 border-b border-indigo-500/20 animate-fade-in">
-                    <div className="flex justify-between items-center mb-4">
-                        <h4 className="text-sm font-bold text-indigo-300 uppercase tracking-widest">Investor Views Configuration</h4>
-                        <p className="text-[10px] text-slate-500 uppercase font-black">Market Equilibrium + Subjective Outlook</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {/* Add View Form */}
-                        <div className="lg:col-span-2 space-y-4 bg-slate-900/40 p-4 rounded-xl border border-indigo-500/10">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
-                                <div>
-                                    <label className="block text-[10px] text-slate-500 font-black uppercase mb-1">View Type</label>
-                                    <select 
-                                        value={newViewType}
-                                        onChange={(e) => setNewViewType(e.target.value as any)}
-                                        className="w-full bg-[#0f172a] border border-indigo-500/20 text-xs text-white rounded px-2 py-1.5 outline-none"
-                                    >
-                                        <option value="Absolute">Absolute</option>
-                                        <option value="Relative">Relative</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] text-slate-500 font-black uppercase mb-1">Asset A</label>
-                                    <select 
-                                        value={newViewAsset1}
-                                        onChange={(e) => setNewViewAsset1(e.target.value)}
-                                        className="w-full bg-[#0f172a] border border-indigo-500/20 text-xs text-white rounded px-2 py-1.5 outline-none uppercase font-bold"
-                                    >
-                                        <option value="">Select</option>
-                                        {holdings.map(h => <option key={h.ticker} value={h.ticker}>{h.ticker}</option>)}
-                                    </select>
-                                </div>
-                                {newViewType === "Relative" && (
-                                    <div>
-                                        <label className="block text-[10px] text-slate-500 font-black uppercase mb-1">Asset B</label>
-                                        <select 
-                                            value={newViewAsset2}
-                                            onChange={(e) => setNewViewAsset2(e.target.value)}
-                                            className="w-full bg-[#0f172a] border border-indigo-500/20 text-xs text-white rounded px-2 py-1.5 outline-none uppercase font-bold"
-                                        >
-                                            <option value="">Select</option>
-                                            {holdings.map(h => <option key={h.ticker} value={h.ticker}>{h.ticker}</option>)}
-                                        </select>
-                                    </div>
-                                )}
-                                <div>
-                                    <label className="block text-[10px] text-slate-500 font-black uppercase mb-1">{newViewType === 'Absolute' ? 'Exp Return %' : 'Spread %'}</label>
-                                    <input 
-                                        type="number"
-                                        value={newViewReturn}
-                                        onChange={(e) => setNewViewReturn(e.target.value)}
-                                        placeholder="e.g. 5"
-                                        className="w-full bg-[#0f172a] border border-indigo-500/20 text-xs text-white rounded px-2 py-1.5 outline-none"
-                                    />
-                                </div>
-                                <div className="md:col-span-2">
-                                    <label className="block text-[10px] text-slate-500 font-black uppercase mb-1">Confidence ({newViewConfidence}%)</label>
-                                    <input 
-                                        type="range"
-                                        min="1" max="100"
-                                        value={newViewConfidence}
-                                        onChange={(e) => setNewViewConfidence(parseInt(e.target.value))}
-                                        className="w-full accent-indigo-500"
-                                    />
-                                </div>
-                                <button 
-                                    onClick={handleAddInvestorView}
-                                    className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black uppercase py-1.5 rounded"
-                                >
-                                    Add View
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* List of Active Views */}
-                        <div className="bg-[#0f172a] p-4 rounded-xl border border-indigo-500/10 flex flex-col h-[200px]">
-                            <h5 className="text-[10px] font-black text-slate-500 uppercase mb-3 border-b border-white/5 pb-2">Active Posterior Views</h5>
-                            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2">
-                                {investorViews.length === 0 ? (
-                                    <p className="text-[10px] text-slate-600 italic text-center mt-8">No active views. Market equilibrium returns will be used.</p>
-                                ) : (
-                                    investorViews.map((v, i) => (
-                                        <div key={i} className="bg-indigo-900/10 p-2 rounded flex justify-between items-center text-[11px] group">
-                                            <div className="flex-1">
-                                                <span className="font-bold text-indigo-300 uppercase">{v.asset1}</span>
-                                                {v.type === 'Relative' ? (
-                                                    <span> vs <span className="font-bold text-indigo-300 uppercase">{v.asset2}</span>: </span>
-                                                ) : ' at '}
-                                                <span className="text-white font-mono">{v.expectedReturn}%</span>
-                                                <div className="text-[9px] text-slate-500">Conf: {v.confidence}%</div>
-                                            </div>
-                                            <button 
-                                                onClick={() => handleRemoveInvestorView(i)}
-                                                className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1"
-                                            >
-                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
-                                            </button>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -1004,171 +910,9 @@ const PortfolioView: React.FC = () => {
                 </table>
             </div>
         </div>
-        
-        {/* MPT Analysis & REBALANCING Result Section */}
-        {mptResult && (
-            <div className="bg-[#0f172a] rounded-xl border border-purple-500/50 shadow-lg shadow-purple-900/20 overflow-hidden fade-in">
-                <div className="p-6 border-b border-purple-500/20 bg-purple-900/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-purple-400">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25a2.25 2.25 0 01-13.5 18v-2.25z" />
-                            </svg>
-                            Optimization Output {rebalanceStrategy === 'Black-Litterman Model' ? '(Black-Litterman)' : '(MPT)'}
-                        </h3>
-                        <div className="flex gap-4 mt-2 text-xs text-purple-200/60 font-medium">
-                            <span>Optimization: Sharpe Ratio Max</span>
-                            <span>•</span>
-                            <span>Strategy: {mptResult.rebalancingContext?.strategyUsed || "Standard"}</span>
-                        </div>
-                    </div>
-                    
-                    {/* Execute Rebalance Trigger */}
-                    {!showConfirmRebalance ? (
-                        <button 
-                            onClick={() => setShowConfirmRebalance(true)}
-                            className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs uppercase px-5 py-2.5 rounded shadow-lg transition-all"
-                        >
-                            Execute Rebalance Plan
-                        </button>
-                    ) : (
-                        <div className="flex gap-2">
-                             <button 
-                                onClick={() => setShowConfirmRebalance(false)}
-                                className="bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs uppercase px-4 py-2.5 rounded transition-all"
-                            >
-                                Cancel
-                            </button>
-                            <button 
-                                onClick={handleExecuteRebalance}
-                                className="bg-green-600 hover:bg-green-500 text-white font-bold text-xs uppercase px-5 py-2.5 rounded shadow-lg shadow-green-900/30 transition-all border border-green-400/30"
-                            >
-                                Confirm & Apply Trades
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                {showConfirmRebalance && (
-                    <div className="bg-purple-500/10 border-b border-purple-500/20 p-6 animate-fade-in">
-                        <h4 className="text-sm font-bold text-purple-300 uppercase mb-4 tracking-widest">Trade Confirmation Summary</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {mptResult.suggestions.map((sug, i) => (
-                                <div key={i} className="bg-slate-900/60 p-3 rounded border border-purple-500/10 flex justify-between items-center">
-                                    <div>
-                                        <div className="text-xs font-black text-slate-500 uppercase mb-1">{sug.ticker}</div>
-                                        <div className={`text-sm font-bold ${sug.action === 'Buy' ? 'text-green-400' : 'text-red-400'}`}>{sug.action} {sug.amount}</div>
-                                    </div>
-                                    <div className="opacity-40">
-                                        {sug.action === 'Buy' ? '➕' : '➖'}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                        <p className="text-[10px] text-slate-500 mt-4 italic">* These orders will be simulated and reflected in your current holdings list immediately upon confirmation.</p>
-                    </div>
-                )}
-
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Metrics Comparison */}
-                    <div>
-                        <h4 className="text-sm font-bold text-slate-400 uppercase mb-4">Performance Metrics</h4>
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div className="bg-slate-800/50 p-3 rounded border border-purple-500/20">
-                                <div className="text-xs text-slate-400 mb-1 uppercase">Current Sharpe</div>
-                                <div className="text-xl font-mono font-bold text-white">{mptResult.currentMetrics.sharpeRatio.toFixed(2)}</div>
-                                <div className="text-[10px] text-slate-500">Ret: {mptResult.currentMetrics.expectedReturn}% | Vol: {mptResult.currentMetrics.volatility}%</div>
-                            </div>
-                            <div className="bg-green-900/20 p-3 rounded border border-green-500/30">
-                                <div className="text-xs text-green-400 mb-1 uppercase">Target Sharpe</div>
-                                <div className="text-xl font-mono font-bold text-green-300">{mptResult.optimalMetrics.sharpeRatio.toFixed(2)}</div>
-                                <div className="text-[10px] text-green-500/70">Ret: {mptResult.optimalMetrics.expectedReturn}% | Vol: {mptResult.optimalMetrics.volatility}%</div>
-                            </div>
-                        </div>
-
-                        <h4 className="text-sm font-bold text-slate-400 uppercase mb-4">Efficient Frontier</h4>
-                        <div className="h-48 w-full bg-slate-900/50 rounded-lg border border-purple-500/20 p-2">
-                             <ResponsiveContainer width="100%" height="100%">
-                                <ComposedChart>
-                                    <XAxis dataKey="risk" type="number" name="Risk" domain={['auto', 'auto']} hide />
-                                    <YAxis dataKey="return" type="number" name="Return" domain={['auto', 'auto']} hide />
-                                    <Tooltip 
-                                        cursor={{ strokeDasharray: '3 3' }}
-                                        content={({ active, payload }) => {
-                                            if (active && payload && payload.length) {
-                                                return (
-                                                    <div className="bg-slate-900 border border-slate-700 p-2 rounded text-xs">
-                                                        <p className="text-slate-300">Risk: {Number(payload[0].value).toFixed(2)}%</p>
-                                                        <p className="text-slate-300">Return: {Number(payload[1].value).toFixed(2)}%</p>
-                                                    </div>
-                                                );
-                                            }
-                                            return null;
-                                        }}
-                                    />
-                                    {/* The Frontier Curve */}
-                                    <Line data={mptResult.efficientFrontier || []} type="monotone" dataKey="return" stroke="#a855f7" strokeWidth={2} dot={false} />
-                                    
-                                    {/* Current Portfolio Point */}
-                                    <Scatter name="Current" data={[{ risk: mptResult.currentMetrics.volatility, return: mptResult.currentMetrics.expectedReturn }]} fill="#f87171">
-                                        <Cell fill="#f87171" />
-                                    </Scatter>
-                                    
-                                    {/* Optimal Portfolio Point */}
-                                    <Scatter name="Optimal" data={[{ risk: mptResult.optimalMetrics.volatility, return: mptResult.optimalMetrics.expectedReturn }]} fill="#4ade80">
-                                        <Cell fill="#4ade80" />
-                                    </Scatter>
-                                </ComposedChart>
-                             </ResponsiveContainer>
-                             <div className="flex justify-center gap-4 mt-2 text-[10px]">
-                                <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400"></span> Current</div>
-                                <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400"></span> Optimal</div>
-                                <div className="flex items-center gap-1"><span className="w-2 h-1 bg-purple-500"></span> Efficient Frontier</div>
-                             </div>
-                        </div>
-                    </div>
-
-                    {/* Rebalancing Suggestions */}
-                    <div>
-                        <h4 className="text-sm font-bold text-slate-400 uppercase mb-4">AI Rebalancing Plan</h4>
-                        {mptResult.rebalancingContext && (
-                            <div className="mb-4 bg-purple-900/10 p-3 rounded border border-purple-500/10">
-                                <div className="text-xs font-bold text-purple-300 mb-1">Strategy: {mptResult.rebalancingContext.strategyUsed}</div>
-                                <div className="text-xs text-slate-400 italic mb-2">"{mptResult.rebalancingContext.notes}"</div>
-                                <div className="text-[10px] uppercase font-bold text-slate-500">Next Action: {mptResult.rebalancingContext.nextRebalanceDate}</div>
-                            </div>
-                        )}
-                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                            {(mptResult.suggestions || []).map((sug, idx) => (
-                                <div key={idx} className="bg-slate-800/30 p-3 rounded border border-purple-500/20 flex gap-3 items-start">
-                                    <div className={`mt-1 p-1 rounded-full ${sug.action === 'Buy' ? 'bg-green-500/20 text-green-400' : sug.action === 'Sell' ? 'bg-red-500/20 text-red-400' : 'bg-slate-500/20 text-slate-400'}`}>
-                                        {sug.action === 'Buy' && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>}
-                                        {sug.action === 'Sell' && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>}
-                                        {sug.action === 'Hold' && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14" /></svg>}
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-bold text-white">{sug.ticker}</span>
-                                            <span className={`text-xs font-bold px-2 py-0.5 rounded ${sug.action === 'Buy' ? 'bg-green-900 text-green-300' : sug.action === 'Sell' ? 'bg-red-900 text-red-300' : 'bg-slate-700 text-slate-300'}`}>
-                                                {sug.action.toUpperCase()} {sug.amount}
-                                            </span>
-                                        </div>
-                                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                                            {sug.reason}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        )}
       </div>
 
-      {/* Stats / Allocation / ETF Engine */}
       <div className="space-y-6">
-         {/* ETF Replication Engine */}
          <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
              <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-400">
@@ -1177,7 +921,6 @@ const PortfolioView: React.FC = () => {
                  ETF Replication Engine
              </h3>
              <p className="text-xs text-slate-400 mb-4">Adopt institutional allocations from major ETFs (e.g. QQQ, ARKK) into your portfolio.</p>
-             
              <form onSubmit={handleScanETF} className="mb-2">
                  <div className="flex gap-2">
                      <input 
@@ -1187,106 +930,11 @@ const PortfolioView: React.FC = () => {
                          placeholder="ETF Ticker (e.g. QQQ)"
                          className="flex-1 bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-purple-500 outline-none text-sm uppercase"
                      />
-                     <button 
-                         type="submit"
-                         disabled={!etfTicker || etfLoading}
-                         className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-3 rounded text-sm disabled:opacity-50"
-                     >
+                     <button type="submit" disabled={!etfTicker || etfLoading} className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-3 rounded text-sm disabled:opacity-50">
                          {etfLoading ? 'Scanning...' : 'Scan'}
                      </button>
                  </div>
              </form>
-             
-             {/* ETF Watchlist */}
-             <div className="flex flex-wrap gap-2 mb-4">
-                 {etfWatchlist.map(t => (
-                    <div 
-                        key={t}
-                        onClick={() => fetchEtfProfile(t)}
-                        className="group flex items-center gap-1 cursor-pointer text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-2 py-1 rounded transition-colors"
-                    >
-                        <span className="font-mono font-bold">{t}</span>
-                        <button 
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                toggleWatchlist(t);
-                            }}
-                            className="text-slate-500 hover:text-red-400 hidden group-hover:block"
-                        >
-                            ×
-                        </button>
-                    </div>
-                 ))}
-             </div>
-
-             {etfResult && (
-                 <div className="bg-slate-800/40 rounded border border-blue-500/20 p-3 animate-fade-in">
-                     <div className="flex justify-between items-center mb-2">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-blue-300">{etfResult.name}</span>
-                            <button 
-                                onClick={() => toggleWatchlist(etfResult.ticker)}
-                                className={`text-xs ${etfWatchlist.includes(etfResult.ticker) ? 'text-yellow-400' : 'text-slate-500 hover:text-yellow-400'}`}
-                                title={etfWatchlist.includes(etfResult.ticker) ? "Remove from Watchlist" : "Add to Watchlist"}
-                            >
-                                ★
-                            </button>
-                        </div>
-                        <span className="text-[10px] bg-blue-900/30 text-blue-200 px-1.5 py-0.5 rounded text-xs font-mono font-bold">{(etfResult.topHoldings || []).length} Assets</span>
-                     </div>
-                     
-                     <div className="space-y-1 mb-4 max-h-[150px] overflow-y-auto custom-scrollbar">
-                         {(etfResult.topHoldings || []).map(h => (
-                             <div key={h.ticker} className="flex justify-between text-xs">
-                                 <span className="text-slate-300 font-mono font-bold">{h.ticker}</span>
-                                 <span className="text-slate-400 font-mono">{h.weight}%</span>
-                             </div>
-                         ))}
-                     </div>
-
-                     <div className="pt-3 border-t border-slate-700 space-y-3">
-                         <div className="grid grid-cols-2 gap-3">
-                             <div>
-                                 <label className="block text-[10px] text-slate-400 mb-1 uppercase font-bold">Capital to Deploy ($)</label>
-                                 <input 
-                                     type="number"
-                                     value={etfCapital}
-                                     onChange={(e) => setEtfCapital(e.target.value)}
-                                     className="w-full bg-[#0f172a] border border-slate-600 rounded px-2 py-1 text-white text-xs"
-                                 />
-                             </div>
-                             <div>
-                                 <label className="block text-[10px] text-slate-400 mb-1 uppercase font-bold">Leverage (x)</label>
-                                 <select 
-                                     value={etfLeverage}
-                                     onChange={(e) => setEtfLeverage(e.target.value)}
-                                     className="w-full bg-[#0f172a] border border-slate-600 rounded px-2 py-1 text-white text-xs outline-none focus:border-blue-500"
-                                 >
-                                     <option value="1">1x (Standard)</option>
-                                     <option value="1.5">1.5x (Moderate)</option>
-                                     <option value="2">2x (Double)</option>
-                                     <option value="3">3x (Triple)</option>
-                                     <option value="5">5x (Aggressive)</option>
-                                 </select>
-                             </div>
-                         </div>
-                         
-                         {parseFloat(etfLeverage) > 1 && (
-                             <div className="text-[9px] text-amber-500 flex items-center gap-1 font-bold italic">
-                                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                                 WARNING: Leveraging increases liquidation risk.
-                             </div>
-                         )}
-
-                         <button 
-                             onClick={handleAdoptETF}
-                             className="w-full bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-3 py-2 rounded transition-colors shadow-lg shadow-green-900/20"
-                         >
-                             Adopt with {etfLeverage}x Leverage
-                         </button>
-                     </div>
-                 </div>
-             )}
          </div>
 
          <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
@@ -1300,31 +948,12 @@ const PortfolioView: React.FC = () => {
                             <span className="text-slate-400">{totalValue > 0 ? ((h.marketValue / totalValue) * 100).toFixed(1) : 0}%</span>
                         </div>
                         <div className="w-full bg-slate-800 rounded-full h-2">
-                            <div 
-                                className="bg-purple-600 h-2 rounded-full transition-all duration-500" 
-                                style={{ width: `${totalValue > 0 ? (h.marketValue / totalValue) * 100 : 0}%` }}
-                            ></div>
+                            <div className="bg-purple-600 h-2 rounded-full transition-all duration-500" style={{ width: `${totalValue > 0 ? (h.marketValue / totalValue) * 100 : 0}%` }}></div>
                         </div>
                     </div>
                 ))}
             </div>
          </div>
-
-         {mptResult && (mptResult.correlationMatrix || []).length > 0 && (
-             <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
-                <h3 className="text-lg font-semibold text-white mb-4">Asset Correlations</h3>
-                <div className="text-xs space-y-2">
-                    {mptResult.correlationMatrix.slice(0, 5).map((corr, i) => (
-                        <div key={i} className="flex justify-between items-center border-b border-purple-500/20 pb-1">
-                            <span className="text-slate-400">{corr.ticker1} / {corr.ticker2}</span>
-                            <span className={`font-mono font-bold ${corr.value > 0.7 ? 'text-red-400' : corr.value < 0.3 ? 'text-green-400' : 'text-yellow-400'}`}>
-                                {corr.value.toFixed(2)}
-                            </span>
-                        </div>
-                    ))}
-                </div>
-             </div>
-         )}
       </div>
     </div>
   );
