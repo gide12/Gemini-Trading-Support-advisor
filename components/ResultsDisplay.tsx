@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from "react";
 import { AnalysisResult, AnalysisType, PriceActionData, PriceActionCandle, TechnicalAnalysisData, NewsItem, BrokerIntelData, TradeIdeaData, ClusteringAnalysisData } from "../types";
 import { 
-    ComposedChart, ReferenceLine, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar, Cell, CartesianGrid, ReferenceArea, Area, BarChart, Line, Scatter, ScatterChart, ZAxis, Legend
+    ComposedChart, ReferenceLine, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar, Cell, CartesianGrid, ReferenceArea, Area, BarChart, Line, Scatter, ScatterChart, ZAxis, Legend, Label
 } from "recharts";
 
 interface ResultsDisplayProps {
@@ -25,6 +25,27 @@ const ClusteringDashboard = ({ data }: { data: ClusteringAnalysisData }) => {
         if (!data.metrics.eigenvalues) return [];
         return data.metrics.eigenvalues.map((v, i) => ({ index: i + 1, val: v }));
     }, [data.metrics.eigenvalues]);
+
+    // Calculate dynamic domains to "fit" nodes closer to the scale
+    const { xDomain, yDomain } = useMemo(() => {
+        if (!data.plotData || data.plotData.length === 0) return { xDomain: [0, 100], yDomain: [0, 100] };
+        
+        const xValues = data.plotData.map(d => d.x);
+        const yValues = data.plotData.map(d => d.y);
+        
+        const minX = Math.min(...xValues);
+        const maxX = Math.max(...xValues);
+        const minY = Math.min(...yValues);
+        const maxY = Math.max(...yValues);
+        
+        const xPad = (maxX - minX) * 0.1 || 1;
+        const yPad = (maxY - minY) * 0.1 || 1;
+        
+        return {
+            xDomain: [minX - xPad, maxX + xPad],
+            yDomain: [minY - yPad, maxY + yPad]
+        };
+    }, [data.plotData]);
 
     return (
         <div className="space-y-8 animate-fade-in font-sans">
@@ -103,32 +124,55 @@ const ClusteringDashboard = ({ data }: { data: ClusteringAnalysisData }) => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* 2D Projection Plot */}
+                {/* 2D Projection Plot with Tight Fit Scale & Lines */}
                 <div className="bg-[#0b0e14] rounded-2xl border border-white/5 p-6 shadow-2xl relative overflow-hidden">
                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">
                         {isGbmlemo ? 'Probabilistic Latent Space (Graph-Aware)' : isSpectral ? 'Spectral Embedding Space (Eigenvectors)' : '2D Latent Space Projection (PCA)'}
                     </h3>
                     <div className="h-[400px]">
                         <ResponsiveContainer width="100%" height="100%">
-                            <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#2a2e39" vertical={false} opacity={0.3} />
-                                <XAxis type="number" dataKey="x" name={isSpectral ? "Eigenvector 1" : "PC1"} hide />
-                                <YAxis type="number" dataKey="y" name={isSpectral ? "Eigenvector 2" : "PC2"} hide />
-                                <ZAxis type="number" range={[100, 300]} dataKey={isProbabilistic ? "probability" : "centrality"} />
+                            <ScatterChart margin={{ top: 20, right: 30, bottom: 40, left: 30 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#2a2e39" opacity={0.3} vertical horizontal />
+                                <XAxis 
+                                    type="number" 
+                                    dataKey="x" 
+                                    name={isSpectral ? "Eigenvector 1" : "PC1"} 
+                                    stroke="#475569" 
+                                    tick={{fontSize: 9, fontFamily: 'monospace'}}
+                                    axisLine={{stroke: '#334155'}}
+                                    domain={xDomain}
+                                    allowDataOverflow={false}
+                                >
+                                    <Label value={isSpectral ? "Spectral Dimension 1" : "Component 1"} offset={-15} position="insideBottom" fill="#64748b" style={{ fontSize: '9px', fontWeight: 'black', textTransform: 'uppercase', letterSpacing: '0.2em' }} />
+                                </XAxis>
+                                <YAxis 
+                                    type="number" 
+                                    dataKey="y" 
+                                    name={isSpectral ? "Eigenvector 2" : "PC2"} 
+                                    stroke="#475569" 
+                                    tick={{fontSize: 9, fontFamily: 'monospace'}}
+                                    axisLine={{stroke: '#334155'}}
+                                    domain={yDomain}
+                                    allowDataOverflow={false}
+                                >
+                                    <Label value={isSpectral ? "Spectral Dimension 2" : "Component 2"} angle={-90} position="insideLeft" offset={0} fill="#64748b" style={{ fontSize: '9px', fontWeight: 'black', textTransform: 'uppercase', letterSpacing: '0.2em' }} />
+                                </YAxis>
+                                <ZAxis type="number" range={[100, 400]} dataKey={isProbabilistic ? "probability" : "centrality"} />
                                 <Tooltip 
-                                    cursor={{ strokeDasharray: '3 3' }}
+                                    cursor={{ strokeDasharray: '3 3', stroke: '#10b981' }}
                                     content={({ active, payload }) => {
                                         if (active && payload && payload.length) {
                                             const item = payload[0].payload;
                                             return (
-                                                <div className="bg-[#1e293b] border border-white/10 p-2 rounded shadow-2xl">
-                                                    <div className="text-xs font-black text-white">{item.ticker}</div>
-                                                    <div className="text-[10px] text-emerald-400 uppercase">Cluster {item.clusterId}</div>
+                                                <div className="bg-[#1e293b] border border-white/10 p-2 rounded shadow-2xl backdrop-blur-md">
+                                                    <div className="text-xs font-black text-white border-b border-white/5 pb-1 mb-1">{item.ticker}</div>
+                                                    <div className="text-[10px] text-emerald-400 uppercase font-black">Community {item.clusterId}</div>
+                                                    <div className="text-[9px] text-slate-500 font-mono mt-1">COORD: [{item.x.toFixed(2)}, {item.y.toFixed(2)}]</div>
                                                     {item.probability !== undefined && (
-                                                        <div className="text-[10px] text-slate-400 uppercase mt-1">Assignment: {(item.probability * 100).toFixed(1)}%</div>
+                                                        <div className="text-[10px] text-cyan-400 uppercase mt-1 font-bold">Posterior: {(item.probability * 100).toFixed(1)}%</div>
                                                     )}
                                                     {item.centrality !== undefined && (
-                                                        <div className="text-[10px] text-cyan-400 uppercase mt-1">Centrality: {item.centrality.toFixed(3)}</div>
+                                                        <div className="text-[10px] text-amber-400 uppercase mt-1 font-bold">Centrality: {item.centrality.toFixed(3)}</div>
                                                     )}
                                                 </div>
                                             );
@@ -138,7 +182,11 @@ const ClusteringDashboard = ({ data }: { data: ClusteringAnalysisData }) => {
                                 />
                                 <Scatter name="Assets" data={data.plotData}>
                                     {data.plotData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={["#a855f7", "#10b981", "#3b82f6", "#f59e0b", "#f43f5e"][entry.clusterId % 5]} fillOpacity={entry.probability ?? 1} />
+                                        <Cell key={`cell-${index}`} 
+                                              fill={["#a855f7", "#10b981", "#3b82f6", "#f59e0b", "#f43f5e"][entry.clusterId % 5]} 
+                                              stroke={["#a855f7", "#10b981", "#3b82f6", "#f59e0b", "#f43f5e"][entry.clusterId % 5]}
+                                              strokeWidth={1}
+                                              fillOpacity={entry.probability ?? 0.8} />
                                     ))}
                                 </Scatter>
                             </ScatterChart>
