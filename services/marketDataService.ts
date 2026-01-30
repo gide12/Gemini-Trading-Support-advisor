@@ -1,3 +1,4 @@
+
 import { MarketTicker, Holding } from "../types";
 
 const INITIAL_TICKERS: MarketTicker[] = [
@@ -22,10 +23,10 @@ const INITIAL_TICKERS: MarketTicker[] = [
 ];
 
 const INITIAL_HOLDINGS: Holding[] = [
-  { ticker: "AAPL", quantity: 50, avgBuyPrice: 150.00, currentPrice: 175.50, marketValue: 8775, pl: 1275, plPercent: 17.0 },
-  { ticker: "NVDA", quantity: 10, avgBuyPrice: 450.00, currentPrice: 780.00, marketValue: 7800, pl: 3300, plPercent: 73.3 },
-  { ticker: "GOOGL", quantity: 20, avgBuyPrice: 130.00, currentPrice: 142.80, marketValue: 2856, pl: 256, plPercent: 9.8 },
-  { ticker: "TSLA", quantity: 100, avgBuyPrice: 220.00, currentPrice: 190.50, marketValue: 19050, pl: -2950, plPercent: -13.4 },
+  { ticker: "AAPL", quantity: 50, avgBuyPrice: 150.00, currentPrice: 175.50, marketValue: 8775, pl: 1275, plPercent: 17.0, mean: 0.015, variance: 0.002, deviation: 0.045 },
+  { ticker: "NVDA", quantity: 10, avgBuyPrice: 450.00, currentPrice: 780.00, marketValue: 7800, pl: 3300, plPercent: 73.3, mean: 0.052, variance: 0.018, deviation: 0.134 },
+  { ticker: "GOOGL", quantity: 20, avgBuyPrice: 130.00, currentPrice: 142.80, marketValue: 2856, pl: 256, plPercent: 9.8, mean: 0.008, variance: 0.004, deviation: 0.063 },
+  { ticker: "TSLA", quantity: 100, avgBuyPrice: 220.00, currentPrice: 190.50, marketValue: 19050, pl: -2950, plPercent: -13.4, mean: -0.012, variance: 0.025, deviation: 0.158 },
 ];
 
 // Simulate slight market movements

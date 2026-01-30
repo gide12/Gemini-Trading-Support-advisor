@@ -120,6 +120,11 @@ const PortfolioView: React.FC = () => {
     const pl = marketValue - (quantity * avgBuyPrice);
     const plPercent = (pl / (quantity * avgBuyPrice)) * 100;
 
+    // Simulate stats
+    const mean = (Math.random() * 0.08) - 0.02; // -2% to 6%
+    const variance = Math.random() * 0.02;
+    const deviation = Math.sqrt(variance);
+
     const newHolding: Holding = {
         ticker,
         quantity,
@@ -127,7 +132,10 @@ const PortfolioView: React.FC = () => {
         currentPrice,
         marketValue,
         pl,
-        plPercent
+        plPercent,
+        mean,
+        variance,
+        deviation
     };
 
     setHoldings(prev => {
@@ -220,7 +228,10 @@ const PortfolioView: React.FC = () => {
                         currentPrice: price,
                         marketValue,
                         pl: 0,
-                        plPercent: 0
+                        plPercent: 0,
+                        mean: (Math.random() * 0.05),
+                        variance: Math.random() * 0.01,
+                        deviation: Math.random() * 0.1
                     });
                 }
             } else if (suggestion.action === "Sell") {
@@ -334,7 +345,10 @@ const PortfolioView: React.FC = () => {
             currentPrice: mockPrice, // Assume bought just now
             marketValue: allocationAmount,
             pl: 0,
-            plPercent: 0
+            plPercent: 0,
+            mean: (Math.random() * 0.05),
+            variance: Math.random() * 0.01,
+            deviation: Math.random() * 0.1
         };
         newHoldings.push(newHolding);
     });
@@ -935,19 +949,22 @@ const PortfolioView: React.FC = () => {
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="bg-[#1e293b]/50 text-slate-400 text-xs uppercase tracking-wider">
-                            <th className="p-4">Asset</th>
-                            <th className="p-4 text-right">Qty</th>
-                            <th className="p-4 text-right">Avg Price</th>
-                            <th className="p-4 text-right">Cur. Price</th>
-                            <th className="p-4 text-right">Value</th>
-                            <th className="p-4 text-right">P/L</th>
-                            <th className="p-4 text-center">Action</th>
+                            <th className="p-4 whitespace-nowrap">Asset</th>
+                            <th className="p-4 text-right whitespace-nowrap">Qty</th>
+                            <th className="p-4 text-right whitespace-nowrap">Avg Price</th>
+                            <th className="p-4 text-right whitespace-nowrap">Cur. Price</th>
+                            <th className="p-4 text-right whitespace-nowrap">Value</th>
+                            <th className="p-4 text-right whitespace-nowrap">P/L</th>
+                            <th className="p-4 text-right whitespace-nowrap">Mean</th>
+                            <th className="p-4 text-right whitespace-nowrap">Variance</th>
+                            <th className="p-4 text-right whitespace-nowrap">Deviation</th>
+                            <th className="p-4 text-center whitespace-nowrap">Action</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-purple-500/10 text-sm">
                         {holdings.length === 0 ? (
                              <tr>
-                                <td colSpan={7} className="p-8 text-center text-slate-500">No assets in portfolio. Add some above.</td>
+                                <td colSpan={10} className="p-8 text-center text-slate-500">No assets in portfolio. Add some above.</td>
                              </tr>
                         ) : (
                             holdings.map((holding) => (
@@ -958,14 +975,17 @@ const PortfolioView: React.FC = () => {
                                             <span>{holding.ticker}</span>
                                         </div>
                                     </td>
-                                    <td className="p-4 text-right text-slate-300">{holding.quantity.toFixed(2)}</td>
-                                    <td className="p-4 text-right text-slate-300">${holding.avgBuyPrice.toFixed(2)}</td>
-                                    <td className="p-4 text-right text-slate-300">${holding.currentPrice.toFixed(2)}</td>
-                                    <td className="p-4 text-right font-medium text-white">${(holding.marketValue || 0).toLocaleString()}</td>
-                                    <td className={`p-4 text-right font-medium ${holding.pl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                    <td className="p-4 text-right text-slate-300 font-mono">{holding.quantity.toFixed(2)}</td>
+                                    <td className="p-4 text-right text-slate-300 font-mono">${holding.avgBuyPrice.toFixed(2)}</td>
+                                    <td className="p-4 text-right text-slate-300 font-mono">${holding.currentPrice.toFixed(2)}</td>
+                                    <td className="p-4 text-right font-medium text-white font-mono">${(holding.marketValue || 0).toLocaleString()}</td>
+                                    <td className={`p-4 text-right font-medium font-mono ${holding.pl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                         {holding.pl >= 0 ? '+' : ''}{holding.pl.toFixed(2)} <br/>
-                                        <span className="text-xs opacity-75">({holding.plPercent.toFixed(2)}%)</span>
+                                        <span className="text-[10px] opacity-75">({holding.plPercent.toFixed(2)}%)</span>
                                     </td>
+                                    <td className="p-4 text-right text-slate-300 font-mono">{(holding.mean ? holding.mean * 100 : 0).toFixed(2)}%</td>
+                                    <td className="p-4 text-right text-slate-400 font-mono">{(holding.variance || 0).toFixed(4)}</td>
+                                    <td className="p-4 text-right text-purple-300 font-mono">{(holding.deviation || 0).toFixed(3)}</td>
                                     <td className="p-4 text-center">
                                         <button 
                                             onClick={() => handleRemove(holding.ticker)}
