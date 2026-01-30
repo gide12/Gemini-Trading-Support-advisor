@@ -25,6 +25,87 @@ export interface NewsItem {
     sentiment: "Positive" | "Negative" | "Neutral";
 }
 
+export interface ClusteringAnalysisData {
+    algorithm: string;
+    metrics: {
+        silhouetteScore?: number;
+        inertia?: number;
+        iterations: number;
+        optimalK: number;
+        bic?: number; 
+        aic?: number; 
+        // BIRCH / Agglomerative Specific
+        threshold?: number;
+        branchingFactor?: number;
+        cfNodesCount?: number;
+        calinskiHarabasz?: number;
+        maxMergeDistance?: number;
+        // Spectral / Graph Specific
+        eigengap?: number;
+        bandwidthSigma?: number;
+        eigenvalues?: number[];
+        // GBML-EMO Specific
+        elbo?: number; // Evidence Lower Bound
+        convergenceDelta?: number;
+    };
+    clusters: {
+        id: number;
+        label: string;
+        count: number;
+        avgReturn: number;
+        avgVolatility: number;
+        avgBeta: number;
+        avgDrawdown: number;
+        avgLiquidity?: number;
+        dominantSectors: string[];
+        interpretation: string;
+        riskDispersion?: number; // From Covariance Matrix
+        cfSubclusterCount?: number;
+        wardVariance?: number;
+        avgSimilarityScore?: number;
+    }[];
+    assignments: {
+        ticker: string;
+        clusterId: number;
+        cfSubclusterId?: string; 
+        dendrogramDepth?: number;
+        mergeDistance?: number;
+        spectralPC1?: number; 
+        spectralPC2?: number; 
+        connectivityScore?: number; // Reused for graph centrality
+        probability: number; // Primary Posterior Probability
+        secondaryClusterId?: number;
+        secondaryProbability?: number;
+        distanceToCentroid: number;
+        riskCharacteristic: string;
+        sector: string;
+        systemicClass?: "Systemic" | "Idiosyncratic" | "Bridge"; // GBML-EMO specific
+    }[];
+    plotData: {
+        x: number;
+        y: number;
+        clusterId: number;
+        ticker: string;
+        probability?: number;
+        centrality?: number;
+    }[];
+    radarData: {
+        metric: string;
+        [key: string]: string | number;
+    }[];
+    investmentInsight: {
+        riskAmplifiers: string[];
+        redundancyCheck: string;
+        diversificationStrategy: string;
+        regimeShiftImpact?: string;
+        hierarchicalInsight?: string; 
+        homogeneityScore?: string;
+        bridgeStocks?: string[];
+        factorStructure?: string; // GBML-EMO specific
+    };
+    summary: string;
+}
+
 export interface PriceActionCandle {
     time: string;
     open: number;
@@ -132,6 +213,7 @@ export interface AnalysisResult {
   priceAction?: PriceActionData;
   newsItems?: NewsItem[];
   tradeIdea?: TradeIdeaData;
+  clusteringAnalysis?: ClusteringAnalysisData;
 }
 
 export interface TabItem { id: AnalysisType; label: string; }

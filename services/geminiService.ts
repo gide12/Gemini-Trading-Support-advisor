@@ -15,7 +15,11 @@ import {
   QuantumMCDMResult,
   AdvancedPricingResult,
   DeltaGammaHedgeResult,
-  Holding
+  Holding,
+  ClusteringAnalysisData,
+  MPTAnalysisResult,
+  ETFProfile,
+  CAPMAPTResult
 } from "../types";
 
 const modelName = "gemini-3-flash-preview";
@@ -48,54 +52,99 @@ const extractSources = (response: any) => {
     .filter((s: any) => s.url);
 };
 
-export const runHedgeAnalysis = async (holdings: Holding[]): Promise<DeltaGammaHedgeResult> => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `
-    Act as a sophisticated financial analysis AI at an institutional hedge fund.
-    Perform a comprehensive hedging diagnostics for the following portfolio: ${JSON.stringify(holdings)}.
-    
-    OBJECTIVES:
-    1. Evaluate Effectiveness: Quantify risk reduction (Variance reduction, Value-at-Risk reduction).
-    2. Cost vs Benefit: Analyze the drag of hedging costs against P&L protection.
-    3. Residual Exposure: Identify assets with high tails or uncovered beta.
-    4. Suggest Improvements: Recommend specific adjustments to option strikes or delta-offsets.
-    
-    Structure the response in JSON:
-    {
-        "summary": "Concise summary for a Portfolio Manager.",
-        "metrics": {
-            "hedgingEfficiency": number, "varianceReduction": number,
-            "unhedgedBeta": number, "hedgedBeta": number,
-            "unhedgedVaR": number, "hedgedVaR": number,
-            "unhedgedCVaR": number, "hedgedCVaR": number
-        },
-        "exposures": [
-            { "asset": "string", "grossExposure": number, "netExposure": number, "hedgingCoverage": number, "costOfHedge": number }
-        ],
-        "pnlComparison": [
-            { "time": "T-30 to Present", "unhedgedPnl": number, "hedgedPnl": number }
-        ],
-        "recommendations": [
-            { "priority": "High"|"Med"|"Low", "title": "string", "action": "string" }
-        ]
-    }
-    IMPORTANT: Provide 20 data points for pnlComparison representing the last 30 trading days.`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-            config: { responseMimeType: "application/json" }
-        });
-        return cleanAndParseJSON(response.text);
-    } catch (e) {
-        throw new Error("Hedging Engine Offline.");
-    }
-};
-
 export const analyzeStock = async (ticker: string, analysisType: AnalysisType): Promise<AnalysisResult> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
+    if (analysisType === AnalysisType.Clustering) {
+        let promptGuidance = `Produce ACTUAL CLUSTERING RESULTS for a universe of stocks using ${ticker}.`;
+        
+        if (ticker === "GBML-EMO CLUSTERING") {
+            promptGuidance = `
+                Act as a quantitative finance AI and graph-based probabilistic clustering engine.
+                Perform GBML-EMO (Graph-Based Machine Learning with Expectation-Maximization Optimization) on a stock universe.
+                Algorithm details: kNN (k=20) similarity graph, normalized Laplacian, soft assignment via EM optimization, maximizing ELBO.
+                
+                MANDATORY DATA REQUIREMENTS:
+                1. EM Metrics: Convergence iterations, Evidence Lower Bound (ELBO) value, and optimal K selection.
+                2. Probabilistic Assignments: For each stock, provide 'probability' (max posterior) and 'secondaryClusterId' if posterior > 0.20.
+                3. Graph Analytics: Provide 'connectivityScore' (node centrality) and 'systemicClass' (Systemic | Idiosyncratic | Bridge).
+                4. Cluster Specifics: Risk dispersion derived from the optimized covariance matrix.
+                
+                Universe: Mag 7 (AAPL, NVDA, MSFT, GOOGL, AMZN, TSLA, META) + 15 S&P 100 Leaders.
+            `;
+        } else if (ticker === "SPECTRAL CLUSTERING") {
+            promptGuidance = `
+                Act as a senior quantitative finance AI and graph-based clustering engine.
+                Perform Spectral Clustering on a high-cap stock investment universe.
+                Algorithm: Normalized Graph Laplacian, RBF kernel similarity, kNN (k=20).
+                
+                MANDATORY DATA REQUIREMENTS:
+                1. Graph Metrics: Eigengap heuristic value, kernel bandwidth (sigma), and top-k eigenvalues.
+                2. Spectral Embeddings: For each stock, provide PC1 and PC2 coordinates in the spectral subspace.
+                3. Graph Statistics: Provide 'connectivityScore' for each ticker and 'avgSimilarityScore' for each cluster.
+                
+                Universe: Magnificent 7, S&P 100 Leaders.
+            `;
+        } else if (ticker === "AGGLOMERATIVE CLUSTERING") {
+            promptGuidance = `
+                Act as a senior quantitative finance AI and hierarchical clustering engine.
+                Perform Agglomerative Hierarchical Clustering using Ward Linkage (minimum variance).
+                
+                MANDATORY DATA REQUIREMENTS:
+                1. Dendrogram Metrics: Calculate optimal cut depth and max merge distance.
+                2. Cluster Specifics: Intra-cluster variance (Ward objective).
+                3. Asset Detail: For each stock, provide its 'dendrogramDepth' and 'mergeDistance'.
+                
+                Universe: Magnificent 7, Top 25 S&P 100 components.
+            `;
+        } else if (ticker === "BIRCH CLUSTERING") {
+            promptGuidance = `
+                Act as a quantitative finance AI and large-scale hierarchical clustering engine.
+                Perform stock clustering using the BIRCH (Balanced Iterative Reducing and Clustering using Hierarchies) algorithm.
+                
+                MANDATORY DATA REQUIREMENTS:
+                1. CF-Tree Metrics: Auto-tuned threshold (T), branching factor (B), and leaf-node count.
+                2. Subcluster Mapping: Identify the CF-leaf node ID for each ticker.
+                
+                Universe: Magnificent 7, S&P 100 components.
+            `;
+        } else if (ticker === "GAUSSIAN MIXTURE MODEL") {
+            promptGuidance = `
+                Act as a quantitative finance AI specializing in probabilistic clustering.
+                Perform stock clustering using a Gaussian Mixture Model (GMM) with EM estimation and full covariance.
+                
+                MANDATORY DATA REQUIREMENTS:
+                1. Soft Assignments: Primary and Secondary cluster probabilities for each stock.
+                
+                Universe: Magnificent 7, S&P 100 Leaders.
+            `;
+        }
+
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: `Act as a senior quantitative finance AI and clustering engine. ${promptGuidance}
+            
+            Return JSON in this format:
+            {
+                "algorithm": "string",
+                "metrics": { "silhouetteScore": number, "elbo": number, "eigengap": number, "bandwidthSigma": number, "eigenvalues": [number], "calinskiHarabasz": number, "maxMergeDistance": number, "iterations": number, "optimalK": number, "threshold": number, "branchingFactor": number, "cfNodesCount": number },
+                "clusters": [
+                    { "id": number, "label": "string", "count": number, "avgReturn": number, "avgVolatility": number, "avgBeta": number, "avgDrawdown": number, "avgLiquidity": number, "riskDispersion": number, "wardVariance": number, "avgSimilarityScore": number, "cfSubclusterCount": number, "dominantSectors": ["string"], "interpretation": "string" }
+                ],
+                "assignments": [
+                    { "ticker": "string", "clusterId": number, "spectralPC1": number, "spectralPC2": number, "connectivityScore": number, "cfSubclusterId": "string", "dendrogramDepth": number, "mergeDistance": number, "probability": number, "secondaryClusterId": number, "secondaryProbability": number, "distanceToCentroid": number, "riskCharacteristic": "string", "sector": "string", "systemicClass": "string" }
+                ],
+                "plotData": [ { "x": number, "y": number, "clusterId": number, "ticker": "string", "probability": number, "centrality": number } ],
+                "radarData": [ { "metric": "Volatility|Return|Beta|Drawdown|Liquidity", "Cluster 0": number, "Cluster 1": number, "Cluster 2": number, "Cluster 3": number } ],
+                "investmentInsight": { "riskAmplifiers": ["string"], "redundancyCheck": "string", "diversificationStrategy": "string", "regimeShiftImpact": "string", "hierarchicalInsight": "string", "homogeneityScore": "string", "bridgeStocks": ["string"], "factorStructure": "string" },
+                "summary": "Institutional quantitative report summary."
+            }`,
+            config: { responseMimeType: "application/json" }
+        });
+        const json = cleanAndParseJSON(response.text);
+        return { ticker, type: analysisType, content: json.summary, clusteringAnalysis: json };
+    }
+
     if (analysisType === AnalysisType.News) {
         const response = await ai.models.generateContent({
             model: modelName,
@@ -557,6 +606,103 @@ export const runOptimalFuzzyDesignAnalysis = async (ticker: string): Promise<Opt
     return cleanAndParseJSON(response.text);
 };
 
-export const runMPTAnalysis = async (holdings: any, strategy: any, views: any) => ({} as any);
-export const getETFProfile = async (t:any) => ({} as any);
-export const runCAPMAPTAnalysis = async (t:any, r:any, m:any) => ({} as any);
+export const runMPTAnalysis = async (holdings: Holding[], strategy: string, views: any[]): Promise<MPTAnalysisResult> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const prompt = `Perform Mean-Variance Optimization (MPT) and Black-Litterman analysis for these holdings: ${JSON.stringify(holdings)}. 
+  Strategy: ${strategy}. Views: ${JSON.stringify(views)}.
+  Return JSON:
+  {
+      "currentMetrics": { "sharpeRatio": number, "expectedReturn": number, "volatility": number },
+      "optimalMetrics": { "sharpeRatio": number, "expectedReturn": number, "volatility": number },
+      "suggestions": [ { "ticker": "string", "action": "Buy"|"Sell"|"Hold", "amount": "string", "reason": "string" } ],
+      "efficientFrontier": [ { "risk": number, "return": number } ],
+      "correlationMatrix": [ { "ticker1": "string", "ticker2": "string", "value": number } ],
+      "rebalancingContext": { "strategyUsed": "string", "notes": "string", "nextRebalanceDate": "string" }
+  }`;
+
+  try {
+      const response = await ai.models.generateContent({
+          model: "gemini-3-pro-preview",
+          contents: prompt,
+          config: { responseMimeType: "application/json" }
+      });
+      return cleanAndParseJSON(response.text);
+  } catch (e) {
+      throw new Error("MPT Analysis Engine failure.");
+  }
+};
+
+export const getETFProfile = async (ticker: string): Promise<ETFProfile> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const prompt = `Act as an ETF database. Provide the top 5-10 holdings and weightings for the ETF: ${ticker}.
+  Return JSON: { "ticker": "string", "name": "string", "topHoldings": [ { "ticker": "string", "name": "string", "weight": number } ] }`;
+
+  try {
+      const response = await ai.models.generateContent({
+          model: "gemini-3-flash-preview",
+          contents: prompt,
+          config: { responseMimeType: "application/json" }
+      });
+      return cleanAndParseJSON(response.text);
+  } catch (e) {
+      throw new Error("ETF Profile Engine failure.");
+  }
+};
+
+export const runCAPMAPTAnalysis = async (ticker: string, rfRate: number, marketReturn: number): Promise<CAPMAPTResult> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const prompt = `Perform CAPM and APT risk analysis for ${ticker}. 
+  Risk-free rate: ${rfRate}%, Market return: ${marketReturn}%.
+  Return JSON:
+  {
+      "ticker": "${ticker}",
+      "capm": { "expectedReturn": number, "beta": number, "alpha": number, "securityMarketLineStatus": "string" },
+      "apt": { "factors": [ { "name": "string", "beta": number } ], "totalExpectedReturn": number },
+      "summary": "string"
+  }`;
+
+  try {
+      const response = await ai.models.generateContent({
+          model: "gemini-3-pro-preview",
+          contents: prompt,
+          config: { responseMimeType: "application/json" }
+      });
+      return cleanAndParseJSON(response.text);
+  } catch (e) {
+      throw new Error("CAPM/APT Model failed to converge.");
+  }
+};
+
+export const runHedgeAnalysis = async (holdings: Holding[]): Promise<DeltaGammaHedgeResult> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const prompt = `Act as a Senior Risk Manager. Perform a Delta-Gamma portfolio hedging and VaR analysis for these holdings: ${JSON.stringify(holdings)}.
+    Analyze protection efficiency and variance reduction under hedged scenarios.
+    Return JSON structure:
+    {
+        "summary": "string",
+        "metrics": {
+            "hedgingEfficiency": number,
+            "varianceReduction": number,
+            "unhedgedBeta": number,
+            "hedgedBeta": number,
+            "unhedgedVaR": number,
+            "hedgedVaR": number,
+            "unhedgedCVaR": number,
+            "hedgedCVaR": number
+        },
+        "exposures": [ { "asset": "string", "grossExposure": number, "netExposure": number, "hedgingCoverage": number, "costOfHedge": number } ],
+        "pnlComparison": [ { "time": "string", "unhedgedPnl": number, "hedgedPnl": number } ],
+        "recommendations": [ { "priority": "High"|"Med"|"Low", "title": "string", "action": "string" } ]
+    }`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-3-pro-preview",
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        });
+        return cleanAndParseJSON(response.text);
+    } catch (e) {
+        throw new Error("Risk Diagnostic Engine failed.");
+    }
+};

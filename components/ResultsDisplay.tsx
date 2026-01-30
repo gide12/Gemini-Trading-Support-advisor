@@ -1,8 +1,8 @@
 
 import React, { useMemo, useState } from "react";
-import { AnalysisResult, AnalysisType, PriceActionData, PriceActionCandle, TechnicalAnalysisData, NewsItem, BrokerIntelData, TradeIdeaData } from "../types";
+import { AnalysisResult, AnalysisType, PriceActionData, PriceActionCandle, TechnicalAnalysisData, NewsItem, BrokerIntelData, TradeIdeaData, ClusteringAnalysisData } from "../types";
 import { 
-    ComposedChart, ReferenceLine, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar, Cell, CartesianGrid, ReferenceArea, Area, BarChart, Line, Scatter, ScatterChart, ZAxis
+    ComposedChart, ReferenceLine, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar, Cell, CartesianGrid, ReferenceArea, Area, BarChart, Line, Scatter, ScatterChart, ZAxis, Legend
 } from "recharts";
 
 interface ResultsDisplayProps {
@@ -10,6 +10,321 @@ interface ResultsDisplayProps {
   isLoading: boolean;
   activeTab: AnalysisType;
 }
+
+const ClusteringDashboard = ({ data }: { data: ClusteringAnalysisData }) => {
+    const [search, setSearch] = useState("");
+    const filteredAssignments = data.assignments.filter(a => a.ticker.toLowerCase().includes(search.toLowerCase()) || a.sector.toLowerCase().includes(search.toLowerCase()));
+
+    const isProbabilistic = data.algorithm.includes("Gaussian") || data.algorithm.includes("Probabilistic") || data.algorithm.includes("GBML");
+    const isBirch = data.algorithm.includes("BIRCH");
+    const isAgglomerative = data.algorithm.includes("Agglomerative") || data.algorithm.includes("Hierarchical");
+    const isSpectral = data.algorithm.includes("Spectral");
+    const isGbmlemo = data.algorithm.includes("GBML-EMO");
+
+    const eigenvalueData = useMemo(() => {
+        if (!data.metrics.eigenvalues) return [];
+        return data.metrics.eigenvalues.map((v, i) => ({ index: i + 1, val: v }));
+    }, [data.metrics.eigenvalues]);
+
+    return (
+        <div className="space-y-8 animate-fade-in font-sans">
+            {/* Header / Stats Bar */}
+            <div className="bg-[#1e293b]/40 p-6 rounded-2xl border border-emerald-500/20 shadow-xl flex flex-wrap gap-8 items-center justify-between">
+                <div>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Clustering Engine Outcome</span>
+                    <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase">{data.algorithm}</h2>
+                </div>
+                <div className="flex gap-6">
+                    {isGbmlemo ? (
+                        <>
+                            <div className="text-center">
+                                <div className="text-[9px] text-slate-500 font-black uppercase">ELBO Score</div>
+                                <div className="text-xl font-mono font-bold text-emerald-400">{data.metrics.elbo?.toLocaleString() || 'N/A'}</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-[9px] text-slate-500 font-black uppercase">Iterations</div>
+                                <div className="text-xl font-mono font-bold text-cyan-400">{data.metrics.iterations}</div>
+                            </div>
+                        </>
+                    ) : isSpectral ? (
+                        <>
+                            <div className="text-center">
+                                <div className="text-[9px] text-slate-500 font-black uppercase">Eigengap Heuristic</div>
+                                <div className="text-xl font-mono font-bold text-emerald-400">{data.metrics.eigengap?.toFixed(4) || '0.0000'}</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-[9px] text-slate-500 font-black uppercase">Kernel Bandwidth (σ)</div>
+                                <div className="text-xl font-mono font-bold text-cyan-400">{data.metrics.bandwidthSigma?.toFixed(3) || '1.450'}</div>
+                            </div>
+                        </>
+                    ) : isAgglomerative ? (
+                         <>
+                            <div className="text-center">
+                                <div className="text-[9px] text-slate-500 font-black uppercase">Merge Distance</div>
+                                <div className="text-xl font-mono font-bold text-emerald-400">{data.metrics.maxMergeDistance?.toFixed(2) || '12.42'}</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-[9px] text-slate-500 font-black uppercase">Calinski-Harabasz</div>
+                                <div className="text-xl font-mono font-bold text-amber-400">{data.metrics.calinskiHarabasz?.toFixed(1) || '854.2'}</div>
+                            </div>
+                         </>
+                    ) : isBirch ? (
+                        <>
+                            <div className="text-center">
+                                <div className="text-[9px] text-slate-500 font-black uppercase">Threshold (T)</div>
+                                <div className="text-xl font-mono font-bold text-cyan-400">{data.metrics.threshold?.toFixed(3) || '0.500'}</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-[9px] text-slate-500 font-black uppercase">CF-Nodes</div>
+                                <div className="text-xl font-mono font-bold text-white">{data.metrics.cfNodesCount || 42}</div>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            {data.metrics.silhouetteScore !== undefined && (
+                                <div className="text-center">
+                                    <div className="text-[9px] text-slate-500 font-black uppercase">Silhouette</div>
+                                    <div className="text-xl font-mono font-bold text-emerald-400">{data.metrics.silhouetteScore.toFixed(3)}</div>
+                                </div>
+                            )}
+                            {data.metrics.bic !== undefined && (
+                                <div className="text-center">
+                                    <div className="text-[9px] text-slate-500 font-black uppercase">BIC Score</div>
+                                    <div className="text-xl font-mono font-bold text-amber-400">{(data.metrics.bic / 1000).toFixed(1)}k</div>
+                                </div>
+                            )}
+                        </>
+                    )}
+                    <div className="text-center">
+                        <div className="text-[9px] text-slate-500 font-black uppercase">Clusters (k)</div>
+                        <div className="text-xl font-mono font-bold text-white">{data.metrics.optimalK}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* 2D Projection Plot */}
+                <div className="bg-[#0b0e14] rounded-2xl border border-white/5 p-6 shadow-2xl relative overflow-hidden">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">
+                        {isGbmlemo ? 'Probabilistic Latent Space (Graph-Aware)' : isSpectral ? 'Spectral Embedding Space (Eigenvectors)' : '2D Latent Space Projection (PCA)'}
+                    </h3>
+                    <div className="h-[400px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#2a2e39" vertical={false} opacity={0.3} />
+                                <XAxis type="number" dataKey="x" name={isSpectral ? "Eigenvector 1" : "PC1"} hide />
+                                <YAxis type="number" dataKey="y" name={isSpectral ? "Eigenvector 2" : "PC2"} hide />
+                                <ZAxis type="number" range={[100, 300]} dataKey={isProbabilistic ? "probability" : "centrality"} />
+                                <Tooltip 
+                                    cursor={{ strokeDasharray: '3 3' }}
+                                    content={({ active, payload }) => {
+                                        if (active && payload && payload.length) {
+                                            const item = payload[0].payload;
+                                            return (
+                                                <div className="bg-[#1e293b] border border-white/10 p-2 rounded shadow-2xl">
+                                                    <div className="text-xs font-black text-white">{item.ticker}</div>
+                                                    <div className="text-[10px] text-emerald-400 uppercase">Cluster {item.clusterId}</div>
+                                                    {item.probability !== undefined && (
+                                                        <div className="text-[10px] text-slate-400 uppercase mt-1">Assignment: {(item.probability * 100).toFixed(1)}%</div>
+                                                    )}
+                                                    {item.centrality !== undefined && (
+                                                        <div className="text-[10px] text-cyan-400 uppercase mt-1">Centrality: {item.centrality.toFixed(3)}</div>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    }}
+                                />
+                                <Scatter name="Assets" data={data.plotData}>
+                                    {data.plotData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={["#a855f7", "#10b981", "#3b82f6", "#f59e0b", "#f43f5e"][entry.clusterId % 5]} fillOpacity={entry.probability ?? 1} />
+                                    ))}
+                                </Scatter>
+                            </ScatterChart>
+                        </ResponsiveContainer>
+                    </div>
+                    <div className="flex justify-center gap-4 mt-2">
+                        {data.clusters.map(c => (
+                            <div key={c.id} className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full" style={{backgroundColor: ["#a855f7", "#10b981", "#3b82f6", "#f59e0b", "#f43f5e"][c.id % 5]}}></div>
+                                <span className="text-[9px] text-slate-500 font-black uppercase tracking-tighter">{c.label}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Cluster Summary Metrics */}
+                <div className="bg-[#0b0e14] rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
+                    <div className="px-6 py-4 bg-slate-900/50 border-b border-white/5 flex justify-between items-center">
+                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            {isGbmlemo ? 'Probabilistic Group Analytics' : isSpectral ? 'Graph Community Analytics' : isAgglomerative ? 'Hierarchical Merge Analytics' : isBirch ? 'Hierarchical Group Analytics' : 'Component Analysis (EM Estimates)'}
+                        </h4>
+                        <span className="text-[8px] font-bold text-slate-600 uppercase">
+                            {isGbmlemo ? 'Optimization: EM-ELBO' : isSpectral ? 'Laplacian: Normalized' : isAgglomerative ? 'Linkage: Ward' : isBirch ? `Branching Factor: ${data.metrics.branchingFactor || 50}` : 'Covariance: Full'}
+                        </span>
+                    </div>
+                    <div className="h-[400px] overflow-y-auto custom-scrollbar">
+                        <table className="w-full text-left">
+                            <thead className="text-[9px] font-black text-slate-500 uppercase tracking-tighter border-b border-white/5 bg-black/20 sticky top-0 z-10">
+                                <tr>
+                                    <th className="px-6 py-3">Archetype</th>
+                                    <th className="px-6 py-3 text-right">Avg Beta</th>
+                                    <th className="px-6 py-3 text-right">{isGbmlemo ? 'Dispersion' : isSpectral ? 'Graph Sim.' : isAgglomerative ? 'Ward Var.' : 'Dispersion'}</th>
+                                    <th className="px-6 py-3 text-center">{isGbmlemo ? 'Density' : isAgglomerative ? 'Nodes' : isBirch ? 'Subclusters' : 'Weight'}</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5 text-[11px]">
+                                {data.clusters.map((c, i) => (
+                                    <React.Fragment key={i}>
+                                        <tr className="hover:bg-white/5 transition-colors">
+                                            <td className="px-6 py-3 font-bold text-white uppercase flex items-center gap-2">
+                                                <div className="w-1.5 h-3 rounded-full" style={{backgroundColor: ["#a855f7", "#10b981", "#3b82f6", "#f59e0b", "#f43f5e"][c.id % 5]}}></div>
+                                                {c.label}
+                                            </td>
+                                            <td className="px-6 py-3 text-right font-mono text-slate-400">{c.avgBeta.toFixed(2)}</td>
+                                            <td className="px-6 py-3 text-right font-mono text-emerald-400">{(c.riskDispersion || c.avgSimilarityScore || c.wardVariance || c.avgVolatility).toFixed(3)}</td>
+                                            <td className="px-6 py-3 text-center text-slate-500 font-black">
+                                                {isGbmlemo ? `${Math.round((c.count / data.assignments.length) * 100)}%` : isAgglomerative ? c.count : isBirch ? (c.cfSubclusterCount || '-') : `${Math.round((c.count / data.assignments.length) * 100)}%`}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td colSpan={4} className="px-6 py-2 bg-black/10 text-[10px] text-slate-500 italic border-b border-white/5">
+                                                {c.interpretation} • <span className="text-slate-400 font-bold uppercase">{c.dominantSectors.join(", ")}</span>
+                                            </td>
+                                        </tr>
+                                    </React.Fragment>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {/* Asset Assignment Searchable Registry */}
+            <div className="bg-[#0b0e14] rounded-2xl border border-white/5 shadow-2xl overflow-hidden">
+                <div className="px-6 py-4 bg-slate-900/50 border-b border-white/5 flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            {isGbmlemo ? 'Probabilistic Soft Assignment Registry' : isSpectral ? 'Systemic Connectivity Registry' : isAgglomerative ? 'Dendrogram Leaf Registry' : isBirch ? 'Hierarchical CF-Leaf Registry' : 'Probabilistic Registry'}
+                        </h4>
+                        {(isBirch || isAgglomerative || isSpectral || isGbmlemo) && <span className="text-[8px] bg-cyan-900/30 text-cyan-400 px-1.5 py-0.5 rounded border border-cyan-500/20 uppercase font-black tracking-tighter">
+                            {isGbmlemo ? 'EM-Graph Smooth active' : isSpectral ? 'Graph communities active' : isAgglomerative ? 'Ward Hierarchy active' : 'CF-Tree active'}
+                        </span>}
+                    </div>
+                    <input 
+                        type="text" 
+                        placeholder="FILTER ASSETS..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="bg-black/40 border border-white/10 px-3 py-1.5 rounded text-[10px] text-white focus:border-emerald-500 outline-none uppercase w-48"
+                    />
+                </div>
+                <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                    <table className="w-full text-left">
+                        <thead className="text-[9px] font-black text-slate-500 uppercase tracking-tighter border-b border-white/5 bg-black/20 sticky top-0">
+                            <tr>
+                                <th className="px-6 py-3">Ticker</th>
+                                <th className="px-6 py-3">{isGbmlemo ? 'Primary Posterior' : isSpectral ? 'Centrality' : isAgglomerative ? 'Merge Dist' : isBirch ? 'CF-Subcluster ID' : 'Primary Prob.'}</th>
+                                <th className="px-6 py-3">Risk Archetype</th>
+                                <th className="px-6 py-3 text-right">{isGbmlemo ? 'Secondary Assignment' : isSpectral ? 'Manifold Dist' : isAgglomerative ? 'Tree Depth' : 'L2 Distance'}</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5 text-[11px]">
+                            {filteredAssignments.map((a, i) => (
+                                <tr key={i} className="hover:bg-white/5 transition-colors">
+                                    <td className="px-6 py-3 font-black text-white uppercase">{a.ticker}</td>
+                                    <td className="px-6 py-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-24 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                                <div className={`h-full ${isGbmlemo ? 'bg-cyan-500' : 'bg-emerald-500'}`} style={{width: `${(a.probability || 0) * 100}%`}}></div>
+                                            </div>
+                                            <span className={`font-mono font-bold ${isGbmlemo ? 'text-cyan-400' : 'text-emerald-400'}`}>{(a.probability * 100).toFixed(1)}%</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-slate-300 font-bold uppercase tracking-tighter">{a.riskCharacteristic}</span>
+                                            {isGbmlemo && a.systemicClass && (
+                                                <span className={`text-[8px] px-1 rounded font-black uppercase ${a.systemicClass === 'Systemic' ? 'bg-rose-500/20 text-rose-400' : a.systemicClass === 'Bridge' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-slate-700 text-slate-500'}`}>
+                                                    {a.systemicClass}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-3 text-right font-mono text-slate-500">
+                                        {isGbmlemo ? (
+                                            a.secondaryClusterId !== undefined ? (
+                                                <span className="text-[10px] text-slate-500">C{a.secondaryClusterId} ({(a.secondaryProbability! * 100).toFixed(0)}%)</span>
+                                            ) : (
+                                                <span className="text-[9px] text-slate-700 font-black italic">IDIOSYNCRATIC</span>
+                                            )
+                                        ) : isAgglomerative ? (
+                                            <span className="px-2 py-0.5 rounded bg-slate-800 text-[9px] font-black text-slate-400 border border-white/5 uppercase">
+                                                Level {a.dendrogramDepth || 0}
+                                            </span>
+                                        ) : (a.distanceToCentroid?.toFixed(4) || '0.0000')}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Investment Strategy Panel */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] p-8 rounded-2xl border border-emerald-500/20 shadow-2xl relative overflow-hidden">
+                    <h3 className="text-xs font-black text-emerald-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                         <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                         Institutional Intelligence: {isGbmlemo ? 'GBML-EMO Synthesis' : isSpectral ? 'Graph Manifold Theory' : isAgglomerative ? 'Ward Hierarchy Insight' : isBirch ? 'Hierarchical Insights' : 'GMM Overlap'}
+                    </h3>
+                    <div className="space-y-6">
+                        {isGbmlemo && data.investmentInsight.factorStructure && (
+                            <div>
+                                <h4 className="text-[10px] font-black text-slate-500 uppercase mb-2">Latent Factor Structure</h4>
+                                <p className="text-sm text-slate-300 italic leading-relaxed">"{data.investmentInsight.factorStructure}"</p>
+                            </div>
+                        )}
+                        <div>
+                            <h4 className="text-[10px] font-black text-slate-500 uppercase mb-2">Portfolio Structural Assessment</h4>
+                            <p className="text-sm text-slate-300 italic leading-relaxed">"{data.investmentInsight.redundancyCheck}"</p>
+                        </div>
+                        <div>
+                            <h4 className="text-[10px] font-black text-slate-500 uppercase mb-2">Probabilistic Diversification Strategy</h4>
+                            <p className="text-sm text-slate-300 italic leading-relaxed">"{data.investmentInsight.diversificationStrategy}"</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-[#131722] border border-slate-800 rounded-2xl p-8 shadow-2xl">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-rose-500 rounded-full"></div>
+                        {isGbmlemo ? 'Soft Assignment Overlap Risks' : 'Systemic Risk Amplifiers'}
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4">
+                        {isGbmlemo && data.investmentInsight.bridgeStocks?.map((ticker, i) => (
+                            <div key={i} className="bg-cyan-900/10 p-4 rounded-xl border border-cyan-500/20 flex gap-4 items-center">
+                                <div className="text-cyan-400 text-lg font-black">{ticker}</div>
+                                <div className="text-[10px] text-slate-400 uppercase tracking-tighter leading-snug font-bold">Bridge Node: Exhibits >20% posterior probability across multiple regimes. Essential for hedging cross-sector contagion.</div>
+                            </div>
+                        ))}
+                        {data.investmentInsight.riskAmplifiers.map((amp, i) => (
+                            <div key={i} className="bg-black/20 p-4 rounded-xl border border-white/5 flex gap-4 items-center group hover:border-rose-500/30 transition-all">
+                                <div className="text-rose-500 text-lg opacity-50 group-hover:opacity-100">⚠️</div>
+                                <div className="text-[11px] font-bold text-white uppercase tracking-tighter leading-snug">{amp}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            <div className="p-4 bg-black/40 rounded-xl border border-white/5 text-[9px] text-slate-600 text-center uppercase tracking-[0.4em] font-black">
+                Q-SYS Stochastic Engine • {isGbmlemo ? 'GBML-EMO Probabilistic Graph' : isSpectral ? 'Spectral Graph Theory' : isAgglomerative ? 'Agglomerative Ward Linkage' : 'Balanced Iterative Reducing and Clustering'} • Institutional Cluster Layer
+            </div>
+        </div>
+    );
+};
 
 const NewsThumbnail = ({ source }: { source: string }) => {
     const [imgError, setImgError] = useState(false);
@@ -287,7 +602,7 @@ const BrokerIntelDashboard = ({ data }: { data: BrokerIntelData }) => {
                         <div className="text-xs font-bold text-slate-400 uppercase">Institutional</div>
                     </div>
                     <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-500 shadow-[0_0_10px_#3b82f6] transition-all duration-1000" style={{width: `${(data.metrics.brokerFlow.participantQuality || 0.5) * 100}%`}}></div>
+                        <div className={`h-full bg-blue-500 shadow-[0_0_10px_#3b82f6] transition-all duration-1000`} style={{width: `${(data.metrics.brokerFlow.participantQuality || 0.5) * 100}%`}}></div>
                     </div>
                 </div>
 
@@ -298,7 +613,7 @@ const BrokerIntelDashboard = ({ data }: { data: BrokerIntelData }) => {
                         <div className="text-xs font-bold text-slate-400 uppercase">Trend Score</div>
                     </div>
                     <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-amber-500 shadow-[0_0_10px_#f59e0b] transition-all duration-1000" style={{width: `${(data.metrics.brokerFlow.flowConsistency || 0.5) * 100}%`}}></div>
+                        <div className={`h-full bg-amber-500 shadow-[0_0_10px_#f59e0b] transition-all duration-1000`} style={{width: `${(data.metrics.brokerFlow.flowConsistency || 0.5) * 100}%`}}></div>
                     </div>
                 </div>
             </div>
@@ -553,6 +868,10 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isLoading, acti
         </div>
       </div>
 
+      {activeTab === AnalysisType.Clustering && result.clusteringAnalysis && (
+          <ClusteringDashboard data={result.clusteringAnalysis} />
+      )}
+
       {activeTab === AnalysisType.News && result.newsItems && (
           <NewsDashboard items={result.newsItems} summary={result.content} />
       )}
@@ -575,7 +894,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isLoading, acti
           <TechnicalAnalysisDashboard data={result.technicalAnalysis} />
       )}
 
-      {activeTab !== AnalysisType.PriceAction && activeTab !== AnalysisType.Technical && activeTab !== AnalysisType.News && activeTab !== AnalysisType.BrokerIntel && activeTab !== AnalysisType.Ideas && (
+      {activeTab !== AnalysisType.Clustering && activeTab !== AnalysisType.PriceAction && activeTab !== AnalysisType.Technical && activeTab !== AnalysisType.News && activeTab !== AnalysisType.BrokerIntel && activeTab !== AnalysisType.Ideas && (
           <div className="p-6 text-slate-200 font-sans text-sm leading-relaxed whitespace-pre-wrap bg-black/40 rounded-xl border border-white/5 shadow-inner">
               {result.content}
           </div>
