@@ -578,121 +578,159 @@ const PortfolioView: React.FC = () => {
 
         {/* Capital Asset Modeling (CAPM & APT) */}
         <div className="bg-[#0f172a] rounded-xl border border-indigo-500/30 p-6 shadow-lg shadow-indigo-900/10">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
                 <div>
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
                         <svg className="w-6 h-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                         Capital Asset Modeling (CAPM & APT)
                     </h3>
-                    <p className="text-xs text-slate-400">Risk-adjusted return expectations and multi-factor macro sensitivity.</p>
+                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mt-1">Risk-adjusted return expectations and multi-factor macro sensitivity</p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                     <div className="flex flex-col gap-1">
-                        <span className="text-[8px] text-slate-500 uppercase font-bold">Asset</span>
+                        <span className="text-[8px] text-slate-500 uppercase font-black">Universe Segment</span>
                         <select 
                             value={capmTicker}
                             onChange={(e) => setCapmTicker(e.target.value)}
-                            className="bg-[#1e293b] border border-indigo-500/30 text-xs text-white rounded px-2 py-1.5 outline-none"
+                            className="bg-[#1e293b] border border-indigo-500/30 text-[10px] font-bold text-white rounded px-2.5 py-1.5 outline-none focus:border-indigo-500"
                         >
                             {holdings.map(h => <option key={h.ticker} value={h.ticker}>{h.ticker}</option>)}
                         </select>
                     </div>
                     <div className="flex flex-col gap-1">
-                        <span className="text-[8px] text-slate-500 uppercase font-bold">Risk-Free %</span>
+                        <span className="text-[8px] text-slate-500 uppercase font-black">Rf Rate (%)</span>
                         <input 
                             type="number" 
                             value={rfRate} 
                             onChange={(e) => setRfRate(parseFloat(e.target.value))}
-                            className="bg-[#1e293b] border border-indigo-500/30 text-xs text-white rounded px-2 py-1 w-16 outline-none"
+                            className="bg-[#1e293b] border border-indigo-500/30 text-[10px] font-mono text-white rounded px-2 py-1.5 w-16 outline-none"
                         />
                     </div>
                     <div className="flex flex-col gap-1">
-                        <span className="text-[8px] text-slate-500 uppercase font-bold">Market Ret %</span>
+                        <span className="text-[8px] text-slate-500 uppercase font-black">Market Ret (%)</span>
                         <input 
                             type="number" 
                             value={marketReturn} 
                             onChange={(e) => setMarketReturn(parseFloat(e.target.value))}
-                            className="bg-[#1e293b] border border-indigo-500/30 text-xs text-white rounded px-2 py-1 w-16 outline-none"
+                            className="bg-[#1e293b] border border-indigo-500/30 text-[10px] font-mono text-white rounded px-2 py-1.5 w-16 outline-none"
                         />
                     </div>
                     <button 
                         onClick={handleRunCAPMAPT}
                         disabled={capmLoading || !capmTicker}
-                        className="self-end bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-1.5 rounded transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-indigo-900/40"
+                        className="self-end bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase px-5 py-2 rounded transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-indigo-900/40"
                     >
-                        {capmLoading ? 'Modeling...' : 'Model Asset'}
+                        {capmLoading ? 'Modeling Matrix...' : 'Run Simulation'}
                     </button>
                 </div>
             </div>
 
             {capmResult ? (
-                <div className="animate-fade-in space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-[#1e293b]/50 border border-indigo-500/20 p-5 rounded-xl">
-                            <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-4">CAPM Performance</h4>
-                            <div className="grid grid-cols-2 gap-4 mb-4">
-                                <div className="text-center bg-slate-900/50 p-2 rounded border border-slate-700">
-                                    <div className="text-[10px] text-slate-500 uppercase">Expected Return (Ke)</div>
-                                    <div className="text-lg font-mono text-white">{(capmResult.capm?.expectedReturn || 0).toFixed(2)}%</div>
+                <div className="animate-fade-in space-y-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* CAPM PERFORMANCE PANEL */}
+                        <div className="bg-[#0b0e14] border border-indigo-500/20 p-6 rounded-2xl shadow-xl relative overflow-hidden group">
+                            <div className="absolute -right-8 -top-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                                <svg className="w-40 h-40 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+                            </div>
+                            <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                                CAPM Performance Diagnostics
+                            </h4>
+                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div className="bg-slate-900/50 p-4 rounded-xl border border-white/5 flex flex-col items-center justify-center">
+                                    <div className="text-[9px] text-slate-500 font-black uppercase mb-1">Expected Return (Ke)</div>
+                                    <div className="text-3xl font-black text-white font-mono">{(capmResult.capm?.expectedReturn || 0).toFixed(2)}%</div>
                                 </div>
-                                <div className="text-center bg-slate-900/50 p-2 rounded border border-slate-700">
-                                    <div className="text-[10px] text-slate-500 uppercase">Beta (β)</div>
-                                    <div className="text-lg font-mono text-white">{(capmResult.capm?.beta || 0).toFixed(2)}</div>
+                                <div className="bg-slate-900/50 p-4 rounded-xl border border-white/5 flex flex-col items-center justify-center">
+                                    <div className="text-[9px] text-slate-500 font-black uppercase mb-1">Beta Coefficient (β)</div>
+                                    <div className="text-3xl font-black text-white font-mono">{(capmResult.capm?.beta || 0).toFixed(2)}</div>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="flex justify-between text-xs px-2">
-                                    <span className="text-slate-500">Alpha (α)</span>
-                                    <span className={`font-bold ${(capmResult.capm?.alpha || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>{(capmResult.capm?.alpha || 0).toFixed(2)}%</span>
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="text-center p-3 bg-black/40 rounded-lg border border-white/5">
+                                    <div className="text-[8px] text-slate-600 font-black uppercase mb-1">Alpha (α)</div>
+                                    <div className={`text-sm font-bold font-mono ${(capmResult.capm?.alpha || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                        {(capmResult.capm?.alpha || 0) >= 0 ? '+' : ''}{(capmResult.capm?.alpha || 0).toFixed(2)}%
+                                    </div>
                                 </div>
-                                <div className="flex justify-between text-xs px-2">
-                                    <span className="text-slate-500">SML Status</span>
-                                    <span className={`font-bold ${capmResult.capm?.securityMarketLineStatus === 'Above' ? 'text-green-400' : 'text-amber-400'}`}>{capmResult.capm?.securityMarketLineStatus || 'N/A'}</span>
+                                <div className="text-center p-3 bg-black/40 rounded-lg border border-white/5">
+                                    <div className="text-[8px] text-slate-600 font-black uppercase mb-1">SML Position</div>
+                                    <div className={`text-[10px] font-black uppercase ${capmResult.capm?.securityMarketLineStatus === 'Above' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                        {capmResult.capm?.securityMarketLineStatus || 'N/A'}
+                                    </div>
+                                </div>
+                                <div className="text-center p-3 bg-black/40 rounded-lg border border-white/5">
+                                    <div className="text-[8px] text-slate-600 font-black uppercase mb-1">Valuation Status</div>
+                                    <div className={`text-[10px] font-black uppercase ${capmResult.capm?.valuationStatus === 'Undervalued' ? 'text-emerald-400' : capmResult.capm?.valuationStatus === 'Overvalued' ? 'text-rose-400' : 'text-blue-400'}`}>
+                                        {capmResult.capm?.valuationStatus || 'Fairly Valued'}
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-[#1e293b]/50 border border-emerald-500/20 p-5 rounded-xl">
-                            <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-4">APT Factor Sensitivities</h4>
-                            <div className="space-y-3">
+                        {/* APT FACTOR SENSITIVITIES PANEL */}
+                        <div className="bg-[#0b0e14] border border-emerald-500/20 p-6 rounded-2xl shadow-xl">
+                            <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                APT Factor Sensitivities
+                            </h4>
+                            <div className="space-y-5">
                                 {(capmResult.apt?.factors || []).map((f: any, i: number) => (
-                                    <div key={i}>
-                                        <div className="flex justify-between text-[10px] mb-1">
-                                            <span className="text-slate-400 font-bold uppercase">{f.name}</span>
-                                            <span className="text-emerald-300 font-mono">β: {(f.beta || 0).toFixed(2)}</span>
+                                    <div key={i} className="group">
+                                        <div className="flex justify-between items-end text-[10px] mb-2">
+                                            <div className="flex flex-col">
+                                                <span className="text-slate-400 font-black uppercase tracking-tighter">{f.name}</span>
+                                                <span className={`text-[8px] font-black uppercase ${f.direction === 'Positive' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                    {f.direction} Exposure • {f.strength}
+                                                </span>
+                                            </div>
+                                            <span className="text-white font-mono font-bold text-sm">β: {(f.beta || 0).toFixed(2)}</span>
                                         </div>
                                         <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
                                             <div 
-                                                className={`h-full ${f.beta > 1 ? 'bg-emerald-500' : f.beta > 0 ? 'bg-emerald-400' : 'bg-red-400'}`} 
+                                                className={`h-full transition-all duration-1000 ${f.beta > 1 ? 'bg-emerald-500' : f.beta > 0.5 ? 'bg-emerald-400' : 'bg-amber-400'}`} 
                                                 style={{ width: `${Math.min(Math.abs(f.beta || 0) * 50, 100)}%` }}
                                             ></div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                            <div className="mt-4 pt-3 border-t border-slate-700/50 flex justify-between items-center">
-                                <span className="text-[10px] text-slate-500 uppercase font-bold">Total Macro Expectation</span>
-                                <span className="text-sm font-mono font-bold text-white">{(capmResult.apt?.totalExpectedReturn || 0).toFixed(2)}%</span>
+                            <div className="mt-8 pt-4 border-t border-white/5 flex justify-between items-center bg-emerald-500/5 px-4 py-3 rounded-xl">
+                                <div className="flex flex-col">
+                                    <span className="text-[9px] text-slate-500 uppercase font-black">Total Macro Expected Return (APT)</span>
+                                    <span className="text-[8px] text-slate-600 font-bold uppercase">Aggregated multi-factor estimate</span>
+                                </div>
+                                <span className="text-2xl font-black text-white font-mono">{(capmResult.apt?.totalExpectedReturn || 0).toFixed(2)}%</span>
                             </div>
                         </div>
                     </div>
                     
-                    <div className="bg-indigo-900/10 p-5 rounded-xl border border-indigo-500/10">
-                        <h4 className="text-xs font-bold text-indigo-500 uppercase mb-2">Modeling Synthesis</h4>
-                        <p className="text-sm text-slate-300 italic leading-relaxed">"{capmResult.summary}"</p>
+                    {/* MODELING SYNTHESIS */}
+                    <div className="bg-gradient-to-r from-[#020617] to-indigo-900/10 p-8 rounded-2xl border border-white/5 relative">
+                        <div className="absolute top-4 right-8 text-[10px] font-black text-slate-800 uppercase tracking-[0.5em] select-none">Institutional Synthesis</div>
+                        <h4 className="text-[10px] font-black text-indigo-400 uppercase mb-4 flex items-center gap-2">
+                             <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></div>
+                             Quant Strategy Report
+                        </h4>
+                        <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap italic opacity-90 border-l border-white/10 pl-6">
+                            "{capmResult.summary}"
+                        </div>
                     </div>
                 </div>
             ) : (
-                <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-xl">
-                    <svg className="w-12 h-12 text-slate-700 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
-                    <p className="text-sm text-slate-600">Select an asset to run CAPM and APT risk modeling.</p>
+                <div className="h-96 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-3xl group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.05)_0,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <svg className="w-16 h-16 text-slate-800 mb-4 group-hover:text-indigo-900 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    <span className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-700 mb-2">Initialize Asset Modeling</span>
+                    <p className="text-[10px] text-slate-500 max-w-xs text-center leading-relaxed">Quant agent requires Rf and Market benchmarks to compute risk-neutral expectations and factor sensitivities.</p>
                 </div>
             )}
         </div>
 
         {/* Advanced Quant Pricing Engine */}
         <div className="bg-[#0f172a] rounded-xl border border-cyan-500/30 p-6 shadow-lg shadow-cyan-900/10 relative overflow-hidden">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-6 relative z-10">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6 relative z-10">
                 <div>
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
                         <svg className="w-6 h-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
@@ -719,7 +757,7 @@ const PortfolioView: React.FC = () => {
             </div>
 
             {pricingResult ? (
-                <div className="animate-fade-in space-y-6 relative z-10">
+                <div className="animate-fade-in space-y-8 relative z-10">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <DiagnosticBadge label="S₀ Spot" status={pricingResult.diagnostics.spotPrice} />
                         <DiagnosticBadge label="Option Chain" status={pricingResult.diagnostics.optionChain} />
@@ -727,83 +765,109 @@ const PortfolioView: React.FC = () => {
                         <DiagnosticBadge label="Dividends" status={pricingResult.diagnostics.dividendYield} />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className={`bg-[#1e293b]/50 border p-5 rounded-xl transition-all ${pricingResult.bsm?.fairValue === 0 ? 'border-rose-500/20 grayscale opacity-60' : 'border-cyan-500/20 shadow-lg shadow-cyan-950/20'}`}>
-                            <div className="flex justify-between items-center mb-4">
-                                <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-widest">BSM Analytic</h4>
-                                {pricingResult.bsm?.fairValue === 0 && <span className="text-[8px] px-1.5 py-0.5 rounded bg-rose-500 text-white font-black uppercase">Failure</span>}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* PANEL A: BSM ANALYTIC PANEL */}
+                        <div className={`bg-[#0b0e14] border p-6 rounded-2xl transition-all ${pricingResult.bsm?.fairValue === 0 ? 'border-rose-500/20 grayscale opacity-60' : 'border-cyan-500/20 shadow-xl'}`}>
+                            <div className="flex justify-between items-center mb-6">
+                                <h4 className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">BSM Analytic Panel</h4>
+                                <span className={`text-[9px] px-2 py-0.5 rounded font-black uppercase ${pricingResult.bsm?.valuationStatus === 'FAIR VALUE' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
+                                    {pricingResult.bsm?.valuationStatus || 'N/A'}
+                                </span>
                             </div>
-                            <div className="grid grid-cols-2 gap-4 mb-4">
-                                <div className="text-center bg-slate-900/50 p-2 rounded border border-slate-700">
-                                    <div className="text-[10px] text-slate-500 uppercase">FAIR VALUE</div>
-                                    <div className="text-lg font-mono text-white">${(pricingResult.bsm?.fairValue || 0).toFixed(2)}</div>
+                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div className="text-center bg-slate-900/50 p-4 rounded-xl border border-white/5">
+                                    <div className="text-[9px] text-slate-500 uppercase font-black mb-1">FAIR VALUE</div>
+                                    <div className="text-2xl font-mono text-white font-black">${(pricingResult.bsm?.fairValue || 0).toFixed(2)}</div>
                                 </div>
-                                <div className="text-center bg-slate-900/50 p-2 rounded border border-slate-700">
-                                    <div className="text-[10px] text-slate-500 uppercase">IMPLIED VOL (σ)</div>
-                                    <div className="text-lg font-mono text-white">{((pricingResult.bsm?.impliedVol || 0) * 100).toFixed(1)}%</div>
+                                <div className="text-center bg-slate-900/50 p-4 rounded-xl border border-white/5">
+                                    <div className="text-[9px] text-slate-500 uppercase font-black mb-1">IMPLIED VOL (σ)</div>
+                                    <div className="text-2xl font-mono text-cyan-400 font-black">{((pricingResult.bsm?.impliedVol || 0) * 100).toFixed(1)}%</div>
                                 </div>
                             </div>
                             <div className="grid grid-cols-5 gap-2 text-center">
                                 {pricingResult.bsm?.greeks && Object.entries(pricingResult.bsm.greeks).map(([name, val]) => (
-                                    <div key={name}>
+                                    <div key={name} className="bg-black/20 p-2 rounded border border-white/5">
                                         <div className="text-[8px] text-slate-600 uppercase font-black">{name}</div>
-                                        <div className="text-[10px] font-mono text-cyan-300">{(val as number || 0).toFixed(3)}</div>
+                                        <div className="text-[10px] font-mono text-cyan-300 font-bold">{(val as number || 0).toFixed(3)}</div>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        <div className={`bg-[#1e293b]/50 border p-5 rounded-xl transition-all ${pricingResult.heston?.surfaceStatus === "N/A" ? 'border-rose-500/20 grayscale opacity-60' : 'border-purple-500/20 shadow-lg shadow-purple-950/20'}`}>
-                            <h4 className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-4">Heston Stochastic Vol</h4>
-                            <div className="grid grid-cols-3 gap-2 mb-4">
+                        {/* PANEL B: HESTON CALIBRATION PANEL */}
+                        <div className={`bg-[#0b0e14] border p-6 rounded-2xl transition-all ${pricingResult.heston?.skewStatus === "DISTORTED" ? 'border-rose-500/20 grayscale opacity-60' : 'border-purple-500/20 shadow-xl'}`}>
+                            <div className="flex justify-between items-center mb-6">
+                                <h4 className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Heston Calibration Suite</h4>
+                                <span className={`text-[9px] px-2 py-0.5 rounded font-black uppercase ${pricingResult.heston?.skewStatus === 'CALIBRATED' ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-500'}`}>
+                                    {pricingResult.heston?.skewStatus || 'N/A'}
+                                </span>
+                            </div>
+                            <div className="grid grid-cols-5 gap-2 mb-6">
                                 {pricingResult.heston?.parameters && Object.entries(pricingResult.heston.parameters).map(([key, val]) => (
-                                    <div key={key} className="bg-slate-900/50 p-1.5 rounded text-center border border-slate-700/50">
-                                        <div className="text-[8px] text-slate-500 font-bold uppercase">{key}</div>
-                                        <div className="text-xs font-mono text-purple-300">{(val as number || 0).toFixed(3)}</div>
+                                    <div key={key} className="bg-slate-900/50 p-2 rounded text-center border border-slate-700/50">
+                                        <div className="text-[8px] text-slate-500 font-black uppercase">{key === 'sigmaV' ? 'σᵥ' : key}</div>
+                                        <div className="text-[10px] font-mono text-purple-300 font-bold">{(val as number || 0).toFixed(3)}</div>
                                     </div>
                                 ))}
                             </div>
-                            <div className="text-xs bg-purple-900/10 p-2 rounded border border-purple-500/10">
-                                <span className="font-bold text-purple-400">Skew/Smile:</span> {pricingResult.heston?.surfaceStatus || 'N/A'}
-                                <p className="text-[10px] text-slate-400 mt-1 leading-tight">{pricingResult.heston?.description}</p>
+                            <div className="bg-purple-900/10 p-4 rounded-xl border border-purple-500/10">
+                                <h5 className="text-[8px] font-black text-purple-400 uppercase mb-2">Market Implication</h5>
+                                <p className="text-[11px] text-slate-400 italic leading-snug">{pricingResult.heston?.implication}</p>
                             </div>
                         </div>
 
-                        <div className={`bg-[#1e293b]/50 border p-5 rounded-xl transition-all ${pricingResult.jumpDiffusion?.jumpProbability === 0 ? 'border-rose-500/20 grayscale opacity-60' : 'border-amber-500/20 shadow-lg shadow-amber-950/20'}`}>
-                            <h4 className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-4">Merton Jump Diffusion</h4>
-                            <div className="flex items-center gap-6 mb-4">
-                                <div className="flex-1">
-                                    <div className="flex justify-between text-[10px] mb-1">
-                                        <span className="text-slate-500 uppercase">Jump Probability</span>
-                                        <span className="text-amber-300 font-bold">{((pricingResult.jumpDiffusion?.jumpProbability || 0) * 100).toFixed(1)}%</span>
-                                    </div>
-                                    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                                        <div className="h-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" style={{width: `${(pricingResult.jumpDiffusion?.jumpProbability || 0) * 100}%`}}></div>
-                                    </div>
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-[8px] text-slate-600 font-bold uppercase">λ (Lambda)</div>
-                                    <div className="text-lg font-mono text-white">{(pricingResult.jumpDiffusion?.parameters?.lambda || 0).toFixed(2)}</div>
+                        {/* PANEL C: MERTON JUMP PANEL */}
+                        <div className={`bg-[#0b0e14] border p-6 rounded-2xl transition-all ${pricingResult.jumpDiffusion?.jumpProbability === 0 ? 'border-rose-500/20 grayscale opacity-60' : 'border-amber-500/20 shadow-xl'}`}>
+                            <div className="flex justify-between items-center mb-6">
+                                <h4 className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Merton Jump Diagnostics</h4>
+                                <div className="text-right">
+                                    <div className="text-[8px] text-slate-600 uppercase font-black">Jump Probability</div>
+                                    <div className="text-xs font-mono font-black text-amber-400">{((pricingResult.jumpDiffusion?.jumpProbability || 0) * 100).toFixed(1)}%</div>
                                 </div>
                             </div>
-                            <p className="text-[10px] text-slate-400 italic leading-snug">{pricingResult.jumpDiffusion?.description}</p>
+                            <div className="grid grid-cols-3 gap-3 mb-6">
+                                <div className="bg-black/40 p-2 rounded text-center border border-white/5">
+                                    <div className="text-[8px] text-slate-600 uppercase">λ (Lambda)</div>
+                                    <div className="text-sm font-mono text-white">{(pricingResult.jumpDiffusion?.parameters?.lambda || 0).toFixed(2)}</div>
+                                </div>
+                                <div className="bg-black/40 p-2 rounded text-center border border-white/5">
+                                    <div className="text-[8px] text-slate-600 uppercase">μ (Mean)</div>
+                                    <div className="text-sm font-mono text-white">{(pricingResult.jumpDiffusion?.parameters?.mu || 0).toFixed(3)}</div>
+                                </div>
+                                <div className="bg-black/40 p-2 rounded text-center border border-white/5">
+                                    <div className="text-[8px] text-slate-600 uppercase">δ (Disp.)</div>
+                                    <div className="text-sm font-mono text-white">{(pricingResult.jumpDiffusion?.parameters?.delta || 0).toFixed(3)}</div>
+                                </div>
+                            </div>
+                            <div className="bg-amber-900/10 p-4 rounded-xl border border-amber-500/10">
+                                <h5 className="text-[8px] font-black text-amber-400 uppercase mb-2">Discrete Risk Assessment</h5>
+                                <p className="text-[11px] text-slate-400 italic leading-snug">{pricingResult.jumpDiffusion?.riskAssessment}</p>
+                            </div>
                         </div>
 
-                        <div className={`bg-[#1e293b]/50 border p-5 rounded-xl transition-all ${pricingResult.varianceSwap?.fairVarianceStrike === 0 ? 'border-rose-500/20 grayscale opacity-60' : 'border-green-500/20 shadow-lg shadow-green-950/20'}`}>
-                            <h4 className="text-xs font-bold text-green-400 uppercase tracking-widest mb-4">Variance Swap Strike</h4>
-                            <div className="bg-slate-900/50 p-3 rounded border border-slate-700 mb-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-xs text-slate-500 uppercase">Fair Variance Strike</span>
-                                    <span className="text-xl font-mono text-green-400 font-bold">{(pricingResult.varianceSwap?.fairVarianceStrike || 0).toFixed(4)}</span>
+                        {/* PANEL D: VARIANCE SWAP PANEL */}
+                        <div className={`bg-[#0b0e14] border p-6 rounded-2xl transition-all ${pricingResult.varianceSwap?.fairVarianceStrike === 0 ? 'border-rose-500/20 grayscale opacity-60' : 'border-emerald-500/20 shadow-xl'}`}>
+                            <div className="flex justify-between items-center mb-6">
+                                <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Variance Swap Analytic</h4>
+                                <div className="text-right">
+                                    <div className="text-[8px] text-slate-600 uppercase font-black">Fair Variance Strike</div>
+                                    <div className="text-xl font-mono font-black text-emerald-400">{(pricingResult.varianceSwap?.fairVarianceStrike || 0).toFixed(4)}</div>
                                 </div>
                             </div>
-                            <div className="text-[10px] text-slate-400 leading-tight">
-                                <div className="font-bold text-slate-500 mb-1 uppercase tracking-tighter">Payoff Topology</div>
-                                {pricingResult.varianceSwap?.payoffDescription || 'N/A'}
+                            <div className="space-y-4">
+                                <div className="bg-slate-900/50 p-4 rounded-xl border border-white/5">
+                                    <h5 className="text-[8px] font-black text-slate-500 uppercase mb-2">Payoff Topology</h5>
+                                    <p className="text-[10px] text-slate-400 leading-tight">{pricingResult.varianceSwap?.payoffTopology}</p>
+                                </div>
+                                <div className="bg-emerald-900/10 p-4 rounded-xl border border-emerald-500/10">
+                                    <h5 className="text-[8px] font-black text-emerald-400 uppercase mb-2">Vol-of-Vol Interpretation</h5>
+                                    <p className="text-[10px] text-slate-300 italic">{pricingResult.varianceSwap?.volOfVolPremium}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
+                    {/* QUANT AUDIT SYNTHESIS */}
                     <div className="bg-gradient-to-r from-[#020617] to-cyan-900/10 p-8 rounded-2xl border border-white/5 relative">
                         <div className="absolute top-4 right-8 text-[10px] font-black text-slate-800 uppercase tracking-[0.5em] select-none">Hedge Fund Audit</div>
                         <h4 className="text-xs font-black text-cyan-400 uppercase mb-4 flex items-center gap-2">
@@ -819,8 +883,8 @@ const PortfolioView: React.FC = () => {
                 <div className="h-96 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-3xl group relative">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.05)_0,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <svg className="w-16 h-16 text-slate-800 mb-4 group-hover:text-cyan-900 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-                    <span className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-700 mb-2">Initialize Model Simulation</span>
-                    <p className="text-[10px] text-slate-500 max-w-xs text-center leading-relaxed">System requires valid spot prices and yield curve specification to perform risk-neutral valuation.</p>
+                    <span className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-700 mb-2">Initialize Pricing Model Simulation</span>
+                    <p className="text-[10px] text-slate-500 max-w-xs text-center leading-relaxed">System requires verified spot prices and yield curve calibration to perform multi-model risk auditing.</p>
                 </div>
             )}
         </div>

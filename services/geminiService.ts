@@ -502,32 +502,65 @@ export const runMLSimulation = async (
 export const runAdvancedPricingAnalysis = async (ticker: string): Promise<AdvancedPricingResult> => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const prompt = `
-    Act as a Senior Quant Researcher at a Hedge Fund. Perform a diagnostic multi-model derivatives analysis for ${ticker}.
-    MODELS: BSM, Heston Stochastic Vol, Merton Jump Diffusion, Variance Swap.
+    Act as an institutional-grade quantitative derivatives pricing engine.
+    Perform a full multi-model option pricing and calibration audit for the underlying asset: ${ticker}.
     
-    DIAGNOSTIC TASKS:
-    1. Check Spot Price availability.
-    2. Assess Option Chain liquidity/depth.
-    3. Evaluate Yield Curve and Dividend yield data.
-    4. If data is missing or invalid, report it in 'diagnostics' and set values to 0. 
-    5. Return a "Quant Analyst Synthesis" explaining failures or analytical results.
-    
-    Structure the response in JSON exactly:
+    MODELS & DATA REQUIREMENTS:
+    1. BLACK–SCHOLES–MERTON (Analytic Baseline):
+       - Use ATM option as reference.
+       - Output: Fair Value, Implied Volatility (σ), Greeks (Δ, Γ, Θ, Vega, Rho).
+       - Determine Valuation Status: "FAIR VALUE" | "OVERPRICED" | "UNDERPRICED".
+       
+    2. HESTON STOCHASTIC VOLATILITY (CALIBRATED):
+       - Calibrate parameters: v₀ (initial variance), κ (mean reversion speed), θ (long-term variance), σᵥ (vol-of-vol), ρ (spot–vol correlation).
+       - Determine Skew/Smile status: "CALIBRATED" | "FLAT" | "DISTORTED".
+       - Provide Market Implication statement.
+       
+    3. MERTON JUMP DIFFUSION:
+       - Calibrate jump dynamics: λ (jump intensity), μ (mean jump size), δ (jump dispersion).
+       - Estimate Jump probability (%).
+       - Provide Qualitative Jump risk assessment.
+       
+    4. VARIANCE SWAP PRICING:
+       - Compute Fair Variance Strike.
+       - Explain Payoff Topology and Vol-of-vol premium interpretation.
+
+    5. QUANT AUDIT SYNTHESIS:
+       - Generate an institutional-grade diagnostic narrative covering data integrity, BSM liquidity baseline, Heston rho/skew interpretation, and Jump vs Continuous volatility relevance.
+
+    Return JSON exactly matching this structure:
     {
         "ticker": "${ticker}",
-        "bsm": { "fairValue": number, "impliedVol": number, "greeks": { "delta": number, "gamma": number, "theta": number, "vega": number, "rho": number } },
-        "heston": { "surfaceStatus": "string", "description": "string", "parameters": { "v0": number, "kappa": number, "theta": number, "sigma": number, "rho": number } },
-        "jumpDiffusion": { "jumpProbability": number, "description": "string", "parameters": { "lambda": number, "mu": number, "delta": number } },
-        "varianceSwap": { "fairVarianceStrike": number, "payoffDescription": "string" },
+        "bsm": { 
+            "fairValue": number, 
+            "impliedVol": number, 
+            "valuationStatus": "FAIR VALUE"|"OVERPRICED"|"UNDERPRICED",
+            "greeks": { "delta": number, "gamma": number, "theta": number, "vega": number, "rho": number } 
+        },
+        "heston": { 
+            "parameters": { "v0": number, "kappa": number, "theta": number, "sigmaV": number, "rho": number },
+            "skewStatus": "CALIBRATED"|"FLAT"|"DISTORTED",
+            "implication": "string"
+        },
+        "jumpDiffusion": { 
+            "jumpProbability": number,
+            "parameters": { "lambda": number, "mu": number, "delta": number },
+            "riskAssessment": "string"
+        },
+        "varianceSwap": { 
+            "fairVarianceStrike": number, 
+            "payoffTopology": "string",
+            "volOfVolPremium": "string"
+        },
         "diagnostics": {
             "spotPrice": "OK"|"MISSING"|"STALE",
             "optionChain": "OK"|"THIN"|"EMPTY",
             "yieldCurve": "OK"|"INVERTED"|"MISSING",
             "dividendYield": "OK"|"ASSUMED"|"MISSING",
             "calibrationStatus": "string",
-            "failureRootCause": "string if applicable"
+            "failureRootCause": "string"
         },
-        "summary": "Detailed 2-paragraph Quant Audit summary."
+        "summary": "Full Institutional Quant Strategy Report narrative."
     }`;
 
     try {
@@ -651,15 +684,51 @@ export const getETFProfile = async (ticker: string): Promise<ETFProfile> => {
 
 export const runCAPMAPTAnalysis = async (ticker: string, rfRate: number, marketReturn: number): Promise<CAPMAPTResult> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const prompt = `Perform CAPM and APT risk analysis for ${ticker}. 
-  Risk-free rate: ${rfRate}%, Market return: ${marketReturn}%.
-  Return JSON:
-  {
-      "ticker": "${ticker}",
-      "capm": { "expectedReturn": number, "beta": number, "alpha": number, "securityMarketLineStatus": "string" },
-      "apt": { "factors": [ { "name": "string", "beta": number } ], "totalExpectedReturn": number },
-      "summary": "string"
-  }`;
+  const prompt = `
+    Act as a quantitative finance AI generating institutional-grade Capital Asset Modeling outputs.
+    Perform a full CAPM and APT analysis for the asset: ${ticker}.
+    
+    INPUT PARAMETERS:
+    Asset (Ticker): ${ticker}
+    Risk-Free Rate: ${rfRate}%
+    Expected Market Return: ${marketReturn}%
+    
+    MANDATORY MODEL REQUIREMENTS:
+    1. CAPM:
+       - Estimate historical beta (β) vs benchmark.
+       - Calculate Ke = Rf + β × (Rm − Rf).
+       - Estimate Alpha (α) relative to market performance.
+       - SML Position: Above / On / Below SML.
+       - Valuation Status: Undervalued / Fairly Valued / Overvalued.
+       
+    2. APT Factor Model:
+       - Estimate factor sensitivities (β) for: Market Risk Premium, Interest Rate Sensitivity, and Inflation Sensitivity.
+       - Include Direction (Positive / Negative) and Relative strength (Low / Medium / High).
+       - Compute Total Macro Expected Return (APT).
+       
+    3. Investment Synthesis:
+       - Institutional-grade narrative summarizing implications.
+
+    Return JSON matching this structure:
+    {
+        "ticker": "${ticker}",
+        "capm": { 
+            "expectedReturn": number, 
+            "beta": number, 
+            "alpha": number, 
+            "securityMarketLineStatus": "Above"|"On"|"Below",
+            "valuationStatus": "Undervalued"|"Fairly Valued"|"Overvalued"
+        },
+        "apt": { 
+            "factors": [ 
+                { "name": "Market Risk Premium", "beta": number, "direction": "string", "strength": "Low"|"Medium"|"High" },
+                { "name": "Interest Rate Sensitivity", "beta": number, "direction": "string", "strength": "Low"|"Medium"|"High" },
+                { "name": "Inflation Sensitivity", "beta": number, "direction": "string", "strength": "Low"|"Medium"|"High" }
+            ], 
+            "totalExpectedReturn": number 
+        },
+        "summary": "Institutional quantitative report narrative."
+    }`;
 
   try {
       const response = await ai.models.generateContent({

@@ -286,10 +286,27 @@ export interface DeltaGammaHedgeResult {
 
 export interface AdvancedPricingResult { 
     ticker: string; 
-    bsm: any; 
-    heston: any; 
-    jumpDiffusion: any; 
-    varianceSwap: any; 
+    bsm: {
+        fairValue: number;
+        impliedVol: number;
+        valuationStatus: "FAIR VALUE" | "OVERPRICED" | "UNDERPRICED";
+        greeks: { delta: number; gamma: number; theta: number; vega: number; rho: number; };
+    }; 
+    heston: {
+        parameters: { v0: number; kappa: number; theta: number; sigmaV: number; rho: number; };
+        skewStatus: "CALIBRATED" | "FLAT" | "DISTORTED";
+        implication: string;
+    }; 
+    jumpDiffusion: {
+        jumpProbability: number;
+        parameters: { lambda: number; mu: number; delta: number; };
+        riskAssessment: string;
+    }; 
+    varianceSwap: {
+        fairVarianceStrike: number;
+        payoffTopology: string;
+        volOfVolPremium: string;
+    }; 
     summary: string;
     diagnostics: {
         spotPrice: "OK" | "MISSING" | "STALE";
