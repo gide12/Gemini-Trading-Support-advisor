@@ -21,14 +21,8 @@ const groups = [
     title: "Analytics",
     items: [
       { id: AnalysisType.Technical, label: "Technical", icon: "T" },
-      { id: AnalysisType.PriceAction, label: "Price Action Adv", icon: "P" },
+      { id: AnalysisType.PriceAction, label: "SIGNAL", icon: "S" },
       { id: AnalysisType.Clustering, label: "Regime Cluster", icon: "R" },
-    ]
-  },
-  {
-    title: "Data & Sim",
-    items: [
-      { id: AnalysisType.YahooFinance, label: "Financials", icon: "F" },
       { id: AnalysisType.Fundamental, label: "Fundamental", icon: "D" },
     ]
   }
@@ -37,14 +31,14 @@ const groups = [
 const Tabs: React.FC<TabsProps> = ({ activeTab, onTabChange }) => {
   return (
     <div className="w-full mb-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {groups.map((group) => (
           <div key={group.title} className="bg-[#131B2E]/50 border border-slate-700/30 rounded-lg p-2">
             <div className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2 px-1 flex items-center justify-between">
               {group.title}
               <div className="h-px flex-1 bg-slate-800 ml-2"></div>
             </div>
-            <div className="grid grid-cols-1 gap-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
               {group.items.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (

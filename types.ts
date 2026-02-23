@@ -7,7 +7,7 @@ export enum AnalysisType {
   Fundamental = "Fundamental Analysis",
   Technical = "Technical Analysis",
   Clustering = "Cluster Analysis",
-  PriceAction = "Price Action Advanced",
+  PriceAction = "SIGNAL",
   Chart = "Chart",
   Ideas = "Trade Ideas",
   OptionsExpert = "Options Expert Analysis",
@@ -25,6 +25,106 @@ export interface NewsItem {
     sentiment: "Positive" | "Negative" | "Neutral";
 }
 
+export interface FundamentalAnalysisData {
+    ticker: string;
+    companyName: string;
+    date: string;
+    moat: {
+        narrative: string;
+        advantages: string[];
+        pricingPower: "High" | "Medium" | "Low";
+        marginSustainability: string;
+    };
+    efficiency: {
+        roic: number;
+        wacc: number;
+        spread: number;
+        fcfMargin: number;
+        operatingMargin: number;
+        grossMargin: number;
+        cashConversionCycle: number;
+        incrementalRoic: string;
+    };
+    solvency: {
+        netDebtEbitda: number;
+        interestCoverage: number;
+        liquidityBuffer: string;
+        downsideProtection: string;
+    };
+    allocation: {
+        shareholderYield: number;
+        capexDiscipline: string;
+        buybackEffectiveness: string;
+        dividendSustainability: string;
+        capitalMisallocationRisk: number; // 1-100
+    };
+    valuation: {
+        dcfIntrinsicValue: number;
+        relativePe: number;
+        evEbitda: number;
+        marginOfSafety: number;
+        intrinsicRange: { low: number; high: number };
+        valuationSensitivity: string;
+    };
+    risk: {
+        fundamentalBeta: number;
+        earningsVolatility: string;
+        drawdownBehavior: string;
+        factorExposure: string[];
+    };
+    thesis: {
+        bull: { narrative: string; financialImpact: string; valuationImplication: number };
+        base: { narrative: string; financialImpact: string; valuationImplication: number };
+        bear: { narrative: string; financialImpact: string; valuationImplication: number };
+    };
+    conclusion: {
+        conviction: "High" | "Medium" | "Low";
+        variablesToMonitor: string[];
+        thesisInvalidation: string;
+    };
+    summary: string;
+}
+
+export interface OptionsExpertAnalysisData {
+    ticker: string;
+    date: string;
+    positioning: {
+        callPutSkew: string;
+        dominantStrikes: { strike: number; type: "Call" | "Put"; significance: string }[];
+        unusualActivity: { contract: string; v_oi_ratio: number; interpretation: string }[];
+        tailRiskProtection: string;
+    };
+    volatility: {
+        ivLevel: number;
+        ivRank: number;
+        impliedMove: { percent: number; dollar: number };
+        ivCrushRisk: string;
+        preferredStructures: string[];
+    };
+    fundamentals: {
+        aiLicensing: string;
+        cloudGrowth: string;
+        valuationAnchors: string;
+    };
+    technicals: {
+        resistance: number;
+        support: number;
+        gammaZones: string;
+        squeezeConditions: string;
+    };
+    strategy: {
+        shortTerm: string;
+        mediumTerm: string;
+        longTerm: string;
+        playbook: {
+            volatilityTrader: string;
+            directionalTrader: string;
+            longTermHolder: string;
+        };
+    };
+    conclusion: string;
+}
+
 export interface ClusteringAnalysisData {
     algorithm: string;
     metrics: {
@@ -34,18 +134,15 @@ export interface ClusteringAnalysisData {
         optimalK: number;
         bic?: number; 
         aic?: number; 
-        // BIRCH / Agglomerative Specific
         threshold?: number;
         branchingFactor?: number;
         cfNodesCount?: number;
         calinskiHarabasz?: number;
         maxMergeDistance?: number;
-        // Spectral / Graph Specific
         eigengap?: number;
         bandwidthSigma?: number;
         eigenvalues?: number[];
-        // GBML-EMO Specific
-        elbo?: number; // Evidence Lower Bound
+        elbo?: number; 
         convergenceDelta?: number;
     };
     clusters: {
@@ -59,7 +156,7 @@ export interface ClusteringAnalysisData {
         avgLiquidity?: number;
         dominantSectors: string[];
         interpretation: string;
-        riskDispersion?: number; // From Covariance Matrix
+        riskDispersion?: number; 
         cfSubclusterCount?: number;
         wardVariance?: number;
         avgSimilarityScore?: number;
@@ -72,14 +169,14 @@ export interface ClusteringAnalysisData {
         mergeDistance?: number;
         spectralPC1?: number; 
         spectralPC2?: number; 
-        connectivityScore?: number; // Reused for graph centrality
-        probability: number; // Primary Posterior Probability
+        connectivityScore?: number; 
+        probability: number; 
         secondaryClusterId?: number;
         secondaryProbability?: number;
         distanceToCentroid: number;
         riskCharacteristic: string;
         sector: string;
-        systemicClass?: "Systemic" | "Idiosyncratic" | "Bridge"; // GBML-EMO specific
+        systemicClass?: "Systemic" | "Idiosyncratic" | "Bridge"; 
     }[];
     plotData: {
         x: number;
@@ -101,7 +198,7 @@ export interface ClusteringAnalysisData {
         hierarchicalInsight?: string; 
         homogeneityScore?: string;
         bridgeStocks?: string[];
-        factorStructure?: string; // GBML-EMO specific
+        factorStructure?: string; 
     };
     summary: string;
 }
@@ -214,6 +311,8 @@ export interface AnalysisResult {
   newsItems?: NewsItem[];
   tradeIdea?: TradeIdeaData;
   clusteringAnalysis?: ClusteringAnalysisData;
+  optionsExpert?: OptionsExpertAnalysisData;
+  fundamentalAnalysis?: FundamentalAnalysisData;
 }
 
 export interface TabItem { id: AnalysisType; label: string; }
@@ -228,6 +327,7 @@ export interface Holding {
     mean?: number;
     variance?: number;
     deviation?: number;
+    npv?: number;
 }
 export interface MarketTicker { symbol: string; name: string; price: number; change: number; changePercent: number; bid: number; ask: number; volume: number; }
 
@@ -256,11 +356,11 @@ export interface ETFProfile { ticker: string; name: string; topHoldings: { ticke
 export interface DeltaGammaHedgeResult { 
     summary: string;
     metrics: {
-        hedgingEfficiency: number; // 0-100%
-        varianceReduction: number; // 0-100%
+        hedgingEfficiency: number; 
+        varianceReduction: number; 
         unhedgedBeta: number;
         hedgedBeta: number;
-        unhedgedVaR: number; // 95% 1-Day
+        unhedgedVaR: number; 
         hedgedVaR: number;
         unhedgedCVaR: number;
         hedgedCVaR: number;
@@ -269,7 +369,7 @@ export interface DeltaGammaHedgeResult {
         asset: string;
         grossExposure: number;
         netExposure: number;
-        hedgingCoverage: number; // 0-100%
+        hedgingCoverage: number; 
         costOfHedge: number;
     }[];
     pnlComparison: {
@@ -396,11 +496,9 @@ export interface QuantumResult {
   decoherenceRisk: string;
   distribution: { price: string; probability: number }[];
   summary: string;
-  // QADQN specific
   agentPolicy?: { action: string; qValue: number; probability: number }[];
   attentionMap?: { head: string; weight: number }[];
   rewardExpectation?: number;
-  // QGNN specific
   graphTopology?: { node: string; neighbor: string; weight: number }[];
   benchmarks?: { metric: string; classical: number; quantum: number }[];
   circuitComplexity?: number;

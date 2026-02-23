@@ -134,6 +134,7 @@ const PortfolioView: React.FC = () => {
     const marketValue = quantity * currentPrice;
     const pl = marketValue - (quantity * avgBuyPrice);
     const plPercent = (pl / (quantity * avgBuyPrice)) * 100;
+    const npv = marketValue * (0.98 + Math.random() * 0.05);
 
     // Simulate stats
     const mean = (Math.random() * 0.08) - 0.02; // -2% to 6%
@@ -150,7 +151,8 @@ const PortfolioView: React.FC = () => {
         plPercent,
         mean,
         variance,
-        deviation
+        deviation,
+        npv
     };
 
     setHoldings(prev => {
@@ -231,7 +233,8 @@ const PortfolioView: React.FC = () => {
                         quantity: newQty, 
                         marketValue: newQty * price,
                         pl: (newQty * price) - (newQty * holding.avgBuyPrice),
-                        plPercent: (((newQty * price) - (newQty * holding.avgBuyPrice)) / (newQty * holding.avgBuyPrice)) * 100
+                        plPercent: (((newQty * price) - (newQty * holding.avgBuyPrice)) / (newQty * holding.avgBuyPrice)) * 100,
+                        npv: (newQty * price) * 1.02
                     };
                 } else {
                     const marketValue = changeInShares * price;
@@ -245,7 +248,8 @@ const PortfolioView: React.FC = () => {
                         plPercent: 0,
                         mean: (Math.random() * 0.05),
                         variance: Math.random() * 0.01,
-                        deviation: Math.random() * 0.1
+                        deviation: Math.random() * 0.1,
+                        npv: marketValue * 1.01
                     });
                 }
             } else if (suggestion.action === "Sell") {
@@ -259,7 +263,8 @@ const PortfolioView: React.FC = () => {
                             quantity: newQty,
                             marketValue: newQty * price,
                             pl: (newQty * price) - (newQty * holding.avgBuyPrice),
-                            plPercent: (((newQty * price) - (newQty * holding.avgBuyPrice)) / (newQty * holding.avgBuyPrice)) * 100
+                            plPercent: (((newQty * price) - (newQty * holding.avgBuyPrice)) / (newQty * holding.avgBuyPrice)) * 100,
+                            npv: (newQty * price) * 0.99
                         };
                     }
                 }
@@ -358,7 +363,8 @@ const PortfolioView: React.FC = () => {
             plPercent: 0,
             mean: (Math.random() * 0.05),
             variance: Math.random() * 0.01,
-            deviation: Math.random() * 0.1
+            deviation: Math.random() * 0.1,
+            npv: allocationAmount * (0.99 + Math.random() * 0.02)
         };
         newHoldings.push(newHolding);
     });
@@ -924,6 +930,7 @@ const PortfolioView: React.FC = () => {
                             <th className="p-4 text-right whitespace-nowrap">Avg Price</th>
                             <th className="p-4 text-right whitespace-nowrap">Cur. Price</th>
                             <th className="p-4 text-right whitespace-nowrap">Value</th>
+                            <th className="p-4 text-right whitespace-nowrap">NPV</th>
                             <th className="p-4 text-right whitespace-nowrap">P/L</th>
                             <th className="p-4 text-right whitespace-nowrap">Mean</th>
                             <th className="p-4 text-right whitespace-nowrap">Variance</th>
@@ -934,7 +941,7 @@ const PortfolioView: React.FC = () => {
                     <tbody className="divide-y divide-purple-500/10 text-sm">
                         {holdings.length === 0 ? (
                              <tr>
-                                <td colSpan={10} className="p-8 text-center text-slate-500">No assets in portfolio. Add some above.</td>
+                                <td colSpan={11} className="p-8 text-center text-slate-500">No assets in portfolio. Add some above.</td>
                              </tr>
                         ) : (
                             holdings.map((holding) => (
@@ -949,6 +956,7 @@ const PortfolioView: React.FC = () => {
                                     <td className="p-4 text-right text-slate-300 font-mono">${holding.avgBuyPrice.toFixed(2)}</td>
                                     <td className="p-4 text-right text-slate-300 font-mono">${holding.currentPrice.toFixed(2)}</td>
                                     <td className="p-4 text-right font-medium text-white font-mono">${(holding.marketValue || 0).toLocaleString()}</td>
+                                    <td className="p-4 text-right font-medium text-cyan-400 font-mono italic">${(holding.npv || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                     <td className={`p-4 text-right font-medium font-mono ${holding.pl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                         {holding.pl >= 0 ? '+' : ''}{holding.pl.toFixed(2)} <br/>
                                         <span className="text-[10px] opacity-75">({holding.plPercent.toFixed(2)}%)</span>

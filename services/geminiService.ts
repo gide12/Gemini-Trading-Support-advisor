@@ -19,7 +19,9 @@ import {
   ClusteringAnalysisData,
   MPTAnalysisResult,
   ETFProfile,
-  CAPMAPTResult
+  CAPMAPTResult,
+  OptionsExpertAnalysisData,
+  FundamentalAnalysisData
 } from "../types";
 
 const modelName = "gemini-3-flash-preview";
@@ -55,6 +57,145 @@ const extractSources = (response: any) => {
 export const analyzeStock = async (ticker: string, analysisType: AnalysisType): Promise<AnalysisResult> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
+    if (analysisType === AnalysisType.Fundamental) {
+        const response = await ai.models.generateContent({
+            model: "gemini-3-pro-preview",
+            contents: `Act as a senior buy-side equity analyst. Produce a professional-grade fundamental analysis for ${ticker} as of February 2, 2026.
+            Synthesize:
+            1. Economic Moat: Scale, network effects, IP, pricing power.
+            2. Financial Quality: ROIC vs WACC spread, margins (Gross/Opt/FCF), cash conversion.
+            3. Solvency: Net Debt/EBITDA, coverage, financial flexibility.
+            4. Allocation: CapEx discipline, shareholder yield, buyback effectiveness.
+            5. Valuation: DCF intrinsic value, Peer PE/EV-EBITDA, Intrinsic Range.
+            6. Risk: Fundamental beta, factor exposure (Growth/Quality), drawdown profile.
+            7. Thesis: Bull/Base/Bear cases with narrative catalysts and financial impacts.
+            
+            Return the analysis in JSON exactly:
+            {
+                "ticker": "${ticker}",
+                "companyName": "string",
+                "date": "February 2, 2026",
+                "moat": {
+                    "narrative": "string",
+                    "advantages": ["string"],
+                    "pricingPower": "High"|"Medium"|"Low",
+                    "marginSustainability": "string"
+                },
+                "efficiency": {
+                    "roic": number,
+                    "wacc": number,
+                    "spread": number,
+                    "fcfMargin": number,
+                    "operatingMargin": number,
+                    "grossMargin": number,
+                    "cashConversionCycle": number,
+                    "incrementalRoic": "string"
+                },
+                "solvency": {
+                    "netDebtEbitda": number,
+                    "interestCoverage": number,
+                    "liquidityBuffer": "string",
+                    "downsideProtection": "string"
+                },
+                "allocation": {
+                    "shareholderYield": number,
+                    "capexDiscipline": "string",
+                    "buybackEffectiveness": "string",
+                    "dividendSustainability": "string",
+                    "capitalMisallocationRisk": number
+                },
+                "valuation": {
+                    "dcfIntrinsicValue": number,
+                    "relativePe": number,
+                    "evEbitda": number,
+                    "marginOfSafety": number,
+                    "intrinsicRange": { "low": number, "high": number },
+                    "valuationSensitivity": "string"
+                },
+                "risk": {
+                    "fundamentalBeta": number,
+                    "earningsVolatility": "string",
+                    "drawdownBehavior": "string",
+                    "factorExposure": ["string"]
+                },
+                "thesis": {
+                    "bull": { "narrative": "string", "financialImpact": "string", "valuationImplication": number },
+                    "base": { "narrative": "string", "financialImpact": "string", "valuationImplication": number },
+                    "bear": { "narrative": "string", "financialImpact": "string", "valuationImplication": number }
+                },
+                "conclusion": {
+                    "conviction": "High"|"Medium"|"Low",
+                    "variablesToMonitor": ["string"],
+                    "thesisInvalidation": "string"
+                },
+                "summary": "Institutional Research Memo Summary."
+            }`,
+            config: { 
+                tools: [{ googleSearch: {} }],
+                responseMimeType: "application/json" 
+            }
+        });
+        const json = cleanAndParseJSON(response.text);
+        return { ticker, type: analysisType, content: json.summary, fundamentalAnalysis: json };
+    }
+
+    if (analysisType === AnalysisType.OptionsExpert) {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: `Act as a senior institutional options strategist. Produce an expert-level options analysis for ${ticker} as of February 2, 2026.
+            Synthesize:
+            1. Institutional Flow: Call/Put dollar volume skew, V/OI ratios, hedge-related signatures.
+            2. Volatility: 30D IV, Rank, earnings-implied move, IV Crush risks.
+            3. Catalysts: AI licensing, Cloud growth, CapEx, Valuation anchors.
+            4. Technicals: Gamma zones, Support/Resistance, Gamma squeeze risk.
+            5. Strategy Playbook: Short, medium, and long-term structures.
+            
+            Format the response in JSON exactly:
+            {
+                "ticker": "${ticker}",
+                "date": "February 2, 2026",
+                "positioning": {
+                    "callPutSkew": "string",
+                    "dominantStrikes": [ { "strike": number, "type": "Call"|"Put", "significance": "string" } ],
+                    "unusualActivity": [ { "contract": "string", "v_oi_ratio": number, "interpretation": "string" } ],
+                    "tailRiskProtection": "string"
+                },
+                "volatility": {
+                    "ivLevel": number,
+                    "ivRank": number,
+                    "impliedMove": { "percent": number, "dollar": number },
+                    "ivCrushRisk": "string",
+                    "preferredStructures": ["string"]
+                },
+                "fundamentals": {
+                    "aiLicensing": "string",
+                    "cloudGrowth": "string",
+                    "valuationAnchors": "string"
+                },
+                "technicals": {
+                    "resistance": number,
+                    "support": number,
+                    "gammaZones": "string",
+                    "squeezeConditions": "string"
+                },
+                "strategy": {
+                    "shortTerm": "string",
+                    "mediumTerm": "string",
+                    "longTerm": "string",
+                    "playbook": {
+                        "volatilityTrader": "string",
+                        "directionalTrader": "string",
+                        "longTermHolder": "string"
+                    }
+                },
+                "conclusion": "Full Expert Consensus Verdict."
+            }`,
+            config: { responseMimeType: "application/json" }
+        });
+        const json = cleanAndParseJSON(response.text);
+        return { ticker, type: analysisType, content: json.conclusion, optionsExpert: json };
+    }
+
     if (analysisType === AnalysisType.Clustering) {
         let promptGuidance = `Produce ACTUAL CLUSTERING RESULTS for a universe of stocks using ${ticker}.`;
         
@@ -63,13 +204,6 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
                 Act as a quantitative finance AI and graph-based probabilistic clustering engine.
                 Perform GBML-EMO (Graph-Based Machine Learning with Expectation-Maximization Optimization) on a stock universe.
                 Algorithm details: kNN (k=20) similarity graph, normalized Laplacian, soft assignment via EM optimization, maximizing ELBO.
-                
-                MANDATORY DATA REQUIREMENTS:
-                1. EM Metrics: Convergence iterations, Evidence Lower Bound (ELBO) value, and optimal K selection.
-                2. Probabilistic Assignments: For each stock, provide 'probability' (max posterior) and 'secondaryClusterId' if posterior > 0.20.
-                3. Graph Analytics: Provide 'connectivityScore' (node centrality) and 'systemicClass' (Systemic | Idiosyncratic | Bridge).
-                4. Cluster Specifics: Risk dispersion derived from the optimized covariance matrix.
-                
                 Universe: Mag 7 (AAPL, NVDA, MSFT, GOOGL, AMZN, TSLA, META) + 15 S&P 100 Leaders.
             `;
         } else if (ticker === "SPECTRAL CLUSTERING") {
@@ -77,45 +211,24 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
                 Act as a senior quantitative finance AI and graph-based clustering engine.
                 Perform Spectral Clustering on a high-cap stock investment universe.
                 Algorithm: Normalized Graph Laplacian, RBF kernel similarity, kNN (k=20).
-                
-                MANDATORY DATA REQUIREMENTS:
-                1. Graph Metrics: Eigengap heuristic value, kernel bandwidth (sigma), and top-k eigenvalues.
-                2. Spectral Embeddings: For each stock, provide PC1 and PC2 coordinates in the spectral subspace.
-                3. Graph Statistics: Provide 'connectivityScore' for each ticker and 'avgSimilarityScore' for each cluster.
-                
                 Universe: Magnificent 7, S&P 100 Leaders.
             `;
         } else if (ticker === "AGGLOMERATIVE CLUSTERING") {
             promptGuidance = `
                 Act as a senior quantitative finance AI and hierarchical clustering engine.
                 Perform Agglomerative Hierarchical Clustering using Ward Linkage (minimum variance).
-                
-                MANDATORY DATA REQUIREMENTS:
-                1. Dendrogram Metrics: Calculate optimal cut depth and max merge distance.
-                2. Cluster Specifics: Intra-cluster variance (Ward objective).
-                3. Asset Detail: For each stock, provide its 'dendrogramDepth' and 'mergeDistance'.
-                
                 Universe: Magnificent 7, Top 25 S&P 100 components.
             `;
         } else if (ticker === "BIRCH CLUSTERING") {
             promptGuidance = `
                 Act as a quantitative finance AI and large-scale hierarchical clustering engine.
                 Perform stock clustering using the BIRCH (Balanced Iterative Reducing and Clustering using Hierarchies) algorithm.
-                
-                MANDATORY DATA REQUIREMENTS:
-                1. CF-Tree Metrics: Auto-tuned threshold (T), branching factor (B), and leaf-node count.
-                2. Subcluster Mapping: Identify the CF-leaf node ID for each ticker.
-                
                 Universe: Magnificent 7, S&P 100 components.
             `;
         } else if (ticker === "GAUSSIAN MIXTURE MODEL") {
             promptGuidance = `
                 Act as a quantitative finance AI specializing in probabilistic clustering.
                 Perform stock clustering using a Gaussian Mixture Model (GMM) with EM estimation and full covariance.
-                
-                MANDATORY DATA REQUIREMENTS:
-                1. Soft Assignments: Primary and Secondary cluster probabilities for each stock.
-                
                 Universe: Magnificent 7, S&P 100 Leaders.
             `;
         }
@@ -184,18 +297,16 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
     if (analysisType === AnalysisType.Ideas) {
         const response = await ai.models.generateContent({
             model: modelName,
-            contents: `Act as a Head of Research at a top Quant Hedge Fund. Generate a specific high-probability Trade Idea for ${ticker}. 
-            Consider macro factors, technical breakouts, and recent institutional flow.
-            Provide precise entry levels, stop loss, and multiple take profit targets.`,
+            contents: `Act as a Head of Research at a top Quant Hedge Fund. Generate a specific high-probability Trade Idea for ${ticker}.`,
             config: { 
                 tools: [{ googleSearch: {} }],
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        bias: { type: Type.STRING, description: "Bullish, Bearish, or Neutral" },
-                        timeframe: { type: Type.STRING, description: "Intraday, Swing (1-2 weeks), or Long-term" },
-                        conviction: { type: Type.NUMBER, description: "Confidence score 0-100" },
+                        bias: { type: Type.STRING },
+                        timeframe: { type: Type.STRING },
+                        conviction: { type: Type.NUMBER },
                         entryRange: {
                             type: Type.OBJECT,
                             properties: {
@@ -215,10 +326,9 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
                             }
                         },
                         catalysts: { type: Type.ARRAY, items: { type: Type.STRING } },
-                        riskRewardRatio: { type: Type.STRING, description: "e.g. 1:3" },
-                        rationale: { type: Type.STRING, description: "Detailed 2-3 paragraph explanation" }
-                    },
-                    required: ["bias", "timeframe", "conviction", "entryRange", "stopLoss", "targets", "catalysts", "riskRewardRatio", "rationale"]
+                        riskRewardRatio: { type: Type.STRING },
+                        rationale: { type: Type.STRING }
+                    }
                 }
             }
         });
@@ -229,9 +339,7 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
     if (analysisType === AnalysisType.BrokerIntel) {
         const response = await ai.models.generateContent({
             model: modelName,
-            contents: `Act as a Senior Institutional Data Analyst. Provide Broker Intelligence for ${ticker}. 
-            Analyze institutional flow, net buy ratios, and broker activity trends. 
-            Include a "Data Analyst Synthesis" (at least 2 paragraphs) summarizing the high-level positioning.`,
+            contents: `Act as a Senior Institutional Data Analyst. Provide Broker Intelligence for ${ticker}.`,
             config: { 
                 tools: [{ googleSearch: {} }],
                 responseMimeType: "application/json",
@@ -264,8 +372,7 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
                             }
                         },
                         summary: { type: Type.STRING }
-                    },
-                    required: ["analystSynthesis", "dominantSide", "metrics", "brokerActivityHistory", "summary"]
+                    }
                 }
             }
         });
@@ -276,9 +383,7 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
     if (analysisType === AnalysisType.PriceAction) {
         const response = await ai.models.generateContent({
             model: modelName,
-            contents: `Act as a Senior Quant. Analyze ${ticker} using Smart Money Concepts (SMC). 
-            Generate exactly 30 candles of OHLC data. Identify Break of Structure (BOS), Change of Character (CHoCH), 
-            Bullish/Bearish Order Blocks, and Liquidity Sweeps.`,
+            contents: `Act as a Senior Quant. Analyze ${ticker} using SMC. Generate 30 OHLC candles and levels.`,
             config: { 
                 responseMimeType: "application/json",
                 responseSchema: {
@@ -298,8 +403,7 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
                                     low: { type: Type.NUMBER },
                                     close: { type: Type.NUMBER },
                                     volume: { type: Type.NUMBER },
-                                    label: { type: Type.STRING, nullable: true },
-                                    breakLinePrice: { type: Type.NUMBER, nullable: true }
+                                    label: { type: Type.STRING, nullable: true }
                                 }
                             }
                         },
@@ -352,7 +456,7 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
     if (analysisType === AnalysisType.Technical) {
         const response = await ai.models.generateContent({
             model: modelName,
-            contents: `Analyze ${ticker} using Technical Indicators. Include Support/Resistance and price history.`,
+            contents: `Analyze ${ticker} using Indicators.`,
             config: { 
                 responseMimeType: "application/json",
                 responseSchema: {
@@ -376,12 +480,8 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
                         indicators: {
                             type: Type.OBJECT,
                             properties: {
-                                rsi: { type: Type.STRING },
                                 rsiVal: { type: Type.NUMBER },
-                                macd: { type: Type.STRING },
-                                macdVal: { type: Type.NUMBER },
-                                movingAverages: { type: Type.STRING },
-                                bollingerBands: { type: Type.STRING }
+                                macdVal: { type: Type.NUMBER }
                             }
                         },
                         supportResistance: {
@@ -401,12 +501,12 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
     
     const response = await ai.models.generateContent({
       model: modelName,
-      contents: `Analyze ${ticker} for ${analysisType}. Provide detailed institutional insights.`,
+      contents: `Analyze ${ticker} for ${analysisType}.`,
       config: { tools: [{ googleSearch: {} }] },
     });
-    return { ticker, type: analysisType, content: response.text || "No analysis generated.", sources: extractSources(response) };
+    return { ticker, type: analysisType, content: response.text || "No analysis.", sources: extractSources(response) };
   } catch (error: any) {
-    throw new Error(error.message || "An unexpected error occurred.");
+    throw new Error(error.message || "Error.");
   }
 };
 
@@ -423,41 +523,23 @@ export const runBacktest = async (
     simulationModel: string
 ): Promise<BacktestResult> => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    
-    let modelGuidance = "";
-    if (simulationModel.includes("Λ-Vol")) {
-        modelGuidance = `
-            The user has selected the "Λ-Vol (Volatility Frameworks)" model. 
-            This is part of an advanced series of Volatility Frameworks. 
-            Focus on modeling non-linear variance pathways, volatility clustering, and the impact of tail-risk events on strategy execution.
-        `;
-    }
-
-    const prompt = `Perform a financial backtest simulation for ${ticker} from ${startDate} to ${endDate}. 
+    const prompt = `Perform financial backtest simulation for ${ticker} from ${startDate} to ${endDate}. 
     Strategy: ${strategy}. 
     Simulation Model: ${simulationModel}. 
-    ${modelGuidance}
     Risk Params: RR ${riskReward}, SL ${stopLoss}, TP ${takeProfit}, Trailing ${trailingStop}.
-    Return JSON matching this structure:
+    Return JSON:
     {
-        "metrics": { "totalReturn": "string %", "maxDrawdown": "string %", "winRate": "string %", "tradesCount": int },
+        "metrics": { "totalReturn": "string", "maxDrawdown": "string", "winRate": "string", "tradesCount": number },
         "equityCurve": [ { "date": "string", "value": number } ],
         "trades": [ { "date": "string", "type": "Buy"|"Sell", "price": number, "result": "string" } ],
-        "summary": "AI breakdown of the simulation pathways.",
-        "blackScholesMetrics": { "impliedVolatility": number, "callOptionPrice": number, "putOptionPrice": number } 
-    }
-    IMPORTANT: Generate exactly 20-30 data points for the equity curve.`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-            config: { responseMimeType: "application/json" }
-        });
-        return cleanAndParseJSON(response.text);
-    } catch (e: any) {
-        throw new Error("Simulation Engine Offline: Failed to compute pathways.");
-    }
+        "summary": "AI breakdown."
+    }`;
+    const response = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt,
+        config: { responseMimeType: "application/json" }
+    });
+    return cleanAndParseJSON(response.text);
 };
 
 export const runMLSimulation = async (
@@ -469,9 +551,7 @@ export const runMLSimulation = async (
     endDate: string
 ): Promise<MLPredictionResult> => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `Perform a Machine Learning simulation for ${ticker} using the ${modelType} architecture.
-    Features: ${features.join(", ")}. Training: ${trainingPeriod} ending ${endDate}. Prediction: ${predictionHorizon}.
-    If model is "PCA-ML", emphasize the extraction of principal components and dimensionality reduction impact.
+    const prompt = `Machine Learning simulation for ${ticker} using ${modelType}. Features: ${features.join(", ")}.
     Return JSON:
     {
         "ticker": "string",
@@ -482,128 +562,55 @@ export const runMLSimulation = async (
         "modelUsed": "string",
         "featureImportance": [ { "feature": "string", "score": number } ],
         "predictionPath": [ { "date": "string", "price": number, "upper": number, "lower": number } ],
-        "explanation": "string describing model logic and PCA components if applicable",
+        "explanation": "string",
         "evaluationMetrics": { "accuracy": number, "f1Score": number },
         "tradingMetrics": { "annualizedReturn": number, "sharpeRatio": number }
     }`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-            config: { responseMimeType: "application/json" }
-        });
-        return cleanAndParseJSON(response.text);
-    } catch (e: any) {
-        throw new Error("ML Engine Convergence Failure.");
-    }
+    const response = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt,
+        config: { responseMimeType: "application/json" }
+    });
+    return cleanAndParseJSON(response.text);
 };
 
 export const runAdvancedPricingAnalysis = async (ticker: string): Promise<AdvancedPricingResult> => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `
-    Act as an institutional-grade quantitative derivatives pricing engine.
-    Perform a full multi-model option pricing and calibration audit for the underlying asset: ${ticker}.
-    
-    MODELS & DATA REQUIREMENTS:
-    1. BLACK–SCHOLES–MERTON (Analytic Baseline):
-       - Use ATM option as reference.
-       - Output: Fair Value, Implied Volatility (σ), Greeks (Δ, Γ, Θ, Vega, Rho).
-       - Determine Valuation Status: "FAIR VALUE" | "OVERPRICED" | "UNDERPRICED".
-       
-    2. HESTON STOCHASTIC VOLATILITY (CALIBRATED):
-       - Calibrate parameters: v₀ (initial variance), κ (mean reversion speed), θ (long-term variance), σᵥ (vol-of-vol), ρ (spot–vol correlation).
-       - Determine Skew/Smile status: "CALIBRATED" | "FLAT" | "DISTORTED".
-       - Provide Market Implication statement.
-       
-    3. MERTON JUMP DIFFUSION:
-       - Calibrate jump dynamics: λ (jump intensity), μ (mean jump size), δ (jump dispersion).
-       - Estimate Jump probability (%).
-       - Provide Qualitative Jump risk assessment.
-       
-    4. VARIANCE SWAP PRICING:
-       - Compute Fair Variance Strike.
-       - Explain Payoff Topology and Vol-of-vol premium interpretation.
-
-    5. QUANT AUDIT SYNTHESIS:
-       - Generate an institutional-grade diagnostic narrative covering data integrity, BSM liquidity baseline, Heston rho/skew interpretation, and Jump vs Continuous volatility relevance.
-
-    Return JSON exactly matching this structure:
+    const prompt = `Act as an institutional quant engine. Pricing calibration for ${ticker}.
+    Return JSON:
     {
         "ticker": "${ticker}",
-        "bsm": { 
-            "fairValue": number, 
-            "impliedVol": number, 
-            "valuationStatus": "FAIR VALUE"|"OVERPRICED"|"UNDERPRICED",
-            "greeks": { "delta": number, "gamma": number, "theta": number, "vega": number, "rho": number } 
-        },
-        "heston": { 
-            "parameters": { "v0": number, "kappa": number, "theta": number, "sigmaV": number, "rho": number },
-            "skewStatus": "CALIBRATED"|"FLAT"|"DISTORTED",
-            "implication": "string"
-        },
-        "jumpDiffusion": { 
-            "jumpProbability": number,
-            "parameters": { "lambda": number, "mu": number, "delta": number },
-            "riskAssessment": "string"
-        },
-        "varianceSwap": { 
-            "fairVarianceStrike": number, 
-            "payoffTopology": "string",
-            "volOfVolPremium": "string"
-        },
-        "diagnostics": {
-            "spotPrice": "OK"|"MISSING"|"STALE",
-            "optionChain": "OK"|"THIN"|"EMPTY",
-            "yieldCurve": "OK"|"INVERTED"|"MISSING",
-            "dividendYield": "OK"|"ASSUMED"|"MISSING",
-            "calibrationStatus": "string",
-            "failureRootCause": "string"
-        },
-        "summary": "Full Institutional Quant Strategy Report narrative."
+        "bsm": { "fairValue": number, "impliedVol": number, "valuationStatus": "FAIR VALUE"|"OVERPRICED"|"UNDERPRICED", "greeks": { "delta": number, "gamma": number, "theta": number, "vega": number, "rho": number } },
+        "heston": { "parameters": { "v0": number, "kappa": number, "theta": number, "sigmaV": number, "rho": number }, "skewStatus": "CALIBRATED"|"FLAT"|"DISTORTED", "implication": "string" },
+        "jumpDiffusion": { "jumpProbability": number, "parameters": { "lambda": number, "mu": number, "delta": number }, "riskAssessment": "string" },
+        "varianceSwap": { "fairVarianceStrike": number, "payoffTopology": "string", "volOfVolPremium": "string" },
+        "diagnostics": { "spotPrice": "OK"|"MISSING"|"STALE", "optionChain": "OK"|"THIN"|"EMPTY", "yieldCurve": "OK"|"INVERTED"|"MISSING", "dividendYield": "OK"|"ASSUMED"|"MISSING", "calibrationStatus": "string", "failureRootCause": "string" },
+        "summary": "Full Institutional Report."
     }`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-            config: { responseMimeType: "application/json" }
-        });
-        return cleanAndParseJSON(response.text);
-    } catch (e) {
-        throw new Error("Quant Engine Connection Interrupted.");
-    }
+    const response = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt,
+        config: { responseMimeType: "application/json" }
+    });
+    return cleanAndParseJSON(response.text);
 };
 
 export const runFTSLFIGAnalysis = async (ticker: string): Promise<FTSLFIGResult> => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `Perform a Fuzzy Time Series (FTS) analysis for ${ticker} integrated with Linear Fuzzy Information Granule (LFIG) method.
-    Return structured JSON:
-    {
-        "ticker": "string",
-        "granules": [ { "time": "string", "lower": number, "center": number, "upper": number, "label": "string" } ],
-        "transitions": [ { "from": "string", "to": "string", "probability": number } ],
-        "forecast": { "linguisticValue": "string", "numericalEstimate": number },
-        "summary": "string"
-    }`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-            config: { responseMimeType: "application/json" }
-        });
-        return cleanAndParseJSON(response.text);
-    } catch (e) {
-        throw new Error("FTS-LFIG Model failed to generate.");
-    }
+    const prompt = `FTS-LFIG analysis for ${ticker}. JSON format.`;
+    const response = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt,
+        config: { responseMimeType: "application/json" }
+    });
+    return cleanAndParseJSON(response.text);
 };
 
 export const runQuantumMCDMAnalysis = async (ticker: string): Promise<QuantumMCDMResult> => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
         model: modelName,
-        contents: `Run Quantum MCDM Analysis for ${ticker}. Return JSON.`,
+        contents: `Run Quantum MCDM for ${ticker}. JSON.`,
         config: { responseMimeType: "application/json" }
     });
     return cleanAndParseJSON(response.text);
@@ -613,7 +620,7 @@ export const runFFTSPLPRAnalysis = async (ticker: string): Promise<FFTSPLPRResul
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
         model: modelName,
-        contents: `Run FFTS-PLPR Analysis for ${ticker}. Return JSON.`,
+        contents: `Run FFTS-PLPR for ${ticker}. JSON.`,
         config: { responseMimeType: "application/json" }
     });
     return cleanAndParseJSON(response.text);
@@ -623,7 +630,7 @@ export const runFFFCMGNNAnalysis = async (ticker: string): Promise<FFFCMGNNResul
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
         model: modelName,
-        contents: `Run FF-FCM-GNN Analysis for ${ticker}. Return JSON.`,
+        contents: `Run FF-FCM-GNN for ${ticker}. JSON.`,
         config: { responseMimeType: "application/json" }
     });
     return cleanAndParseJSON(response.text);
@@ -633,7 +640,7 @@ export const runOptimalFuzzyDesignAnalysis = async (ticker: string): Promise<Opt
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
         model: modelName,
-        contents: `Run Optimal Fuzzy FIS Design for ${ticker}. Return JSON.`,
+        contents: `Run Optimal Fuzzy FIS for ${ticker}. JSON.`,
         config: { responseMimeType: "application/json" }
     });
     return cleanAndParseJSON(response.text);
@@ -641,137 +648,40 @@ export const runOptimalFuzzyDesignAnalysis = async (ticker: string): Promise<Opt
 
 export const runMPTAnalysis = async (holdings: Holding[], strategy: string, views: any[]): Promise<MPTAnalysisResult> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const prompt = `Perform Mean-Variance Optimization (MPT) and Black-Litterman analysis for these holdings: ${JSON.stringify(holdings)}. 
-  Strategy: ${strategy}. Views: ${JSON.stringify(views)}.
-  Return JSON:
-  {
-      "currentMetrics": { "sharpeRatio": number, "expectedReturn": number, "volatility": number },
-      "optimalMetrics": { "sharpeRatio": number, "expectedReturn": number, "volatility": number },
-      "suggestions": [ { "ticker": "string", "action": "Buy"|"Sell"|"Hold", "amount": "string", "reason": "string" } ],
-      "efficientFrontier": [ { "risk": number, "return": number } ],
-      "correlationMatrix": [ { "ticker1": "string", "ticker2": "string", "value": number } ],
-      "rebalancingContext": { "strategyUsed": "string", "notes": "string", "nextRebalanceDate": "string" }
-  }`;
-
-  try {
-      const response = await ai.models.generateContent({
-          model: "gemini-3-pro-preview",
-          contents: prompt,
-          config: { responseMimeType: "application/json" }
-      });
-      return cleanAndParseJSON(response.text);
-  } catch (e) {
-      throw new Error("MPT Analysis Engine failure.");
-  }
+  const response = await ai.models.generateContent({
+      model: "gemini-3-pro-preview",
+      contents: `MPT analysis for ${JSON.stringify(holdings)}. JSON.`,
+      config: { responseMimeType: "application/json" }
+  });
+  return cleanAndParseJSON(response.text);
 };
 
 export const getETFProfile = async (ticker: string): Promise<ETFProfile> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const prompt = `Act as an ETF database. Provide the top 5-10 holdings and weightings for the ETF: ${ticker}.
-  Return JSON: { "ticker": "string", "name": "string", "topHoldings": [ { "ticker": "string", "name": "string", "weight": number } ] }`;
-
-  try {
-      const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
-          contents: prompt,
-          config: { responseMimeType: "application/json" }
-      });
-      return cleanAndParseJSON(response.text);
-  } catch (e) {
-      throw new Error("ETF Profile Engine failure.");
-  }
+  const response = await ai.models.generateContent({
+      model: modelName,
+      contents: `ETF holdings for ${ticker}. JSON.`,
+      config: { responseMimeType: "application/json" }
+  });
+  return cleanAndParseJSON(response.text);
 };
 
 export const runCAPMAPTAnalysis = async (ticker: string, rfRate: number, marketReturn: number): Promise<CAPMAPTResult> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const prompt = `
-    Act as a quantitative finance AI generating institutional-grade Capital Asset Modeling outputs.
-    Perform a full CAPM and APT analysis for the asset: ${ticker}.
-    
-    INPUT PARAMETERS:
-    Asset (Ticker): ${ticker}
-    Risk-Free Rate: ${rfRate}%
-    Expected Market Return: ${marketReturn}%
-    
-    MANDATORY MODEL REQUIREMENTS:
-    1. CAPM:
-       - Estimate historical beta (β) vs benchmark.
-       - Calculate Ke = Rf + β × (Rm − Rf).
-       - Estimate Alpha (α) relative to market performance.
-       - SML Position: Above / On / Below SML.
-       - Valuation Status: Undervalued / Fairly Valued / Overvalued.
-       
-    2. APT Factor Model:
-       - Estimate factor sensitivities (β) for: Market Risk Premium, Interest Rate Sensitivity, and Inflation Sensitivity.
-       - Include Direction (Positive / Negative) and Relative strength (Low / Medium / High).
-       - Compute Total Macro Expected Return (APT).
-       
-    3. Investment Synthesis:
-       - Institutional-grade narrative summarizing implications.
-
-    Return JSON matching this structure:
-    {
-        "ticker": "${ticker}",
-        "capm": { 
-            "expectedReturn": number, 
-            "beta": number, 
-            "alpha": number, 
-            "securityMarketLineStatus": "Above"|"On"|"Below",
-            "valuationStatus": "Undervalued"|"Fairly Valued"|"Overvalued"
-        },
-        "apt": { 
-            "factors": [ 
-                { "name": "Market Risk Premium", "beta": number, "direction": "string", "strength": "Low"|"Medium"|"High" },
-                { "name": "Interest Rate Sensitivity", "beta": number, "direction": "string", "strength": "Low"|"Medium"|"High" },
-                { "name": "Inflation Sensitivity", "beta": number, "direction": "string", "strength": "Low"|"Medium"|"High" }
-            ], 
-            "totalExpectedReturn": number 
-        },
-        "summary": "Institutional quantitative report narrative."
-    }`;
-
-  try {
-      const response = await ai.models.generateContent({
-          model: "gemini-3-pro-preview",
-          contents: prompt,
-          config: { responseMimeType: "application/json" }
-      });
-      return cleanAndParseJSON(response.text);
-  } catch (e) {
-      throw new Error("CAPM/APT Model failed to converge.");
-  }
+  const response = await ai.models.generateContent({
+      model: "gemini-3-pro-preview",
+      contents: `CAPM/APT for ${ticker}. JSON.`,
+      config: { responseMimeType: "application/json" }
+  });
+  return cleanAndParseJSON(response.text);
 };
 
 export const runHedgeAnalysis = async (holdings: Holding[]): Promise<DeltaGammaHedgeResult> => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `Act as a Senior Risk Manager. Perform a Delta-Gamma portfolio hedging and VaR analysis for these holdings: ${JSON.stringify(holdings)}.
-    Analyze protection efficiency and variance reduction under hedged scenarios.
-    Return JSON structure:
-    {
-        "summary": "string",
-        "metrics": {
-            "hedgingEfficiency": number,
-            "varianceReduction": number,
-            "unhedgedBeta": number,
-            "hedgedBeta": number,
-            "unhedgedVaR": number,
-            "hedgedVaR": number,
-            "unhedgedCVaR": number,
-            "hedgedCVaR": number
-        },
-        "exposures": [ { "asset": "string", "grossExposure": number, "netExposure": number, "hedgingCoverage": number, "costOfHedge": number } ],
-        "pnlComparison": [ { "time": "string", "unhedgedPnl": number, "hedgedPnl": number } ],
-        "recommendations": [ { "priority": "High"|"Med"|"Low", "title": "string", "action": "string" } ]
-    }`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: "gemini-3-pro-preview",
-            contents: prompt,
-            config: { responseMimeType: "application/json" }
-        });
-        return cleanAndParseJSON(response.text);
-    } catch (e) {
-        throw new Error("Risk Diagnostic Engine failed.");
-    }
+    const response = await ai.models.generateContent({
+        model: "gemini-3-pro-preview",
+        contents: `Delta-Gamma hedge for ${JSON.stringify(holdings)}. JSON.`,
+        config: { responseMimeType: "application/json" }
+    });
+    return cleanAndParseJSON(response.text);
 };
