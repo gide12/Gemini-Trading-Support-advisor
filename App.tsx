@@ -13,6 +13,8 @@ import FuzzyLogicView from "./components/FuzzyLogicView";
 import QuantumView from "./components/QuantumView";
 import ChartView from "./components/ChartView";
 import LandingPage from "./components/LandingPage";
+import HedgeFundView from "./components/HedgeFundView";
+import MonitoringView from "./components/MonitoringView";
 import { View } from "./types";
 
 const App: React.FC = () => {
@@ -41,6 +43,8 @@ const App: React.FC = () => {
         {currentView === 'community' && <CommunityView />}
         {currentView === 'fuzzy' && <FuzzyLogicView />}
         {currentView === 'quantum' && <QuantumView />}
+        {currentView === 'hedge_fund' && <HedgeFundView />}
+        {currentView === 'monitoring' && <MonitoringView />}
       </main>
       
       {!isChartView && (

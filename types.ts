@@ -14,7 +14,7 @@ export enum AnalysisType {
   BrokerIntel = "Broker Intelligence"
 }
 
-export type View = 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum';
+export type View = 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum' | 'hedge_fund' | 'monitoring';
 
 export interface NewsItem {
     title: string;
@@ -355,7 +355,7 @@ export interface ETFProfile { ticker: string; name: string; topHoldings: { ticke
 
 export interface DeltaGammaHedgeResult { 
     summary: string;
-    metrics: {
+    metrics?: {
         hedgingEfficiency: number; 
         varianceReduction: number; 
         unhedgedBeta: number;

@@ -465,29 +465,29 @@ const PortfolioView: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div className="bg-[#1e293b]/50 border border-pink-500/10 p-4 rounded-2xl flex flex-col items-center text-center">
                             <span className="text-[9px] text-slate-500 font-black uppercase mb-2">Hedging Efficiency</span>
-                            <div className="text-2xl font-black text-pink-400">{hedgeResult.metrics.hedgingEfficiency}%</div>
+                            <div className="text-2xl font-black text-pink-400">{hedgeResult.metrics?.hedgingEfficiency}%</div>
                             <div className="w-full h-1 bg-slate-800 rounded-full mt-2">
-                                <div className="h-full bg-pink-500" style={{width: `${hedgeResult.metrics.hedgingEfficiency}%`}}></div>
+                                <div className="h-full bg-pink-500" style={{width: `${hedgeResult.metrics?.hedgingEfficiency}%`}}></div>
                             </div>
                         </div>
                         <div className="bg-[#1e293b]/50 border border-emerald-500/10 p-4 rounded-2xl flex flex-col items-center text-center">
                             <span className="text-[9px] text-slate-500 font-black uppercase mb-2">Beta Reduction</span>
                             <div className="text-2xl font-black text-emerald-400">
-                                {hedgeResult.metrics.unhedgedBeta.toFixed(2)} <span className="text-slate-600 text-sm">→</span> {hedgeResult.metrics.hedgedBeta.toFixed(2)}
+                                {hedgeResult.metrics?.unhedgedBeta?.toFixed(2)} <span className="text-slate-600 text-sm">→</span> {hedgeResult.metrics?.hedgedBeta?.toFixed(2)}
                             </div>
                             <span className="text-[8px] text-slate-500 mt-1 uppercase font-bold">Systemic Offset</span>
                         </div>
                         <div className="bg-[#1e293b]/50 border border-cyan-500/10 p-4 rounded-2xl flex flex-col items-center text-center">
                             <span className="text-[9px] text-slate-500 font-black uppercase mb-2">VaR Reduction (95%)</span>
                             <div className="text-2xl font-black text-cyan-400">
-                                {hedgeResult.metrics.varianceReduction}%
+                                {hedgeResult.metrics?.varianceReduction}%
                             </div>
                             <span className="text-[8px] text-slate-500 mt-1 uppercase font-bold">Tail Mitigation</span>
                         </div>
                         <div className="bg-[#1e293b]/50 border border-amber-500/10 p-4 rounded-2xl flex flex-col items-center text-center">
                             <span className="text-[9px] text-slate-500 font-black uppercase mb-2">CVaR (Hedged)</span>
                             <div className="text-2xl font-black text-amber-400">
-                                ${(hedgeResult.metrics.hedgedCVaR || 0).toLocaleString()}
+                                ${(hedgeResult.metrics?.hedgedCVaR || 0).toLocaleString()}
                             </div>
                             <span className="text-[8px] text-slate-500 mt-1 uppercase font-bold">Expectation of Tail</span>
                         </div>
