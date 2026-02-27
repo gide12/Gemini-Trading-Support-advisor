@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
-import { Holding, MPTAnalysisResult, ETFProfile, DeltaGammaHedgeResult, AdvancedPricingResult, CAPMAPTResult, InvestorView } from "../types";
-import { getInitialHoldings, getPortfolioHistory } from "../services/marketDataService";
+import { Holding, MPTAnalysisResult, ETFProfile, DeltaGammaHedgeResult, AdvancedPricingResult, CAPMAPTResult, InvestorView, MarketTicker } from "../types";
+import { getInitialHoldings, getPortfolioHistory, getInitialMarketData } from "../services/marketDataService";
 import { runMPTAnalysis, getETFProfile, runHedgeAnalysis, runAdvancedPricingAnalysis, runCAPMAPTAnalysis } from "../services/geminiService";
 import { 
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -49,6 +49,7 @@ const DiagnosticBadge = ({ label, status }: { label: string, status: "OK" | "MIS
 const PortfolioView: React.FC = () => {
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [history, setHistory] = useState<{date: string, value: number}[]>([]);
+  const [marketIndices, setMarketIndices] = useState<MarketTicker[]>([]);
   const [totalValue, setTotalValue] = useState(0);
   const [totalPL, setTotalPL] = useState(0);
   
@@ -99,6 +100,11 @@ const PortfolioView: React.FC = () => {
     const initial = getInitialHoldings();
     setHoldings(initial);
     setHistory(getPortfolioHistory());
+    
+    // Get market indices (filtering for the major ones)
+    const allMarketData = getInitialMarketData();
+    const indices = allMarketData.filter(t => t.symbol.startsWith('^'));
+    setMarketIndices(indices);
   }, []);
 
   // Recalculate totals whenever holdings change
@@ -1021,6 +1027,26 @@ const PortfolioView: React.FC = () => {
                         </div>
                         <div className="w-full bg-slate-800 rounded-full h-2">
                             <div className="bg-purple-600 h-2 rounded-full transition-all duration-500" style={{ width: `${totalValue > 0 ? (h.marketValue / totalValue) * 100 : 0}%` }}></div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+         </div>
+
+         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
+            <h3 className="text-lg font-semibold text-white mb-4">Stock Market Index</h3>
+            <div className="space-y-4">
+                {marketIndices.map((index) => (
+                    <div key={index.symbol} className="flex justify-between items-center border-b border-slate-800 pb-2 last:border-0 last:pb-0">
+                        <div>
+                            <div className="text-sm font-medium text-slate-200">{index.name}</div>
+                            <div className="text-xs text-slate-500">{index.symbol}</div>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-sm font-mono text-white">{index.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                            <div className={`text-xs font-mono ${index.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {index.change >= 0 ? '+' : ''}{index.change.toFixed(2)} ({index.changePercent >= 0 ? '+' : ''}{index.changePercent.toFixed(2)}%)
+                            </div>
                         </div>
                     </div>
                 ))}
