@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState } from "react";
-import { AnalysisResult, AnalysisType, PriceActionData, PriceActionCandle, TechnicalAnalysisData, NewsItem, BrokerIntelData, TradeIdeaData, ClusteringAnalysisData, OptionsExpertAnalysisData, FundamentalAnalysisData } from "../types";
+import { AnalysisResult, AnalysisType, PriceActionData, PriceActionCandle, TechnicalAnalysisData, NewsItem, BrokerIntelData, TradeIdeaData, ClusteringAnalysisData, OptionsExpertAnalysisData, FundamentalAnalysisData, SmartMoneyData } from "../types";
 import { 
     ComposedChart, ReferenceLine, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar, Cell, CartesianGrid, ReferenceArea, Area, BarChart, Line, Scatter, ScatterChart, ZAxis, Legend, Label
 } from "recharts";
@@ -562,6 +562,129 @@ const NewsDashboard = ({ items, summary }: { items: NewsItem[], summary: string 
     );
 };
 
+const SmartMoneyDashboard = ({ data }: { data: SmartMoneyData }) => {
+    return (
+        <div className="space-y-6 fade-in">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="bg-[#1e293b]/50 p-6 rounded-xl border border-blue-500/20 shadow-lg">
+                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">Smart Money Activity</h3>
+                    <div className="flex items-center gap-4">
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center border-4 ${data.smartMoneyActivity === 'Accumulation' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' : data.smartMoneyActivity === 'Distribution' ? 'border-rose-500/30 bg-rose-500/10 text-rose-400' : 'border-slate-500/30 bg-slate-500/10 text-slate-400'}`}>
+                            {data.smartMoneyActivity === 'Accumulation' && <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
+                            {data.smartMoneyActivity === 'Distribution' && <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>}
+                            {data.smartMoneyActivity === 'Neutral' && <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>}
+                        </div>
+                        <div>
+                            <div className={`text-2xl font-black uppercase ${data.smartMoneyActivity === 'Accumulation' ? 'text-emerald-400' : data.smartMoneyActivity === 'Distribution' ? 'text-rose-400' : 'text-slate-400'}`}>{data.smartMoneyActivity}</div>
+                            <div className="text-xs text-slate-400 mt-1">Ratio Volume: <span className="font-mono text-white">{data.ratioVolume.toFixed(2)}x</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-[#1e293b]/50 p-6 rounded-xl border border-blue-500/20 shadow-lg">
+                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">Trend Probabilities</h3>
+                    <div className="space-y-3">
+                        <div>
+                            <div className="flex justify-between text-xs mb-1">
+                                <span className="text-emerald-400 font-bold">Bullish</span>
+                                <span className="text-slate-300 font-mono">{data.probabilities.bullish}%</span>
+                            </div>
+                            <div className="w-full bg-slate-800 rounded-full h-1.5">
+                                <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${data.probabilities.bullish}%` }}></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div className="flex justify-between text-xs mb-1">
+                                <span className="text-rose-400 font-bold">Bearish</span>
+                                <span className="text-slate-300 font-mono">{data.probabilities.bearish}%</span>
+                            </div>
+                            <div className="w-full bg-slate-800 rounded-full h-1.5">
+                                <div className="bg-rose-500 h-1.5 rounded-full" style={{ width: `${data.probabilities.bearish}%` }}></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div className="flex justify-between text-xs mb-1">
+                                <span className="text-slate-400 font-bold">Sideways</span>
+                                <span className="text-slate-300 font-mono">{data.probabilities.sideways}%</span>
+                            </div>
+                            <div className="w-full bg-slate-800 rounded-full h-1.5">
+                                <div className="bg-slate-500 h-1.5 rounded-full" style={{ width: `${data.probabilities.sideways}%` }}></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-[#1e293b]/50 p-6 rounded-xl border border-blue-500/20 shadow-lg">
+                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">Action & Confidence</h3>
+                    <div className="flex flex-col h-full justify-center">
+                        <div className="text-center mb-4">
+                            <div className="text-xs text-slate-400 uppercase mb-1">Recommendation</div>
+                            <div className="text-xl font-bold text-blue-400">{data.recommendation}</div>
+                        </div>
+                        <div className="flex items-center justify-between bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
+                            <span className="text-xs text-slate-400 uppercase font-bold">Confidence Score</span>
+                            <span className="text-lg font-mono text-white">{data.confidenceScore}/100</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-[#1e293b]/50 p-6 rounded-xl border border-blue-500/20 shadow-lg">
+                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">Key Zones & MA Status</h3>
+                    <div className="space-y-4">
+                        <div>
+                            <div className="text-xs text-slate-400 uppercase mb-2">MA Status</div>
+                            <div className="text-sm text-slate-200 bg-slate-900/50 p-3 rounded border border-slate-700/50">{data.maStatus}</div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <div className="text-xs text-slate-400 uppercase mb-2">Support Zones</div>
+                                <div className="flex flex-wrap gap-2">
+                                    {data.keyZones.support.map((val, i) => (
+                                        <span key={i} className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono rounded">${val.toFixed(2)}</span>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <div className="text-xs text-slate-400 uppercase mb-2">Resistance Zones</div>
+                                <div className="flex flex-wrap gap-2">
+                                    {data.keyZones.resistance.map((val, i) => (
+                                        <span key={i} className="px-2 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-mono rounded">${val.toFixed(2)}</span>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div className="text-xs text-slate-400 uppercase mb-2">Volume Clusters</div>
+                            <div className="flex flex-wrap gap-2">
+                                {data.keyZones.volumeClusters.map((val, i) => (
+                                    <span key={i} className="px-2 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-mono rounded">${val.toFixed(2)}</span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-[#1e293b]/50 p-6 rounded-xl border border-blue-500/20 shadow-lg flex flex-col">
+                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">AI Reasoning & Warnings</h3>
+                    <div className="space-y-4 flex-1">
+                        <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700/50 flex-1">
+                            <p className="text-sm text-slate-300 leading-relaxed">{data.reasoning}</p>
+                        </div>
+                        {data.warnings && (
+                            <div className="bg-amber-500/10 p-4 rounded-lg border border-amber-500/20 flex items-start gap-3">
+                                <svg className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                <p className="text-sm text-amber-400/90 leading-relaxed">{data.warnings}</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isLoading, activeTab }) => {
   if (isLoading) {
     return (
@@ -603,7 +726,11 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isLoading, acti
           <NewsDashboard items={result.newsItems} summary={result.content} />
       )}
 
-      {activeTab !== AnalysisType.Fundamental && activeTab !== AnalysisType.OptionsExpert && activeTab !== AnalysisType.Clustering && activeTab !== AnalysisType.News && (
+      {activeTab === AnalysisType.SmartMoney && result.smartMoney && (
+          <SmartMoneyDashboard data={result.smartMoney} />
+      )}
+
+      {activeTab !== AnalysisType.Fundamental && activeTab !== AnalysisType.OptionsExpert && activeTab !== AnalysisType.Clustering && activeTab !== AnalysisType.News && activeTab !== AnalysisType.SmartMoney && (
           <div className="p-6 text-slate-200 font-sans text-sm leading-relaxed whitespace-pre-wrap bg-black/40 rounded-xl border border-white/5 shadow-inner">
               {result.content}
           </div>

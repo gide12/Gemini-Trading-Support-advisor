@@ -499,6 +499,75 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
         return { ticker, type: analysisType, content: json.summary, technicalAnalysis: json };
     }
     
+    if (analysisType === AnalysisType.SmartMoney) {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: `You are SMART MONEY AI, an advanced market intelligence assistant. Your goal is to analyze a stock's price and volume data to detect **smart money accumulation/distribution** and provide **probabilistic trend predictions** using both technical indicators and advanced logic for ${ticker}.
+
+Inputs:
+- Historical OHLC (Open, High, Low, Close) data
+- Volume data per candle
+- Moving Averages: MA20, MA50, MA100
+- Optional: news sentiment, sector info
+
+Rules / Logic:
+1. Identify MA cross events:
+   - MA20 crossing MA50 or MA100 = reference point for potential trend reversal or continuation.
+2. Calculate Ratio Volume:
+   - Ratio Volume = Current candle volume / Average volume since last MA cross.
+   - Interpret:
+     - Ratio > 1 → strong participation, possible accumulation (bullish) or distribution (bearish)
+     - Ratio < 1 → low participation, market possibly passive
+     - Ratio ~ 1 → sideways / uncertain, requires additional AI analysis
+3. Trend probability logic:
+   - If Ratio > 1 AND MA20 > MA50 & MA100 → assign high bullish probability
+   - If Ratio < 1 AND MA20 < MA50 & MA100 → assign high bearish probability
+   - If Ratio ~ 1 → analyze using AI pattern recognition on price action, volume clusters, and MA alignment for trend probability
+4. Smart Money Detection:
+   - Detect unusual volume clusters and directional price movement that indicate institutional participation.
+   - Highlight possible accumulation (buying pressure) and distribution (selling pressure) zones.
+5. Output:
+   - Probabilistic trend prediction (Bullish %, Bearish %, Sideways %)
+   - Recommended action for retail traders: Follow smart money / Wait / Hedge
+   - Key support/resistance zones and volume clusters for guidance
+   - Confidence score for each prediction
+
+Constraints:
+- Probabilities must be normalized and sum to 100%
+- Provide reasoning behind each recommendation
+- Highlight if market shows signs of manipulation or low liquidity that may invalidate signals
+- Focus on actionable insights for both bullish and bearish markets
+
+Return JSON exactly in this format:
+{
+    "ticker": "${ticker}",
+    "ratioVolume": number,
+    "maStatus": "string",
+    "smartMoneyActivity": "Accumulation" | "Distribution" | "Neutral",
+    "probabilities": {
+        "bullish": number,
+        "bearish": number,
+        "sideways": number
+    },
+    "recommendation": "Follow smart money" | "Wait" | "Hedge",
+    "confidenceScore": number,
+    "keyZones": {
+        "support": [number],
+        "resistance": [number],
+        "volumeClusters": [number]
+    },
+    "reasoning": "string",
+    "warnings": "string"
+}`,
+            config: { 
+                tools: [{ googleSearch: {} }],
+                responseMimeType: "application/json" 
+            }
+        });
+        const json = cleanAndParseJSON(response.text);
+        return { ticker, type: analysisType, content: json.reasoning, smartMoney: json, sources: extractSources(response) };
+    }
+
     const response = await ai.models.generateContent({
       model: modelName,
       contents: `Analyze ${ticker} for ${analysisType}.`,

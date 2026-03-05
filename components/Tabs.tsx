@@ -15,6 +15,7 @@ const groups = [
       { id: AnalysisType.BrokerIntel, label: "Broker Intel", icon: "B" },
       { id: AnalysisType.Ideas, label: "Trade Ideas", icon: "I" },
       { id: AnalysisType.OptionsExpert, label: "Options Expert", icon: "O" },
+      { id: AnalysisType.SmartMoney, label: "Smart Money AI", icon: "M" },
     ]
   },
   {

@@ -11,7 +11,8 @@ export enum AnalysisType {
   Chart = "Chart",
   Ideas = "Trade Ideas",
   OptionsExpert = "Options Expert Analysis",
-  BrokerIntel = "Broker Intelligence"
+  BrokerIntel = "Broker Intelligence",
+  SmartMoney = "Smart Money AI"
 }
 
 export type View = 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum' | 'hedge_fund' | 'monitoring';
@@ -300,6 +301,27 @@ export interface TradeIdeaData {
     rationale: string;
 }
 
+export interface SmartMoneyData {
+    ticker: string;
+    ratioVolume: number;
+    maStatus: string;
+    smartMoneyActivity: "Accumulation" | "Distribution" | "Neutral";
+    probabilities: {
+        bullish: number;
+        bearish: number;
+        sideways: number;
+    };
+    recommendation: "Follow smart money" | "Wait" | "Hedge";
+    confidenceScore: number;
+    keyZones: {
+        support: number[];
+        resistance: number[];
+        volumeClusters: number[];
+    };
+    reasoning: string;
+    warnings: string;
+}
+
 export interface AnalysisResult {
   ticker: string;
   type: AnalysisType;
@@ -313,6 +335,7 @@ export interface AnalysisResult {
   clusteringAnalysis?: ClusteringAnalysisData;
   optionsExpert?: OptionsExpertAnalysisData;
   fundamentalAnalysis?: FundamentalAnalysisData;
+  smartMoney?: SmartMoneyData;
 }
 
 export interface TabItem { id: AnalysisType; label: string; }
