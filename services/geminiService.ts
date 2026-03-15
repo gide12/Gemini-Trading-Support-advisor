@@ -745,6 +745,150 @@ export const runCAPMAPTAnalysis = async (ticker: string, rfRate: number, marketR
   return cleanAndParseJSON(response.text);
 };
 
+export const analyzeSECReport = async (ticker: string): Promise<any> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const response = await ai.models.generateContent({
+        model: "gemini-3.1-pro-preview",
+        contents: `You are a senior hedge fund analyst and institutional asset manager with expertise in forensic accounting, valuation modeling, and macro risk analysis.
+
+Your task is to perform a deep fundamental analysis of the latest SEC filing from the U.S. Securities and Exchange Commission for ${ticker}.
+
+Analyze the document as if preparing an internal investment memo for a hedge fund investment committee.
+
+Structure your analysis into the following sections:
+
+1. Executive Summary
+- Provide a concise investment thesis
+- Bull case vs Bear case
+- Key catalysts in the next 6–24 months
+- Overall rating: Strong Buy / Buy / Hold / Sell / Avoid
+
+2. Business Model Analysis
+- Core revenue streams
+- Competitive moat (network effects, switching costs, brand, cost advantage)
+- Industry positioning
+- Total addressable market (TAM)
+
+3. Financial Statement Deep Dive
+Analyze the following trends over 5–10 years if available:
+Revenue growth, Gross margin trends, Operating margin, Free cash flow generation, ROIC (Return on Invested Capital), Debt levels and leverage ratios, Capital allocation strategy (buybacks, dividends, acquisitions)
+Identify: Earnings quality, Accounting red flags, Revenue recognition risks
+
+4. Management & Governance
+- Management incentives and compensation
+- Insider ownership and insider trading activity
+- Capital discipline
+- Corporate governance risks
+
+5. Risk Analysis
+Identify major risks mentioned in the filing and also hidden risks:
+Regulatory risk, Technological disruption, Competitive pressure, Macroeconomic exposure, Supply chain risk, Legal liabilities
+
+6. Valuation Framework
+Provide multiple valuation approaches:
+DCF valuation, Comparable company multiples, EV/EBITDA, P/E ratio vs industry, Sum-of-the-parts (if relevant)
+Determine whether the company is: Undervalued / Fairly valued / Overvalued.
+
+7. Hidden Insights
+Look for subtle signals often missed by retail investors:
+Footnotes, Changes in accounting policies, Segment reporting anomalies, Off-balance-sheet liabilities, Stock-based compensation impact
+
+8. Shareholders
+Provide data on the shareholders of the stock:
+- Institutional ownership percentage
+- Top shareholders (name, percentage, shares)
+- Recent changes in ownership
+
+9. Investment Conclusion
+Provide:
+- Target price estimate
+- Probability-weighted scenario analysis
+- Key metrics to monitor in future earnings
+
+Be extremely analytical and think like a hedge fund manager allocating billions of dollars.
+
+Return JSON exactly in this format:
+{
+  "ticker": "${ticker}",
+  "executiveSummary": {
+    "thesis": "string",
+    "bullCase": "string",
+    "bearCase": "string",
+    "catalysts": ["string"],
+    "rating": "Strong Buy" | "Buy" | "Hold" | "Sell" | "Avoid"
+  },
+  "businessModel": {
+    "revenueStreams": ["string"],
+    "moat": "string",
+    "positioning": "string",
+    "tam": "string"
+  },
+  "financials": {
+    "revenueGrowth": "string",
+    "grossMargin": "string",
+    "operatingMargin": "string",
+    "fcf": "string",
+    "roic": "string",
+    "debt": "string",
+    "capitalAllocation": "string",
+    "earningsQuality": "string",
+    "redFlags": ["string"],
+    "revenueRisks": "string"
+  },
+  "management": {
+    "incentives": "string",
+    "insiderActivity": "string",
+    "capitalDiscipline": "string",
+    "governanceRisks": ["string"]
+  },
+  "risks": {
+    "regulatory": "string",
+    "technological": "string",
+    "competitive": "string",
+    "macroeconomic": "string",
+    "supplyChain": "string",
+    "legal": "string"
+  },
+  "valuation": {
+    "dcf": "string",
+    "comparables": "string",
+    "evEbitda": "string",
+    "peRatio": "string",
+    "sotp": "string",
+    "conclusion": "Undervalued" | "Fairly valued" | "Overvalued"
+  },
+  "hiddenInsights": {
+    "footnotes": "string",
+    "accountingChanges": "string",
+    "segmentAnomalies": "string",
+    "offBalanceSheet": "string",
+    "stockComp": "string"
+  },
+  "shareholders": {
+    "institutionalOwnership": "string",
+    "topShareholders": [
+      {
+        "name": "string",
+        "percentage": "string",
+        "shares": "string"
+      }
+    ],
+    "recentChanges": "string"
+  },
+  "conclusion": {
+    "targetPrice": "string",
+    "scenarioAnalysis": "string",
+    "metricsToMonitor": ["string"]
+  }
+}`,
+        config: { 
+            tools: [{ googleSearch: {} }],
+            responseMimeType: "application/json" 
+        }
+    });
+    return cleanAndParseJSON(response.text);
+};
+
 export const runHedgeAnalysis = async (holdings: Holding[]): Promise<DeltaGammaHedgeResult> => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({

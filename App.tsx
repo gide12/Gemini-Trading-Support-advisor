@@ -15,6 +15,7 @@ import ChartView from "./components/ChartView";
 import LandingPage from "./components/LandingPage";
 import HedgeFundView from "./components/HedgeFundView";
 import MonitoringView from "./components/MonitoringView";
+import SecReportView from "./components/SecReportView";
 import { View } from "./types";
 
 const App: React.FC = () => {
@@ -45,6 +46,7 @@ const App: React.FC = () => {
         {currentView === 'quantum' && <QuantumView />}
         {currentView === 'hedge_fund' && <HedgeFundView />}
         {currentView === 'monitoring' && <MonitoringView />}
+        {currentView === 'sec_report' && <SecReportView />}
       </main>
       
       {!isChartView && (

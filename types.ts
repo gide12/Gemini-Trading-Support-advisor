@@ -15,7 +15,7 @@ export enum AnalysisType {
   SmartMoney = "Smart Money AI"
 }
 
-export type View = 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum' | 'hedge_fund' | 'monitoring';
+export type View = 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum' | 'hedge_fund' | 'monitoring' | 'sec_report';
 
 export interface NewsItem {
     title: string;
@@ -354,7 +354,75 @@ export interface Holding {
 }
 export interface MarketTicker { symbol: string; name: string; price: number; change: number; changePercent: number; bid: number; ask: number; volume: number; }
 
-export interface BacktestResult { 
+export interface SECReportResult {
+  ticker: string;
+  executiveSummary: {
+    thesis: string;
+    bullCase: string;
+    bearCase: string;
+    catalysts: string[];
+    rating: "Strong Buy" | "Buy" | "Hold" | "Sell" | "Avoid";
+  };
+  businessModel: {
+    revenueStreams: string[];
+    moat: string;
+    positioning: string;
+    tam: string;
+  };
+  financials: {
+    revenueGrowth: string;
+    grossMargin: string;
+    operatingMargin: string;
+    fcf: string;
+    roic: string;
+    debt: string;
+    capitalAllocation: string;
+    earningsQuality: string;
+    redFlags: string[];
+    revenueRisks: string;
+  };
+  management: {
+    incentives: string;
+    insiderActivity: string;
+    capitalDiscipline: string;
+    governanceRisks: string[];
+  };
+  risks: {
+    regulatory: string;
+    technological: string;
+    competitive: string;
+    macroeconomic: string;
+    supplyChain: string;
+    legal: string;
+  };
+  valuation: {
+    dcf: string;
+    comparables: string;
+    evEbitda: string;
+    peRatio: string;
+    sotp: string;
+    conclusion: "Undervalued" | "Fairly valued" | "Overvalued";
+  };
+  hiddenInsights: {
+    footnotes: string;
+    accountingChanges: string;
+    segmentAnomalies: string;
+    offBalanceSheet: string;
+    stockComp: string;
+  };
+  shareholders: {
+    institutionalOwnership: string;
+    topShareholders: { name: string; percentage: string; shares: string }[];
+    recentChanges: string;
+  };
+  conclusion: {
+    targetPrice: string;
+    scenarioAnalysis: string;
+    metricsToMonitor: string[];
+  };
+}
+
+export interface BacktestResult {
   metrics: { totalReturn: string; maxDrawdown: string; winRate: string; tradesCount: number; }; 
   equityCurve: { date: string; value: number }[]; 
   trades: { date: string; type: 'Buy' | 'Sell'; price: number; result?: string }[]; 
