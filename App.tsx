@@ -30,7 +30,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0B1221] text-slate-200 flex flex-col font-sans fade-in">
-      <Header currentView={currentView} onViewChange={setCurrentView} />
+      <Header currentView={currentView} onViewChange={setCurrentView} onGoHome={() => setIsStarted(false)} />
       <StockTicker />
       <SentimentTicker />
       

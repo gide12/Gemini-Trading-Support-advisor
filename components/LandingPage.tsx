@@ -62,17 +62,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
            style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '60px 60px' }}>
       </div>
 
-      {/* 2. RESTORED: BENJAMIN FRANKLIN BACKGROUND PORTRAIT */}
-      <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none select-none overflow-hidden opacity-15 mix-blend-screen grayscale transition-opacity duration-1000">
+      {/* 2. DARKPOOL STYLISH BENJAMIN FRANKLIN BACKGROUND */}
+      <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none select-none overflow-hidden transition-opacity duration-1000">
           <img 
             src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Benjamin_Franklin_by_Joseph_Duplessis_1778.jpg/800px-Benjamin_Franklin_by_Joseph_Duplessis_1778.jpg" 
             alt="Benjamin Franklin" 
-            className="w-full h-full object-cover scale-110 brightness-75 contrast-125 blur-[1px] animate-slow-zoom"
+            className="w-full h-full object-cover scale-110 grayscale animate-slow-zoom"
+            referrerPolicy="no-referrer"
           />
           {/* Vignette to blend edges and protect center text readability */}
-          <div className="absolute inset-0 bg-[#02040a]/40"></div>
+          <div className="absolute inset-0 bg-[#02040a]/50"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-[#02040a] via-transparent to-[#02040a]"></div>
           <div className="absolute inset-0 bg-gradient-to-r from-[#02040a] via-transparent to-[#02040a]"></div>
+          {/* Cyan/Blue tint overlay for darkpool vibe */}
+          <div className="absolute inset-0 bg-cyan-900/30 mix-blend-overlay"></div>
       </div>
 
       {/* 3. BACKGROUND ARCHITECTURE: Blurred Vertical Bars (Market Silhouettes) */}
@@ -122,16 +125,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         </div>
 
         {/* The Hero Quote */}
-        <div className="mb-24 space-y-12">
-            <h1 className="text-5xl md:text-8xl font-black text-white leading-tight tracking-tighter drop-shadow-2xl">
+        <div className="mb-24 space-y-8 md:space-y-12">
+            <h1 className="text-4xl md:text-7xl lg:text-8xl font-black text-white leading-[1.1] tracking-tighter drop-shadow-2xl">
                 “You don’t choose <br/> 
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-200 via-white to-slate-500">cheap or expensive.”</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-300 via-white to-slate-500">cheap or expensive.”</span>
             </h1>
-            <h2 className="text-2xl md:text-4xl font-light text-slate-400 max-w-4xl mx-auto leading-relaxed">
+            <h2 className="text-xl md:text-3xl lg:text-4xl font-light text-slate-400 max-w-5xl mx-auto leading-relaxed tracking-tight">
                 “You choose whether you’re paid by <br className="md:hidden"/>
-                <span className="text-white font-bold border-b-4 border-cyan-500/40 hover:text-cyan-400 transition-colors cursor-default px-4">direction</span> 
-                <span className="mx-6 text-slate-700 italic">or by</span> 
-                <span className="text-white font-bold border-b-4 border-cyan-500/40 hover:text-cyan-400 transition-colors cursor-default px-4">movement</span>.”
+                <span className="text-white font-bold border-b border-cyan-500/40 hover:text-cyan-400 transition-colors cursor-default px-2">direction</span> 
+                <span className="mx-4 text-slate-600 italic font-serif">or by</span> 
+                <span className="text-white font-bold border-b border-cyan-500/40 hover:text-cyan-400 transition-colors cursor-default px-2">movement</span>.”
             </h2>
         </div>
 
