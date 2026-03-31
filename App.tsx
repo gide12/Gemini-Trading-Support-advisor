@@ -13,6 +13,8 @@ import FuzzyLogicView from "./components/FuzzyLogicView";
 import QuantumView from "./components/QuantumView";
 import ChartView from "./components/ChartView";
 import LandingPage from "./components/LandingPage";
+import OnboardingWizard from "./components/OnboardingWizard";
+import NewsFrontView from "./components/NewsFrontView";
 import HedgeFundView from "./components/HedgeFundView";
 import MonitoringView from "./components/MonitoringView";
 import SecReportView from "./components/SecReportView";
@@ -20,10 +22,22 @@ import { View } from "./types";
 
 const App: React.FC = () => {
   const [isStarted, setIsStarted] = useState(false);
-  const [currentView, setCurrentView] = useState<View>('analysis');
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [currentView, setCurrentView] = useState<View>('news');
 
   if (!isStarted) {
     return <LandingPage onStart={() => setIsStarted(true)} />;
+  }
+
+  if (!hasCompletedOnboarding) {
+    return (
+      <OnboardingWizard 
+        onComplete={(data) => {
+          console.log("Onboarding complete:", data);
+          setHasCompletedOnboarding(true);
+        }} 
+      />
+    );
   }
 
   const isChartView = currentView === 'chart';
@@ -35,6 +49,7 @@ const App: React.FC = () => {
       <SentimentTicker />
       
       <main className={`flex-1 w-full flex flex-col ${isChartView ? 'p-0 max-w-none' : 'max-w-7xl mx-auto p-6 lg:p-10'}`}>
+        {currentView === 'news' && <NewsFrontView />}
         {currentView === 'analysis' && <AnalysisView />}
         {currentView === 'portfolio' && <PortfolioView />}
         {currentView === 'market' && <MarketDataView />}

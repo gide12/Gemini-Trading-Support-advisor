@@ -15,7 +15,7 @@ export enum AnalysisType {
   SmartMoney = "Smart Money AI"
 }
 
-export type View = 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum' | 'hedge_fund' | 'monitoring' | 'sec_report';
+export type View = 'news' | 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum' | 'hedge_fund' | 'monitoring' | 'sec_report';
 
 export interface NewsItem {
     title: string;
