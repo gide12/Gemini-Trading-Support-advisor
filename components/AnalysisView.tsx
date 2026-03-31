@@ -4,7 +4,7 @@ import Tabs from "./Tabs";
 import SearchBar from "./SearchBar";
 import ResultsDisplay from "./ResultsDisplay";
 import StockScreener from "./StockScreener";
-import { AnalysisType, AnalysisResult } from "../types";
+import { AnalysisType, AnalysisResult, View } from "../types";
 import { analyzeStock } from "../services/geminiService";
 
 const CLUSTERING_ALGORITHMS = [
@@ -17,7 +17,11 @@ const CLUSTERING_ALGORITHMS = [
   "GBML-EMO CLUSTERING"
 ];
 
-const AnalysisView: React.FC = () => {
+interface AnalysisViewProps {
+  onNavigate?: (view: View) => void;
+}
+
+const AnalysisView: React.FC<AnalysisViewProps> = ({ onNavigate }) => {
   const [activeTab, setActiveTab] = useState<AnalysisType>(AnalysisType.News);
   const [currentTicker, setCurrentTicker] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -96,7 +100,7 @@ const AnalysisView: React.FC = () => {
                     )}
                 </div>
 
-                <Tabs activeTab={activeTab} onTabChange={handleTabChange} />
+                <Tabs activeTab={activeTab} onTabChange={handleTabChange} onNavigate={onNavigate} />
                 
                 {activeTab === AnalysisType.Clustering ? (
                     <div className="mb-8">

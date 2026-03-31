@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
-import Header from "./components/Header";
+import Sidebar from "./components/Sidebar";
+import RightSidebar from "./components/RightSidebar";
 import StockTicker from "./components/StockTicker";
 import SentimentTicker from "./components/SentimentTicker";
 import AnalysisView from "./components/AnalysisView";
@@ -43,32 +44,43 @@ const App: React.FC = () => {
   const isChartView = currentView === 'chart';
 
   return (
-    <div className="min-h-screen bg-[#0B1221] text-slate-200 flex flex-col font-sans fade-in">
-      <Header currentView={currentView} onViewChange={setCurrentView} onGoHome={() => setIsStarted(false)} />
-      <StockTicker />
-      <SentimentTicker />
-      
-      <main className={`flex-1 w-full flex flex-col ${isChartView ? 'p-0 max-w-none' : 'max-w-7xl mx-auto p-6 lg:p-10'}`}>
-        {currentView === 'news' && <NewsFrontView />}
-        {currentView === 'analysis' && <AnalysisView />}
-        {currentView === 'portfolio' && <PortfolioView />}
-        {currentView === 'market' && <MarketDataView />}
-        {currentView === 'chart' && <ChartView />}
-        {currentView === 'ml' && <MLView />}
-        {currentView === 'backtest' && <BacktestView />}
-        {currentView === 'community' && <CommunityView />}
-        {currentView === 'fuzzy' && <FuzzyLogicView />}
-        {currentView === 'quantum' && <QuantumView />}
-        {currentView === 'hedge_fund' && <HedgeFundView />}
-        {currentView === 'monitoring' && <MonitoringView />}
-        {currentView === 'sec_report' && <SecReportView />}
+    <div className="h-screen bg-[#0B1221] text-slate-200 flex font-sans fade-in overflow-hidden">
+      {/* LEFT: 20-25% */}
+      <aside className="w-[20%] min-w-[240px] max-w-[300px] z-20 shrink-0">
+        <Sidebar currentView={currentView} onViewChange={setCurrentView} onGoHome={() => setIsStarted(false)} />
+      </aside>
+
+      {/* CENTER: 50-55% */}
+      <main className="flex-1 flex flex-col relative overflow-hidden bg-[#0B1221] border-x border-slate-800/50 shadow-2xl z-10">
+        <div className="shrink-0 border-b border-slate-800/50 bg-[#0f172a]/50">
+          <StockTicker />
+        </div>
+        <div className={`flex-1 overflow-y-auto custom-scrollbar ${isChartView ? 'p-0' : 'p-6 lg:p-8'}`}>
+          {currentView === 'news' && <NewsFrontView />}
+          {currentView === 'analysis' && <AnalysisView onNavigate={setCurrentView} />}
+          {currentView === 'portfolio' && <PortfolioView />}
+          {currentView === 'market' && <MarketDataView />}
+          {currentView === 'chart' && <ChartView />}
+          {currentView === 'ml' && <MLView />}
+          {currentView === 'backtest' && <BacktestView />}
+          {currentView === 'community' && <CommunityView />}
+          {currentView === 'fuzzy' && <FuzzyLogicView />}
+          {currentView === 'quantum' && <QuantumView />}
+          {currentView === 'hedge_fund' && <HedgeFundView />}
+          {currentView === 'monitoring' && <MonitoringView />}
+          {currentView === 'sec_report' && <SecReportView />}
+        </div>
       </main>
-      
-      {!isChartView && (
-        <footer className="py-6 text-center text-slate-600 text-sm border-t border-slate-900 mt-auto">
-          <p>© 2025 Gemini Trading Support. Powered by Google Gemini 3 Flash.</p>
-        </footer>
-      )}
+
+      {/* RIGHT: 20-25% */}
+      <aside className="w-[25%] min-w-[280px] max-w-[350px] z-20 shrink-0 flex flex-col bg-[#0B1221]">
+        <div className="shrink-0 border-b border-slate-800/50 bg-[#0f172a]/50">
+          <SentimentTicker />
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <RightSidebar />
+        </div>
+      </aside>
     </div>
   );
 };

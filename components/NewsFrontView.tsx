@@ -64,13 +64,6 @@ const NEWS_ITEMS = [
   }
 ];
 
-const MARKET_MOVERS = [
-  { ticker: "NVDA", change: "+4.2%", price: "$135.20", trend: "up" },
-  { ticker: "TSLA", change: "-2.1%", price: "$185.40", trend: "down" },
-  { USDJPY: "JPY", change: "-1.8%", price: "148.50", trend: "down" },
-  { ticker: "BTC", change: "+3.5%", price: "$68,400", trend: "up" }
-];
-
 const NewsFrontView: React.FC = () => {
   return (
     <div className="space-y-6 fade-in">
@@ -89,10 +82,10 @@ const NewsFrontView: React.FC = () => {
         </div>
       </div>
 
-      {/* Top Section: Market Movers & Featured Story */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Top Section: Featured Story */}
+      <div className="grid grid-cols-1 gap-6">
         {/* Featured Story */}
-        <div className="lg:col-span-2 bg-gradient-to-br from-[#0f172a] to-[#0B1221] rounded-xl border border-cyan-500/30 p-6 shadow-lg relative overflow-hidden group cursor-pointer">
+        <div className="bg-gradient-to-br from-[#0f172a] to-[#0B1221] rounded-xl border border-cyan-500/30 p-6 shadow-lg relative overflow-hidden group cursor-pointer">
           <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
           
           <div className="flex items-center gap-2 mb-4">
@@ -113,28 +106,6 @@ const NewsFrontView: React.FC = () => {
           
           <div className="flex items-center gap-2 text-cyan-400 text-sm font-bold uppercase tracking-wider group-hover:translate-x-1 transition-transform">
             Read Full Analysis <ArrowRight className="w-4 h-4" />
-          </div>
-        </div>
-
-        {/* Market Movers Sidebar */}
-        <div className="bg-[#0f172a] rounded-xl border border-slate-800 p-6 shadow-lg flex flex-col">
-          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4" />
-            Key Market Movers
-          </h3>
-          <div className="space-y-4 flex-1">
-            {MARKET_MOVERS.map((asset, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 hover:bg-slate-800 transition-colors cursor-pointer">
-                <div>
-                  <div className="font-bold text-white">{asset.ticker || Object.keys(asset)[0]}</div>
-                  <div className="text-xs text-slate-400 font-mono">{asset.price}</div>
-                </div>
-                <div className={`flex items-center gap-1 font-bold ${asset.trend === 'up' ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {asset.trend === 'up' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                  {asset.change}
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </div>
