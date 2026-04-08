@@ -61,6 +61,16 @@ const NEWS_ITEMS = [
     impact: "Medium",
     sentiment: "neutral",
     summary: "Trading volume on political outcome contracts hits record highs as polls narrow, with institutional hedging activity detected."
+  },
+  {
+    id: 7,
+    category: "FOREX",
+    title: "EUR/USD Breaks Key Resistance as ECB Signals Potential Rate Hold",
+    source: "ForexLive",
+    time: "1h ago",
+    impact: "High",
+    sentiment: "positive",
+    summary: "The Euro surged past the 1.1000 level against the dollar following comments from ECB officials suggesting a pause in the current easing cycle."
   }
 ];
 
@@ -124,6 +134,7 @@ const NewsFrontView: React.FC = () => {
                   news.category === 'HEDGE FUND' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
                   news.category === 'MACRO' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
                   news.category === 'POLYMARKET' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                  news.category === 'FOREX' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
                   'bg-slate-800 text-slate-300 border-slate-700'
                 }`}>
                   {news.category}

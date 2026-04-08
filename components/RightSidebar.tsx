@@ -2,11 +2,11 @@ import React from 'react';
 import { Zap, Activity } from 'lucide-react';
 
 const ALERTS = [
-  { time: "10:42", text: "Large block trade detected in NVDA options", type: "info" },
-  { time: "10:15", text: "VIX spikes above 20", type: "warning" },
-  { time: "09:30", text: "CPI data exceeds consensus", type: "critical" },
-  { time: "08:45", text: "BOJ unexpected rate hike", type: "critical" },
-  { time: "08:15", text: "Gold hits new all-time high", type: "info" },
+  { time: "10:42", text: "Large block trade detected in NVDA options", type: "info", factor: "Options Flow", value: "$45M Prem" },
+  { time: "10:15", text: "VIX spikes above 20", type: "warning", factor: "Volatility", value: "21.50 (+15%)" },
+  { time: "09:30", text: "CPI data exceeds consensus", type: "critical", factor: "Macro", value: "3.4% YoY" },
+  { time: "08:45", text: "BOJ unexpected rate hike", type: "critical", factor: "Rates", value: "+25 bps" },
+  { time: "08:15", text: "Gold hits new all-time high", type: "info", factor: "Commodities", value: "$2,450/oz" },
 ];
 
 const RightSidebar: React.FC = () => {
@@ -30,11 +30,21 @@ const RightSidebar: React.FC = () => {
                 alert.type === 'warning' ? 'bg-amber-500' :
                 'bg-cyan-500'
               }`}></div>
-              <div className="font-mono text-[10px] opacity-70 mb-1.5 flex items-center gap-1">
-                <Activity className="w-3 h-3" />
-                {alert.time}
+              <div className="font-mono text-[10px] opacity-70 mb-1.5 flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Activity className="w-3 h-3" />
+                  {alert.time}
+                </div>
+                <div className="font-bold uppercase tracking-wider">{alert.factor}</div>
               </div>
-              <div className="leading-relaxed">{alert.text}</div>
+              <div className="leading-relaxed mb-2">{alert.text}</div>
+              <div className={`text-[11px] font-mono font-bold px-2 py-1 rounded inline-block ${
+                alert.type === 'critical' ? 'bg-red-500/20 text-red-300' :
+                alert.type === 'warning' ? 'bg-amber-500/20 text-amber-300' :
+                'bg-cyan-500/20 text-cyan-300'
+              }`}>
+                {alert.value}
+              </div>
             </div>
           ))}
         </div>
