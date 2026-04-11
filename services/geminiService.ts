@@ -568,6 +568,50 @@ Return JSON exactly in this format:
         return { ticker, type: analysisType, content: json.reasoning, smartMoney: json, sources: extractSources(response) };
     }
 
+    if (analysisType === AnalysisType.MarineTraffic) {
+        const response = await ai.models.generateContent({
+            model: "gemini-3-pro-preview",
+            contents: `Act as a global supply chain and maritime intelligence analyst. Provide a MarineTraffic and port congestion analysis for ${ticker} (or the general macroeconomic shipping environment if ${ticker} is an index/macro asset) as of February 2, 2026.
+            Include:
+            1. Chokepoint Throughput Index (0-100) and major bottlenecks.
+            2. Port Congestion Index (0-100) and average wait time in days.
+            3. Vessel Activity (arrivals, departures, total in port).
+            4. Time-in-Port Indicator and status (Efficient, Delayed, Critical).
+            
+            Return the analysis in JSON exactly:
+            {
+                "ticker": "${ticker}",
+                "chokepointThroughput": {
+                    "index": number,
+                    "trend": "Up" | "Down" | "Stable",
+                    "majorBottlenecks": ["string"]
+                },
+                "portCongestion": {
+                    "index": number,
+                    "trend": "Up" | "Down" | "Stable",
+                    "averageWaitTimeDays": number
+                },
+                "vesselActivity": {
+                    "arrivals": number,
+                    "departures": number,
+                    "totalInPort": number
+                },
+                "timeInPort": {
+                    "indicator": number,
+                    "historicalAverage": number,
+                    "status": "Efficient" | "Delayed" | "Critical"
+                },
+                "summary": "string"
+            }`,
+            config: { 
+                tools: [{ googleSearch: {} }],
+                responseMimeType: "application/json" 
+            }
+        });
+        const json = cleanAndParseJSON(response.text);
+        return { ticker, type: analysisType, content: json.summary, marineTraffic: json, sources: extractSources(response) };
+    }
+
     const response = await ai.models.generateContent({
       model: modelName,
       contents: `Analyze ${ticker} for ${analysisType}.`,

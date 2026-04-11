@@ -12,10 +12,11 @@ export enum AnalysisType {
   Ideas = "Trade Ideas",
   OptionsExpert = "Options Expert Analysis",
   BrokerIntel = "Broker Intelligence",
-  SmartMoney = "Smart Money AI"
+  SmartMoney = "Smart Money AI",
+  MarineTraffic = "Marine Traffic Intelligence"
 }
 
-export type View = 'news' | 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum' | 'hedge_fund' | 'monitoring' | 'sec_report';
+export type View = 'news' | 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum' | 'hedge_fund' | 'monitoring' | 'sec_report' | 'marine_traffic';
 
 export interface NewsItem {
     title: string;
@@ -336,6 +337,7 @@ export interface AnalysisResult {
   optionsExpert?: OptionsExpertAnalysisData;
   fundamentalAnalysis?: FundamentalAnalysisData;
   smartMoney?: SmartMoneyData;
+  marineTraffic?: MarineTrafficData;
 }
 
 export interface TabItem { id: AnalysisType; label: string; }
@@ -593,4 +595,29 @@ export interface QuantumResult {
   graphTopology?: { node: string; neighbor: string; weight: number }[];
   benchmarks?: { metric: string; classical: number; quantum: number }[];
   circuitComplexity?: number;
+}
+
+export interface MarineTrafficData {
+  ticker: string;
+  chokepointThroughput: {
+    index: number;
+    trend: "Up" | "Down" | "Stable";
+    majorBottlenecks: string[];
+  };
+  portCongestion: {
+    index: number;
+    trend: "Up" | "Down" | "Stable";
+    averageWaitTimeDays: number;
+  };
+  vesselActivity: {
+    arrivals: number;
+    departures: number;
+    totalInPort: number;
+  };
+  timeInPort: {
+    indicator: number;
+    historicalAverage: number;
+    status: "Efficient" | "Delayed" | "Critical";
+  };
+  summary: string;
 }

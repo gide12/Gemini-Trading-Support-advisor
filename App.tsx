@@ -19,6 +19,7 @@ import NewsFrontView from "./components/NewsFrontView";
 import HedgeFundView from "./components/HedgeFundView";
 import MonitoringView from "./components/MonitoringView";
 import SecReportView from "./components/SecReportView";
+import MarineTrafficView from "./components/MarineTrafficView";
 import { View } from "./types";
 
 const App: React.FC = () => {
@@ -69,6 +70,7 @@ const App: React.FC = () => {
           {currentView === 'hedge_fund' && <HedgeFundView />}
           {currentView === 'monitoring' && <MonitoringView />}
           {currentView === 'sec_report' && <SecReportView />}
+          {currentView === 'marine_traffic' && <MarineTrafficView />}
         </div>
       </main>
 

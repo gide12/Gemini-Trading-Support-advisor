@@ -1,9 +1,10 @@
 
 import React, { useMemo, useState } from "react";
-import { AnalysisResult, AnalysisType, PriceActionData, PriceActionCandle, TechnicalAnalysisData, NewsItem, BrokerIntelData, TradeIdeaData, ClusteringAnalysisData, OptionsExpertAnalysisData, FundamentalAnalysisData, SmartMoneyData } from "../types";
+import { AnalysisResult, AnalysisType, PriceActionData, PriceActionCandle, TechnicalAnalysisData, NewsItem, BrokerIntelData, TradeIdeaData, ClusteringAnalysisData, OptionsExpertAnalysisData, FundamentalAnalysisData, SmartMoneyData, MarineTrafficData } from "../types";
 import { 
     ComposedChart, ReferenceLine, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar, Cell, CartesianGrid, ReferenceArea, Area, BarChart, Line, Scatter, ScatterChart, ZAxis, Legend, Label
 } from "recharts";
+import { Anchor, Ship, Clock, AlertTriangle, Activity, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface ResultsDisplayProps {
   result: AnalysisResult | null;
@@ -730,7 +731,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isLoading, acti
           <SmartMoneyDashboard data={result.smartMoney} />
       )}
 
-      {activeTab !== AnalysisType.Fundamental && activeTab !== AnalysisType.OptionsExpert && activeTab !== AnalysisType.Clustering && activeTab !== AnalysisType.News && activeTab !== AnalysisType.SmartMoney && (
+      {activeTab !== AnalysisType.Fundamental && activeTab !== AnalysisType.OptionsExpert && activeTab !== AnalysisType.Clustering && activeTab !== AnalysisType.News && activeTab !== AnalysisType.SmartMoney && activeTab !== AnalysisType.MarineTraffic && (
           <div className="p-6 text-slate-200 font-sans text-sm leading-relaxed whitespace-pre-wrap bg-black/40 rounded-xl border border-white/5 shadow-inner">
               {result.content}
           </div>

@@ -50,6 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onGoHome }
         { id: 'portfolio', label: 'Portfolio', icon: <Briefcase className="w-4 h-4" /> },
         { id: 'market', label: 'Live Market', icon: <Globe className="w-4 h-4" /> },
         { id: 'monitoring', label: 'Monitoring', icon: <ShieldAlert className="w-4 h-4" /> },
+        { id: 'marine_traffic', label: 'Marine Traffic', icon: <Globe className="w-4 h-4" /> },
       ]
     }
   ];
