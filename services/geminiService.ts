@@ -612,6 +612,51 @@ Return JSON exactly in this format:
         return { ticker, type: analysisType, content: json.summary, marineTraffic: json, sources: extractSources(response) };
     }
 
+    if (analysisType === AnalysisType.BISReport) {
+        const response = await ai.models.generateContent({
+            model: "gemini-3-pro-preview",
+            contents: `Act as a central bank and macro-liquidity analyst. Provide a Bank for International Settlements (BIS) style macro report for the current global environment (or specifically tailored to ${ticker} if it's a macro asset/currency) as of February 2, 2026.
+            Include:
+            1. Global Liquidity (USD credit, trend, YoY change).
+            2. Cross-Border Claims (total, emerging markets, advanced economies).
+            3. Policy Rates (stance, divergence index).
+            4. Systemic Risk (indicator 0-100, primary vulnerability).
+            5. Key Takeaways (array of strings).
+            6. Executive Summary.
+            
+            Return the analysis in JSON exactly:
+            {
+                "date": "February 2, 2026",
+                "globalLiquidity": {
+                    "usdCredit": "string",
+                    "trend": "Expanding" | "Contracting" | "Stable",
+                    "yoyChange": number
+                },
+                "crossBorderClaims": {
+                    "total": "string",
+                    "emergingMarkets": "string",
+                    "advancedEconomies": "string"
+                },
+                "policyRates": {
+                    "stance": "Hawkish" | "Dovish" | "Neutral",
+                    "divergenceIndex": number
+                },
+                "systemicRisk": {
+                    "indicator": number,
+                    "primaryVulnerability": "string"
+                },
+                "keyTakeaways": ["string"],
+                "executiveSummary": "string"
+            }`,
+            config: { 
+                tools: [{ googleSearch: {} }],
+                responseMimeType: "application/json" 
+            }
+        });
+        const json = cleanAndParseJSON(response.text);
+        return { ticker, type: analysisType, content: json.executiveSummary, bisReport: json, sources: extractSources(response) };
+    }
+
     const response = await ai.models.generateContent({
       model: modelName,
       contents: `Analyze ${ticker} for ${analysisType}.`,

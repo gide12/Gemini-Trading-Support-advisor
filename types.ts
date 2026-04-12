@@ -13,10 +13,11 @@ export enum AnalysisType {
   OptionsExpert = "Options Expert Analysis",
   BrokerIntel = "Broker Intelligence",
   SmartMoney = "Smart Money AI",
-  MarineTraffic = "Marine Traffic Intelligence"
+  MarineTraffic = "Marine Traffic Intelligence",
+  BISReport = "BIS Macro Report"
 }
 
-export type View = 'news' | 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum' | 'hedge_fund' | 'monitoring' | 'sec_report' | 'marine_traffic';
+export type View = 'news' | 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum' | 'hedge_fund' | 'monitoring' | 'sec_report' | 'marine_traffic' | 'bis_report';
 
 export interface NewsItem {
     title: string;
@@ -338,6 +339,7 @@ export interface AnalysisResult {
   fundamentalAnalysis?: FundamentalAnalysisData;
   smartMoney?: SmartMoneyData;
   marineTraffic?: MarineTrafficData;
+  bisReport?: BISReportData;
 }
 
 export interface TabItem { id: AnalysisType; label: string; }
@@ -620,4 +622,28 @@ export interface MarineTrafficData {
     status: "Efficient" | "Delayed" | "Critical";
   };
   summary: string;
+}
+
+export interface BISReportData {
+  date: string;
+  globalLiquidity: {
+    usdCredit: string;
+    trend: "Expanding" | "Contracting" | "Stable";
+    yoyChange: number;
+  };
+  crossBorderClaims: {
+    total: string;
+    emergingMarkets: string;
+    advancedEconomies: string;
+  };
+  policyRates: {
+    stance: "Hawkish" | "Dovish" | "Neutral";
+    divergenceIndex: number;
+  };
+  systemicRisk: {
+    indicator: number;
+    primaryVulnerability: string;
+  };
+  keyTakeaways: string[];
+  executiveSummary: string;
 }

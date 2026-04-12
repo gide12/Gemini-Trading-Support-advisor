@@ -3,7 +3,7 @@ import { View } from "../types";
 import { 
   Newspaper, Activity, BarChart3, Target, 
   Cpu, Network, ShieldAlert, Globe, 
-  Briefcase, Zap, FileText, ChevronDown, ChevronRight
+  Briefcase, Zap, FileText, ChevronDown, ChevronRight, Landmark
 } from "lucide-react";
 
 interface SidebarProps {
@@ -31,6 +31,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onGoHome }
         { id: 'analysis', label: 'Deep Dive', icon: <Activity className="w-4 h-4" /> },
         { id: 'hedge_fund', label: 'Hedge Fund', icon: <Briefcase className="w-4 h-4" /> },
         { id: 'sec_report', label: 'SEC Report', icon: <FileText className="w-4 h-4" /> },
+        { id: 'bis_report', label: 'BIS Report', icon: <Landmark className="w-4 h-4" /> },
         { id: 'community', label: 'Community', icon: <Network className="w-4 h-4" /> },
       ]
     },
