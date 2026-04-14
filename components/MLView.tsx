@@ -27,6 +27,7 @@ const MODEL_TYPES = [
   "Linear-Exponential-Polynomial model",
   "Ridge Regression",
   "Multivariate Time Series Forecasting (GRU)",
+  "Multivariate Adaptive Regression Splines (MARS)",
   "GRU (Gated Recurrent Unit)",
   "Recurrent Neural Network (RNN)",
   "Convolutional Neural Network (CNN)",

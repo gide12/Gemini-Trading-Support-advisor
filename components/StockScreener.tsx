@@ -68,25 +68,24 @@ const StockScreener: React.FC<StockScreenerProps> = ({ onSelectTicker }) => {
                         key={item.symbol}
                         onClick={() => onSelectTicker(item.symbol)}
                         className={`
-                            p-3 border-b border-purple-500/10 cursor-pointer transition-colors flex justify-between items-center
+                            p-3 border-b border-purple-500/10 cursor-pointer transition-colors flex justify-between items-center gap-2
                             ${idx % 2 === 0 ? 'bg-[#1e293b]/30' : 'bg-transparent'}
                             hover:bg-purple-900/20
                         `}
                     >
-                        <div>
+                        <div className="flex-1 min-w-0">
                             <div className="font-bold text-white text-sm flex items-center gap-2">
                                 {item.symbol}
-                                {/* Simple trend indicator based on random tick simulation (visual flair) */}
-                                <span className={`text-[8px] ${Math.random() > 0.5 ? 'text-green-500' : 'text-red-500'}`}>
-                                    {Math.random() > 0.5 ? '▲' : '▼'}
+                                <span className={`text-[8px] ${item.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                    {item.change >= 0 ? '▲' : '▼'}
                                 </span>
                             </div>
-                            <div className="text-[10px] text-slate-500 truncate max-w-[80px]">{item.name}</div>
+                            <div className="text-[10px] text-slate-500 truncate">{item.name}</div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right shrink-0">
                             <div className="text-slate-200 font-mono text-sm">${item.price.toFixed(2)}</div>
-                            <div className={`text-xs font-bold font-mono ${activeTab === 'gainers' ? 'text-green-400' : 'text-red-400'}`}>
-                                {activeTab === 'gainers' ? '+' : ''}{item.changePercent.toFixed(2)}%
+                            <div className={`text-xs font-bold font-mono ${item.changePercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {item.changePercent > 0 ? '+' : ''}{item.changePercent.toFixed(2)}%
                             </div>
                         </div>
                     </div>

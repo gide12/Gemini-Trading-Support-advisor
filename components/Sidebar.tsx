@@ -3,7 +3,7 @@ import { View } from "../types";
 import { 
   Newspaper, Activity, BarChart3, Target, 
   Cpu, Network, ShieldAlert, Globe, 
-  Briefcase, Zap, FileText, ChevronDown, ChevronRight, Landmark
+  Briefcase, Zap, FileText, ChevronDown, ChevronRight, Landmark, Ship
 } from "lucide-react";
 
 interface SidebarProps {
@@ -51,7 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onGoHome }
         { id: 'portfolio', label: 'Portfolio', icon: <Briefcase className="w-4 h-4" /> },
         { id: 'market', label: 'Live Market', icon: <Globe className="w-4 h-4" /> },
         { id: 'monitoring', label: 'Monitoring', icon: <ShieldAlert className="w-4 h-4" /> },
-        { id: 'marine_traffic', label: 'Marine Traffic', icon: <Globe className="w-4 h-4" /> },
+        { id: 'marine_traffic', label: 'Marine Traffic', icon: <Ship className="w-4 h-4" /> },
       ]
     }
   ];
@@ -62,12 +62,14 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onGoHome }
       <div className="p-5 border-b border-slate-800/50 flex items-center gap-3 cursor-pointer group shrink-0" onClick={onGoHome}>
         <div className="w-8 h-8 text-cyan-500 group-hover:text-cyan-400 transition-colors shrink-0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
+            <path d="M4 4.5a16 16 0 0 1 16 0" />
+            <path d="M4 19.5a16 16 0 0 0 16 0" />
+            <path d="M9 5v14" />
+            <path d="M15 5v14" />
           </svg>
         </div>
         <h1 className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-200 tracking-tight leading-tight">
-          GEMINI<br/>Investmarketstation
+          GEMINI<br/>Invest Market Station
         </h1>
       </div>
 

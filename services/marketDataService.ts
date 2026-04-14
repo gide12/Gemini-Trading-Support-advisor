@@ -35,7 +35,8 @@ export const simulateMarketUpdate = (tickers: MarketTicker[]): MarketTicker[] =>
     const move = (Math.random() - 0.5) * (t.price * 0.002); // 0.2% max variance per tick
     const newPrice = t.price + move;
     const change = t.change + move;
-    const changePercent = (change / (newPrice - change)) * 100;
+    const originalPrice = newPrice - change;
+    const changePercent = (change / originalPrice) * 100;
     
     return {
       ...t,
