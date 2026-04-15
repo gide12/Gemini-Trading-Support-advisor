@@ -8,6 +8,7 @@ const MarineTrafficView: React.FC = () => {
   const [data, setData] = useState<MarineTrafficData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showMap, setShowMap] = useState<boolean>(false);
+  const [isMapLoading, setIsMapLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchGlobalData = async () => {
@@ -29,6 +30,16 @@ const MarineTrafficView: React.FC = () => {
 
     fetchGlobalData();
   }, []);
+
+  useEffect(() => {
+    if (showMap) {
+      setIsMapLoading(true);
+      const timer = setTimeout(() => {
+        setIsMapLoading(false);
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [showMap]);
 
   return (
     <div className="space-y-6 fade-in">
@@ -69,12 +80,27 @@ const MarineTrafficView: React.FC = () => {
 
       {showMap && !isLoading && (
         <div className="w-full h-[500px] bg-slate-900 rounded-xl border border-slate-800 overflow-hidden relative animate-fade-in">
-          <div className="absolute inset-0 flex items-center justify-center flex-col gap-4 z-10 pointer-events-none">
-             <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-400 rounded-full animate-spin"></div>
-             <div className="text-blue-400 font-mono text-xs uppercase tracking-widest animate-pulse">Connecting to AIS Satellites...</div>
-          </div>
-          {/* Simulated Map Background */}
-          <div className="absolute inset-0 opacity-20" style={{
+          {isMapLoading ? (
+            <div className="absolute inset-0 flex items-center justify-center flex-col gap-4 z-10 pointer-events-none">
+               <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-400 rounded-full animate-spin"></div>
+               <div className="text-blue-400 font-mono text-xs uppercase tracking-widest animate-pulse">Connecting to AIS Satellites...</div>
+            </div>
+          ) : (
+            <iframe 
+              name="marinetraffic" 
+              id="marinetraffic" 
+              width="100%" 
+              height="100%" 
+              scrolling="no" 
+              frameBorder="0" 
+              src="https://www.marinetraffic.com/en/ais/embed/zoom:3/centery:20/centerx:0/maptype:1/shownames:false/mmsi:0/shipid:0/fleet:/fleet_id:/vtypes:/showmenu:"
+              title="MarineTraffic Live Map"
+              className="absolute inset-0 z-10"
+            ></iframe>
+          )}
+          
+          {/* Simulated Map Background (shows while iframe loads) */}
+          <div className="absolute inset-0 opacity-30" style={{
             backgroundImage: 'radial-gradient(circle at 50% 50%, #1e293b 0%, #020617 100%)',
             backgroundSize: 'cover'
           }}>
