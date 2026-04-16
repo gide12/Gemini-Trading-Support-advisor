@@ -96,6 +96,7 @@ const MarineTrafficView: React.FC = () => {
               src="https://www.marinetraffic.com/en/ais/embed/zoom:3/centery:20/centerx:0/maptype:1/shownames:false/mmsi:0/shipid:0/fleet:/fleet_id:/vtypes:/showmenu:"
               title="MarineTraffic Live Map"
               className="absolute inset-0 z-10"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
             ></iframe>
           )}
           

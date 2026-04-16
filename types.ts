@@ -445,7 +445,24 @@ export interface BacktestResult {
   };
 }
 
-export interface MLPredictionResult { ticker: string; currentPrice: number; predictedPrice: number; confidenceScore: number; volatility: string; modelUsed: string; featureImportance: { feature: string; score: number }[]; predictionPath: { date: string; price: number; upper: number; lower: number }[]; explanation: string; evaluationMetrics: any; tradingMetrics: any; }
+export interface MLPredictionResult { 
+  ticker: string; 
+  currentPrice: number; 
+  predictedPrice: number; 
+  confidenceScore: number; 
+  volatility: string; 
+  modelUsed: string; 
+  featureImportance: { feature: string; score: number }[]; 
+  predictionPath: { date: string; price: number; upper: number; lower: number }[]; 
+  explanation: string; 
+  evaluationMetrics: any; 
+  tradingMetrics: any; 
+  performanceMetrics?: {
+    mse: number;
+    mae: number;
+    rmse: number;
+  };
+}
 export interface ETFProfile { ticker: string; name: string; topHoldings: { ticker: string; name: string; weight: number; }[]; }
 
 export interface DeltaGammaHedgeResult { 

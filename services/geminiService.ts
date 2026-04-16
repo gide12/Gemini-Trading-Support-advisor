@@ -722,7 +722,8 @@ export const runMLSimulation = async (
         "predictionPath": [ { "date": "string", "price": number, "upper": number, "lower": number } ],
         "explanation": "string",
         "evaluationMetrics": { "accuracy": number, "f1Score": number },
-        "tradingMetrics": { "annualizedReturn": number, "sharpeRatio": number }
+        "tradingMetrics": { "annualizedReturn": number, "sharpeRatio": number },
+        "performanceMetrics": { "mse": number, "mae": number, "rmse": number }
     }`;
     const response = await ai.models.generateContent({
         model: modelName,

@@ -186,59 +186,65 @@ const MLView: React.FC = () => {
 
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Architecture</label>
-            <div className="space-y-2 max-h-[140px] overflow-y-auto custom-scrollbar pr-2">
+            <select
+              value={modelType}
+              onChange={(e) => setModelType(e.target.value)}
+              className="w-full bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-purple-500 outline-none text-sm appearance-none"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 0.75rem center',
+                backgroundSize: '1rem'
+              }}
+            >
               {MODEL_TYPES.map((model) => (
-                <div
-                  key={model}
-                  onClick={() => setModelType(model)}
-                  className={`cursor-pointer px-3 py-2 rounded text-sm border transition-all ${
-                    modelType === model
-                      ? "bg-purple-900/30 border-purple-500 text-white"
-                      : "bg-[#1e293b] border-transparent text-slate-400 hover:border-purple-500/30"
-                  }`}
-                >
+                <option key={model} value={model}>
                   {model}
-                </div>
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Training Dataset</label>
-                <div className="space-y-1">
-                    {TRAINING_PERIODS.map(period => (
-                        <button
-                            key={period}
-                            onClick={() => setTrainingPeriod(period)}
-                            className={`w-full text-left px-3 py-1.5 rounded text-xs border transition-all ${
-                                trainingPeriod === period
-                                ? "bg-purple-900/30 border-purple-500 text-white"
-                                : "bg-[#1e293b] border-transparent text-slate-400 hover:border-purple-500/20"
-                            }`}
-                        >
-                            {period}
-                        </button>
-                    ))}
-                </div>
+                <select
+                  value={trainingPeriod}
+                  onChange={(e) => setTrainingPeriod(e.target.value)}
+                  className="w-full bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-purple-500 outline-none text-sm appearance-none"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 0.75rem center',
+                    backgroundSize: '1rem'
+                  }}
+                >
+                  {TRAINING_PERIODS.map(period => (
+                    <option key={period} value={period}>
+                      {period}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Prediction Horizon</label>
-                <div className="space-y-1">
-                    {PREDICTION_HORIZONS.map(horizon => (
-                        <button
-                            key={horizon}
-                            onClick={() => setPredictionHorizon(horizon)}
-                            className={`w-full text-left px-3 py-1.5 rounded text-xs border transition-all ${
-                                predictionHorizon === horizon
-                                ? "bg-blue-900/30 border-blue-500 text-white"
-                                : "bg-[#1e293b] border-transparent text-slate-400 hover:border-blue-500/20"
-                            }`}
-                        >
-                            {horizon}
-                        </button>
-                    ))}
-                </div>
+                <select
+                  value={predictionHorizon}
+                  onChange={(e) => setPredictionHorizon(e.target.value)}
+                  className="w-full bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-blue-500 outline-none text-sm appearance-none"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 0.75rem center',
+                    backgroundSize: '1rem'
+                  }}
+                >
+                  {PREDICTION_HORIZONS.map(horizon => (
+                    <option key={horizon} value={horizon}>
+                      {horizon}
+                    </option>
+                  ))}
+                </select>
               </div>
           </div>
           
@@ -344,7 +350,7 @@ const MLView: React.FC = () => {
 
                 <div className="md:col-span-2 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
                     <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">Performance Metrics</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                         <div>
                             <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 border-b border-purple-500/20 pb-1">Validation Set Statistics</h4>
                             <div className="grid grid-cols-2 gap-3">
@@ -369,6 +375,23 @@ const MLView: React.FC = () => {
                                     <div className="text-[10px] text-slate-400 uppercase">Sharpe</div>
                                     <div className="text-xl font-mono text-purple-300 font-bold">{(result.tradingMetrics?.sharpeRatio || 0).toFixed(2)}</div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 border-b border-purple-500/20 pb-1">Error Metrics</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-[#1e293b] p-4 rounded border border-purple-500/10">
+                                <div className="text-[10px] text-slate-400 uppercase mb-1">Mean Squared Error (MSE)</div>
+                                <div className="text-2xl font-mono text-rose-300 font-bold">{(result.performanceMetrics?.mse || 0).toFixed(4)}</div>
+                            </div>
+                            <div className="bg-[#1e293b] p-4 rounded border border-purple-500/10">
+                                <div className="text-[10px] text-slate-400 uppercase mb-1">Mean Absolute Error (MAE)</div>
+                                <div className="text-2xl font-mono text-rose-300 font-bold">{(result.performanceMetrics?.mae || 0).toFixed(4)}</div>
+                            </div>
+                            <div className="bg-[#1e293b] p-4 rounded border border-purple-500/10">
+                                <div className="text-[10px] text-slate-400 uppercase mb-1">Root Mean Squared Error (RMSE)</div>
+                                <div className="text-2xl font-mono text-rose-300 font-bold">{(result.performanceMetrics?.rmse || 0).toFixed(4)}</div>
                             </div>
                         </div>
                     </div>
