@@ -17,7 +17,35 @@ export enum AnalysisType {
   BISReport = "BIS Macro Report"
 }
 
-export type View = 'news' | 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum' | 'hedge_fund' | 'monitoring' | 'sec_report' | 'marine_traffic' | 'bis_report';
+export type View = 'news' | 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum' | 'hedge_fund' | 'monitoring' | 'sec_report' | 'marine_traffic' | 'bis_report' | 'planner';
+
+export interface UserProfile {
+    riskTolerance: "Conservative" | "Moderate" | "Aggressive";
+    investmentHorizon: "Short-term (< 3 Yrs)" | "Medium-term (3-7 Yrs)" | "Long-term (7+ Yrs)";
+    initialCapital: number;
+    goal: "Capital Preservation" | "Income" | "Balanced" | "Maximum Growth";
+}
+
+export interface PortfolioPlanResult {
+    summary: string;
+    assetAllocation: { assetClass: string; percentage: number }[];
+    recommendedHoldings: {
+        ticker: string;
+        name: string;
+        assetClass: string;
+        weight: number;
+        currentPriceEstimate: number;
+        targetPrice: number;
+        predictedGrowth: number;
+        rationale: string;
+    }[];
+    diversificationStrategy: string;
+    estimatedAnnualReturn: number;
+    riskMetrics: {
+        maxDrawdown: number;
+        volatility: number;
+    };
+}
 
 export interface NewsItem {
     title: string;

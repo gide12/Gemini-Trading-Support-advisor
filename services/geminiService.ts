@@ -988,3 +988,54 @@ export const runHedgeAnalysis = async (holdings: Holding[]): Promise<DeltaGammaH
     });
     return cleanAndParseJSON(response.text);
 };
+
+export const generatePortfolioPlan = async (profile: UserProfile): Promise<PortfolioPlanResult> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const prompt = `Act as an expert fiduciary Robo-Advisor and Wealth Manager. 
+Generate a comprehensive, diversified portfolio plan tailored to the following user profile:
+Risk Tolerance: ${profile.riskTolerance}
+Investment Horizon: ${profile.investmentHorizon}
+Initial Capital: $${profile.initialCapital}
+Investment Goal: ${profile.goal}
+
+Provide a well-researched asset allocation and specific stock/ETF recommendations with predicted potential growing prices based on current market trends.
+
+Respond STRICTLY with a JSON object matching this structure:
+{
+    "summary": "High-level summary of the strategy.",
+    "assetAllocation": [
+        { "assetClass": "Equities", "percentage": 60 },
+        { "assetClass": "Fixed Income", "percentage": 30 },
+        { "assetClass": "Cash/Equivalents", "percentage": 10 }
+    ],
+    "recommendedHoldings": [
+        {
+            "ticker": "AAPL",
+            "name": "Apple Inc.",
+            "assetClass": "Equities",
+            "weight": 15,
+            "currentPriceEstimate": 180,
+            "targetPrice": 210,
+            "predictedGrowth": 16.6,
+            "rationale": "Strong balance sheet, share buybacks."
+        }
+    ],
+    "diversificationStrategy": "Detailed explanation of how this mitigates risk.",
+    "estimatedAnnualReturn": 7.5,
+    "riskMetrics": {
+        "maxDrawdown": 12.5,
+        "volatility": 10.2
+    }
+}`;
+    
+    const response = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt,
+        config: { 
+            tools: [{ googleSearch: {} }],
+            responseMimeType: "application/json" 
+        }
+    });
+
+    return cleanAndParseJSON(response.text);
+};

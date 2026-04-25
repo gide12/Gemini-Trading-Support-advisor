@@ -126,16 +126,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
 
         {/* The Hero Quote */}
         <div className="mb-24 space-y-8 md:space-y-12">
-            <h1 className="text-4xl md:text-7xl lg:text-8xl font-black text-white leading-[1.1] tracking-tighter drop-shadow-2xl">
-                “You don’t choose <br/> 
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-300 via-white to-slate-500">cheap or expensive.”</span>
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white leading-[1.1] tracking-tighter drop-shadow-2xl uppercase">
+                WELCOME GEMINI RESEARCH <br/> 
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-300 via-white to-slate-500">AND SIMULATION MARKET</span>
             </h1>
-            <h2 className="text-xl md:text-3xl lg:text-4xl font-light text-slate-400 max-w-5xl mx-auto leading-relaxed tracking-tight">
-                “You choose whether you’re paid by <br className="md:hidden"/>
-                <span className="text-white font-bold border-b border-cyan-500/40 hover:text-cyan-400 transition-colors cursor-default px-2">direction</span> 
-                <span className="mx-4 text-slate-600 italic font-serif">or by</span> 
-                <span className="text-white font-bold border-b border-cyan-500/40 hover:text-cyan-400 transition-colors cursor-default px-2">movement</span>.”
-            </h2>
         </div>
 
         {/* Start Button */}

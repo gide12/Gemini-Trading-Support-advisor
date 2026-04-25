@@ -21,6 +21,7 @@ import MonitoringView from "./components/MonitoringView";
 import SecReportView from "./components/SecReportView";
 import MarineTrafficView from "./components/MarineTrafficView";
 import BisReportView from "./components/BisReportView";
+import PortfolioPlannerView from "./components/PortfolioPlannerView";
 import { View } from "./types";
 
 const App: React.FC = () => {
@@ -73,6 +74,7 @@ const App: React.FC = () => {
           {currentView === 'sec_report' && <SecReportView />}
           {currentView === 'marine_traffic' && <MarineTrafficView />}
           {currentView === 'bis_report' && <BisReportView />}
+          {currentView === 'planner' && <PortfolioPlannerView />}
         </div>
       </main>
 

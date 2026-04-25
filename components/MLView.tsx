@@ -28,6 +28,7 @@ const MODEL_TYPES = [
   "Ridge Regression",
   "Multivariate Time Series Forecasting (GRU)",
   "Multivariate Adaptive Regression Splines (MARS)",
+  "Local Interpretable Model-agnostic Explanations (LIME)",
   "GRU (Gated Recurrent Unit)",
   "Recurrent Neural Network (RNN)",
   "Convolutional Neural Network (CNN)",
