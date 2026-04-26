@@ -204,6 +204,17 @@ const PortfolioPlannerView: React.FC = () => {
                                             dataKey="percentage"
                                             nameKey="assetClass"
                                             stroke="none"
+                                            label={({ cx, cy, midAngle, outerRadius, value }) => {
+                                                const RADIAN = Math.PI / 180;
+                                                const radius = outerRadius + 15;
+                                                const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                                                const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                                                return (
+                                                    <text x={x} y={y} fill="#cbd5e1" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize="11" fontWeight="bold">
+                                                        {`${value}%`}
+                                                    </text>
+                                                );
+                                            }}
                                         >
                                             {result.assetAllocation.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
