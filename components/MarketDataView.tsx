@@ -7,13 +7,21 @@ const MarketDataView: React.FC = () => {
   const [newSymbol, setNewSymbol] = useState("");
 
   useEffect(() => {
-    setTickers(getInitialMarketData());
+    let mounted = true;
+    (async () => {
+      const data = await getInitialMarketData();
+      if (mounted) setTickers(data);
+    })();
     
-    const interval = setInterval(() => {
-      setTickers(prev => simulateMarketUpdate(prev));
-    }, 2000); // Update every 2 seconds
+    const interval = setInterval(async () => {
+      const data = await getInitialMarketData();
+      if (mounted) setTickers(data);
+    }, 15000); // Update every 15 seconds real data
 
-    return () => clearInterval(interval);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    }
   }, []);
 
   const handleAddTicker = (e: React.FormEvent) => {

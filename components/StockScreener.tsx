@@ -11,18 +11,22 @@ const StockScreener: React.FC<StockScreenerProps> = ({ onSelectTicker }) => {
     const [movers, setMovers] = useState<{ gainers: MarketTicker[], losers: MarketTicker[] }>({ gainers: [], losers: [] });
 
     useEffect(() => {
-        // Initialize
-        setMovers(getInitialScreenerData());
+        let mounted = true;
+        (async () => {
+            const data = await getInitialScreenerData();
+            if (mounted) setMovers(data);
+        })();
 
         // Live simulation loop
-        const interval = setInterval(() => {
-            setMovers(prev => ({
-                gainers: simulateMarketUpdate(prev.gainers),
-                losers: simulateMarketUpdate(prev.losers)
-            }));
-        }, 2000);
+        const interval = setInterval(async () => {
+            const data = await getInitialScreenerData();
+            if (mounted && data.gainers.length > 0) setMovers(data);
+        }, 15000); // 15 seconds
 
-        return () => clearInterval(interval);
+        return () => {
+            mounted = false;
+            clearInterval(interval);
+        };
     }, []);
 
     const currentList = activeTab === 'gainers' ? movers.gainers : movers.losers;

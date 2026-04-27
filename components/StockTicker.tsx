@@ -6,15 +6,22 @@ const StockTicker: React.FC = () => {
   const [tickers, setTickers] = useState<MarketTicker[]>([]);
 
   useEffect(() => {
-    // Initial data
-    setTickers(getInitialMarketData());
+    let mounted = true;
+    (async () => {
+      const data = await getInitialMarketData();
+      if (mounted) setTickers(data);
+    })();
 
     // Updates
-    const interval = setInterval(() => {
-      setTickers(prev => simulateMarketUpdate(prev));
-    }, 2000);
+    const interval = setInterval(async () => {
+      const data = await getInitialMarketData();
+      if (mounted && data.length > 0) setTickers(data);
+    }, 15000);
 
-    return () => clearInterval(interval);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   // Triple the data to ensure seamless scrolling with the -33.33% translation

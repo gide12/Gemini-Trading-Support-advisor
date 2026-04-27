@@ -97,14 +97,17 @@ const PortfolioView: React.FC = () => {
   const [etfWatchlist, setEtfWatchlist] = useState<string[]>(['SPY', 'QQQ', 'ARKK', 'VOO', 'SMH']);
 
   useEffect(() => {
-    const initial = getInitialHoldings();
-    setHoldings(initial);
-    setHistory(getPortfolioHistory());
-    
-    // Get market indices (filtering for the major ones)
-    const allMarketData = getInitialMarketData();
-    const indices = allMarketData.filter(t => t.symbol.startsWith('^'));
-    setMarketIndices(indices);
+    let mounted = true;
+    (async () => {
+      const initial = await getInitialHoldings();
+      if (mounted) setHoldings(initial);
+      if (mounted) setHistory(getPortfolioHistory());
+      
+      const allMarketData = await getInitialMarketData();
+      const indices = allMarketData.filter(t => t.symbol.startsWith('^') || t.symbol === 'BTC-USD');
+      if (mounted) setMarketIndices(indices);
+    })();
+    return () => { mounted = false };
   }, []);
 
   // Recalculate totals whenever holdings change
