@@ -19,29 +19,25 @@ async function startServer() {
   app.get("/api/market-data", async (req, res) => {
     try {
       const symbols = ["^GSPC", "^DJI", "^IXIC", "^RUT", "BTC-USD", "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "TSLA", "META", "AMD"];
-      const results = await Promise.all(
-        symbols.map(async (symbol) => {
-          try {
-            const quote = await yahooFinance.quote(symbol);
-            if (!quote) return null;
-            return {
-              symbol,
-              name: quote.shortName || quote.longName || symbol,
-              price: quote.regularMarketPrice,
-              change: quote.regularMarketChange,
-              changePercent: quote.regularMarketChangePercent,
-              bid: quote.bid || quote.regularMarketPrice,
-              ask: quote.ask || quote.regularMarketPrice,
-              volume: quote.regularMarketVolume || 0,
-            };
-          } catch (error) {
-            console.error(`Failed to fetch ${symbol}:`, error);
-            return null;
-          }
-        })
-      );
-      res.json(results.filter((r) => r !== null));
+      const quotes = await yahooFinance.quote(symbols);
+      
+      const results = quotes.map((quote) => {
+        if (!quote) return null;
+        return {
+          symbol: quote.symbol,
+          name: quote.shortName || quote.longName || quote.symbol,
+          price: quote.regularMarketPrice,
+          change: quote.regularMarketChange,
+          changePercent: quote.regularMarketChangePercent,
+          bid: quote.bid || quote.regularMarketPrice,
+          ask: quote.ask || quote.regularMarketPrice,
+          volume: quote.regularMarketVolume || 0,
+        };
+      }).filter(r => r !== null);
+      
+      res.json(results);
     } catch (error) {
+      console.error("market-data fetch error:", error);
       res.status(500).json({ error: "Failed to fetch market data" });
     }
   });
@@ -54,26 +50,21 @@ async function startServer() {
         "TSLA", "BA", "LULU", "NKE", "INTC", "RIVN", "LCID", "PTON", "CVNA", "PYPL", "SQ", "SNAP", "Z", "U", "PARA"
       ];
       
-      const results = await Promise.all(
-        symbols.map(async (symbol) => {
-          try {
-            const quote = await yahooFinance.quote(symbol);
-            if (!quote) return null;
-            return {
-              symbol,
-              name: quote.shortName || quote.longName || symbol,
-              price: quote.regularMarketPrice,
-              change: quote.regularMarketChange,
-              changePercent: quote.regularMarketChangePercent,
-              bid: quote.bid || quote.regularMarketPrice,
-              ask: quote.ask || quote.regularMarketPrice,
-              volume: quote.regularMarketVolume || 0,
-            };
-          } catch (error) {
-            return null;
-          }
-        })
-      );
+      const quotes = await yahooFinance.quote(symbols);
+      
+      const results = quotes.map((quote) => {
+        if (!quote) return null;
+        return {
+          symbol: quote.symbol,
+          name: quote.shortName || quote.longName || quote.symbol,
+          price: quote.regularMarketPrice,
+          change: quote.regularMarketChange,
+          changePercent: quote.regularMarketChangePercent,
+          bid: quote.bid || quote.regularMarketPrice,
+          ask: quote.ask || quote.regularMarketPrice,
+          volume: quote.regularMarketVolume || 0,
+        };
+      });
 
       const validResults = results.filter((r) => r !== null && r.changePercent !== undefined) as any[];
       validResults.sort((a, b) => b.changePercent - a.changePercent);
@@ -96,30 +87,30 @@ async function startServer() {
         { ticker: "TSLA", quantity: 100, avgBuyPrice: 220.00 },
       ];
 
-      const results = await Promise.all(
-        portfolio.map(async (pos) => {
-          try {
-            const quote = await yahooFinance.quote(pos.ticker);
-            const currentPrice = quote.regularMarketPrice || pos.avgBuyPrice;
-            const marketValue = currentPrice * pos.quantity;
-            const pl = marketValue - (pos.avgBuyPrice * pos.quantity);
-            const plPercent = ((currentPrice - pos.avgBuyPrice) / pos.avgBuyPrice) * 100;
-            return {
-              ...pos,
-              currentPrice,
-              marketValue,
-              pl,
-              plPercent,
-              mean: 0.01,
-              variance: 0.005,
-              deviation: 0.07,
-              npv: marketValue + 100 // dummy calculation
-            };
-          } catch(err) {
-            return null;
-          }
-        })
-      );
+      const tickers = portfolio.map(p => p.ticker);
+      const quotes = await yahooFinance.quote(tickers);
+
+      const results = quotes.map((quote) => {
+        const pos = portfolio.find(p => p.ticker === quote.symbol);
+        if (!pos || !quote) return null;
+        
+        const currentPrice = quote.regularMarketPrice || pos.avgBuyPrice;
+        const marketValue = currentPrice * pos.quantity;
+        const pl = marketValue - (pos.avgBuyPrice * pos.quantity);
+        const plPercent = ((currentPrice - pos.avgBuyPrice) / pos.avgBuyPrice) * 100;
+        
+        return {
+          ...pos,
+          currentPrice,
+          marketValue,
+          pl,
+          plPercent,
+          mean: 0.01,
+          variance: 0.005,
+          deviation: 0.07,
+          npv: marketValue + 100 // dummy calculation
+        };
+      });
       res.json(results.filter(Boolean));
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch holdings data" });

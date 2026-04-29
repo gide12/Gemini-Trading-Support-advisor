@@ -10,7 +10,8 @@ const NEWS_ITEMS = [
     time: "10m ago",
     impact: "High",
     sentiment: "negative",
-    summary: "Prediction markets have aggressively repriced the Fed's path, with the probability of a 25bps cut in Q2 dropping from 65% to 12% in the last hour."
+    summary: "Prediction markets have aggressively repriced the Fed's path, with the probability of a 25bps cut in Q2 dropping from 65% to 12% in the last hour.",
+    url: "https://www.bloomberg.com",
   },
   {
     id: 2,
@@ -20,7 +21,8 @@ const NEWS_ITEMS = [
     time: "45m ago",
     impact: "Medium",
     sentiment: "positive",
-    summary: "Top-tier multi-strategy funds are deploying significant capital to Hong Kong and Singapore, hunting for alpha in Asian equities as local markets show signs of bottoming."
+    summary: "Top-tier multi-strategy funds are deploying significant capital to Hong Kong and Singapore, hunting for alpha in Asian equities as local markets show signs of bottoming.",
+    url: "https://www.ft.com",
   },
   {
     id: 3,
@@ -30,7 +32,8 @@ const NEWS_ITEMS = [
     time: "2h ago",
     impact: "High",
     sentiment: "neutral",
-    summary: "The Bank of Japan surprised markets with a hawkish tilt, sending USD/JPY tumbling 2% and triggering a global unwind of yen-funded carry trades."
+    summary: "The Bank of Japan surprised markets with a hawkish tilt, sending USD/JPY tumbling 2% and triggering a global unwind of yen-funded carry trades.",
+    url: "https://www.reuters.com",
   },
   {
     id: 4,
@@ -40,7 +43,8 @@ const NEWS_ITEMS = [
     time: "3h ago",
     impact: "High",
     sentiment: "positive",
-    summary: "The semiconductor giant reported record data center revenue, crushing consensus estimates and raising Q3 guidance by $2 billion."
+    summary: "The semiconductor giant reported record data center revenue, crushing consensus estimates and raising Q3 guidance by $2 billion.",
+    url: "https://www.wsj.com",
   },
   {
     id: 5,
@@ -50,7 +54,8 @@ const NEWS_ITEMS = [
     time: "4h ago",
     impact: "Medium",
     sentiment: "negative",
-    summary: "New regulatory framework aims to increase transparency in off-exchange trading venues and standardize reporting for digital asset funds."
+    summary: "New regulatory framework aims to increase transparency in off-exchange trading venues and standardize reporting for digital asset funds.",
+    url: "https://www.sec.gov",
   },
   {
     id: 6,
@@ -60,7 +65,8 @@ const NEWS_ITEMS = [
     time: "5h ago",
     impact: "Medium",
     sentiment: "neutral",
-    summary: "Trading volume on political outcome contracts hits record highs as polls narrow, with institutional hedging activity detected."
+    summary: "Trading volume on political outcome contracts hits record highs as polls narrow, with institutional hedging activity detected.",
+    url: "https://polymarket.com",
   },
   {
     id: 7,
@@ -70,7 +76,8 @@ const NEWS_ITEMS = [
     time: "1h ago",
     impact: "High",
     sentiment: "positive",
-    summary: "The Euro surged past the 1.1000 level against the dollar following comments from ECB officials suggesting a pause in the current easing cycle."
+    summary: "The Euro surged past the 1.1000 level against the dollar following comments from ECB officials suggesting a pause in the current easing cycle.",
+    url: "https://www.forexlive.com",
   }
 ];
 
@@ -95,7 +102,10 @@ const NewsFrontView: React.FC = () => {
       {/* Top Section: Featured Story */}
       <div className="grid grid-cols-1 gap-6">
         {/* Featured Story */}
-        <div className="bg-gradient-to-br from-[#0f172a] to-[#0B1221] rounded-xl border border-cyan-500/30 p-6 shadow-lg relative overflow-hidden group cursor-pointer">
+        <div 
+          className="bg-gradient-to-br from-[#0f172a] to-[#0B1221] rounded-xl border border-cyan-500/30 p-6 shadow-lg relative overflow-hidden group cursor-pointer"
+          onClick={() => window.open(NEWS_ITEMS[0].url, '_blank')}
+        >
           <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
           
           <div className="flex items-center gap-2 mb-4">
@@ -128,7 +138,11 @@ const NewsFrontView: React.FC = () => {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {NEWS_ITEMS.slice(1).map((news) => (
-            <div key={news.id} className="bg-[#0f172a] rounded-xl border border-slate-800 p-5 shadow-lg hover:border-cyan-500/30 transition-colors cursor-pointer flex flex-col h-full group">
+            <div 
+              key={news.id} 
+              className="bg-[#0f172a] rounded-xl border border-slate-800 p-5 shadow-lg hover:border-cyan-500/30 transition-colors cursor-pointer flex flex-col h-full group"
+              onClick={() => window.open(news.url, '_blank')}
+            >
               <div className="flex items-center justify-between mb-3">
                 <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded border ${
                   news.category === 'HEDGE FUND' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :

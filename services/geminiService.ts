@@ -21,7 +21,9 @@ import {
   ETFProfile,
   CAPMAPTResult,
   OptionsExpertAnalysisData,
-  FundamentalAnalysisData
+  FundamentalAnalysisData,
+  UserProfile,
+  PortfolioPlanResult
 } from "../types";
 
 const modelName = "gemini-3-flash-preview";
@@ -262,7 +264,7 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
         const response = await ai.models.generateContent({
             model: modelName,
             contents: `Search for the latest financial news regarding ${ticker}. Focus specifically on major publishers like Bloomberg, Financial Times, Wall Street Journal, and Yahoo Finance. 
-            Return a detailed summary and a structured list of at least 5 news items.`,
+            Return a detailed summary and a structured list of at least 5 news items. Make sure the 'url' field contains the direct link to the original article on the publisher's website, NOT a Google Search link.`,
             config: { 
                 tools: [{ googleSearch: {} }],
                 responseMimeType: "application/json",

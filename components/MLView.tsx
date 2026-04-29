@@ -349,51 +349,66 @@ const MLView: React.FC = () => {
                      </div>
                 </div>
 
-                <div className="md:col-span-2 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
-                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">Performance Metrics</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                        <div>
-                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 border-b border-purple-500/20 pb-1">Validation Set Statistics</h4>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
-                                    <div className="text-[10px] text-slate-400 uppercase">Accuracy (AR)</div>
-                                    <div className="text-xl font-mono text-white font-bold">{((result.evaluationMetrics?.accuracy || 0) * 100).toFixed(1)}%</div>
-                                </div>
-                                <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
-                                    <div className="text-[10px] text-slate-400 uppercase">F1-Score</div>
-                                    <div className="text-xl font-mono text-cyan-300 font-bold">{(result.evaluationMetrics?.f1Score || 0).toFixed(2)}</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div>
-                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 border-b border-purple-500/20 pb-1">Backtest Returns</h4>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
-                                    <div className="text-[10px] text-slate-400 uppercase">Annualized</div>
-                                    <div className={`text-xl font-mono font-bold ${(result.tradingMetrics?.annualizedReturn || 0) > 0 ? 'text-green-400' : 'text-red-400'}`}>{((result.tradingMetrics?.annualizedReturn || 0) * 100).toFixed(1)}%</div>
-                                </div>
-                                <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
-                                    <div className="text-[10px] text-slate-400 uppercase">Sharpe</div>
-                                    <div className="text-xl font-mono text-purple-300 font-bold">{(result.tradingMetrics?.sharpeRatio || 0).toFixed(2)}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div className="md:col-span-2 bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg flex flex-col h-full overflow-y-auto custom-scrollbar">
+                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">Model Architecture Analytics</h3>
+                    
                     <div>
+                        <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 border-b border-purple-500/20 pb-1">Performance Metrics</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                <div className="text-[10px] text-slate-400 uppercase">Accuracy (AR)</div>
+                                <div className="text-xl font-mono text-white font-bold">{((result.evaluationMetrics?.accuracy || 0) * 100).toFixed(1)}%</div>
+                            </div>
+                            <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                <div className="text-[10px] text-slate-400 uppercase">F1-Score</div>
+                                <div className="text-xl font-mono text-cyan-300 font-bold">{(result.evaluationMetrics?.f1Score || 0).toFixed(2)}</div>
+                            </div>
+                            <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                <div className="text-[10px] text-slate-400 uppercase">Annualized</div>
+                                <div className={`text-xl font-mono font-bold ${(result.tradingMetrics?.annualizedReturn || 0) > 0 ? 'text-green-400' : 'text-red-400'}`}>{((result.tradingMetrics?.annualizedReturn || 0) * 100).toFixed(1)}%</div>
+                            </div>
+                            <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                <div className="text-[10px] text-slate-400 uppercase">Sharpe</div>
+                                <div className="text-xl font-mono text-purple-300 font-bold">{(result.tradingMetrics?.sharpeRatio || 0).toFixed(2)}</div>
+                            </div>
+                        </div>
+
                         <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 border-b border-purple-500/20 pb-1">Error Metrics</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="bg-[#1e293b] p-4 rounded border border-purple-500/10">
-                                <div className="text-[10px] text-slate-400 uppercase mb-1">Mean Squared Error (MSE)</div>
-                                <div className="text-2xl font-mono text-rose-300 font-bold">{(result.performanceMetrics?.mse || 0).toFixed(4)}</div>
+                        <div className="grid grid-cols-3 gap-4 mb-8">
+                            <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                <div className="text-[10px] text-slate-400 uppercase mb-1">MSE</div>
+                                <div className="text-lg font-mono text-rose-300 font-bold">{(result.performanceMetrics?.mse || 0).toFixed(4)}</div>
                             </div>
-                            <div className="bg-[#1e293b] p-4 rounded border border-purple-500/10">
-                                <div className="text-[10px] text-slate-400 uppercase mb-1">Mean Absolute Error (MAE)</div>
-                                <div className="text-2xl font-mono text-rose-300 font-bold">{(result.performanceMetrics?.mae || 0).toFixed(4)}</div>
+                            <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                <div className="text-[10px] text-slate-400 uppercase mb-1">MAE</div>
+                                <div className="text-lg font-mono text-rose-300 font-bold">{(result.performanceMetrics?.mae || 0).toFixed(4)}</div>
                             </div>
-                            <div className="bg-[#1e293b] p-4 rounded border border-purple-500/10">
-                                <div className="text-[10px] text-slate-400 uppercase mb-1">Root Mean Squared Error (RMSE)</div>
-                                <div className="text-2xl font-mono text-rose-300 font-bold">{(result.performanceMetrics?.rmse || 0).toFixed(4)}</div>
+                            <div className="bg-[#1e293b] p-3 rounded border border-purple-500/10">
+                                <div className="text-[10px] text-slate-400 uppercase mb-1">RMSE</div>
+                                <div className="text-lg font-mono text-rose-300 font-bold">{(result.performanceMetrics?.rmse || 0).toFixed(4)}</div>
                             </div>
+                        </div>
+
+                        <h4 className="text-xs font-bold text-slate-500 uppercase mb-4 border-b border-purple-500/20 pb-1">
+                            LIME Algorithmic Feature Explanations
+                        </h4>
+                        <div className="space-y-4">
+                            {result.featureImportance?.length > 0 ? result.featureImportance.map((f, i) => (
+                                <div key={i} className="flex items-center justify-between text-sm">
+                                    <span className="text-slate-300 w-1/3 truncate pr-2">{f.feature}</span>
+                                    <div className="flex items-center w-2/3">
+                                        <div className="h-2 rounded bg-slate-700 w-full overflow-hidden">
+                                            <div 
+                                                className="h-full bg-gradient-to-r from-purple-500 to-cyan-400" 
+                                                style={{ width: `${Math.min(100, Math.max(0, f.score * 100))}%` }}
+                                            />
+                                        </div>
+                                        <span className="ml-3 font-mono text-cyan-400 w-12 text-right text-xs">{(f.score * 100).toFixed(0)}%</span>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="text-slate-500 text-sm italic">LIME analysis not generated for this model.</div>
+                            )}
                         </div>
                     </div>
                 </div>
