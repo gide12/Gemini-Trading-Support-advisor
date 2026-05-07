@@ -23,7 +23,8 @@ import {
   OptionsExpertAnalysisData,
   FundamentalAnalysisData,
   UserProfile,
-  PortfolioPlanResult
+  PortfolioPlanResult,
+  GovDatabaseResult
 } from "../types";
 
 const modelName = "gemini-3-flash-preview";
@@ -1041,3 +1042,42 @@ Respond STRICTLY with a JSON object matching this structure:
 
     return cleanAndParseJSON(response.text);
 };
+
+export async function fetchGovDatabase(ticker: string): Promise<GovDatabaseResult> {
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const prompt = `Search for the latest data from US Government and Regulatory databases regarding ${ticker}.
+Include information from:
+1. SEC Form 13F (Institutional Holdings)
+2. SEC N-PORT (Mutual Fund Holdings)
+3. SEC Schedule 13D/G (Beneficial Ownership)
+4. SEC Form 4 (Insider Trading)
+5. CFTC Commitments of Traders (COT) report (if applicable)
+6. USAspending.gov (Government contracts)
+7. Treasury TIC (Treasury International Capital) data
+
+Provide a detailed summary and specific insights extracted from each database. If a database is not directly applicable to the specific ticker (e.g. COT for an individual stock), provide a brief explanation or related proxy data.
+
+Respond STRICTLY with a JSON object matching this structure:
+{
+  "sec13F": "Institutional ownership trends, major buyers/sellers from recent 13F filings.",
+  "secNPort": "Mutual fund exposure and shifts based on N-PORT data.",
+  "sec13DG": "Activist blocks or >5% ownership stakes from 13D/13G filings.",
+  "secForm4": "Recent insider buying or selling patterns.",
+  "cftcCot": "Relevant futures positioning or macro context.",
+  "usASpending": "Relevant government contracts or grants.",
+  "treasuryTic": "Foreign investment flows or macro context.",
+  "summary": "Overall synthesis of what government and regulatory data reveals about the asset."
+}`;
+    
+  const response = await ai.models.generateContent({
+      model: modelName,
+      contents: prompt,
+      config: { 
+          tools: [{ googleSearch: {} }],
+          responseMimeType: "application/json" 
+      }
+  });
+
+  return cleanAndParseJSON(response.text);
+}
+

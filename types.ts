@@ -14,10 +14,11 @@ export enum AnalysisType {
   BrokerIntel = "Broker Intelligence",
   SmartMoney = "Smart Money AI",
   MarineTraffic = "Marine Traffic Intelligence",
-  BISReport = "BIS Macro Report"
+  BISReport = "BIS Macro Report",
+  GovDatabase = "GOV Database"
 }
 
-export type View = 'news' | 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum' | 'hedge_fund' | 'monitoring' | 'sec_report' | 'marine_traffic' | 'bis_report' | 'planner';
+export type View = 'news' | 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum' | 'hedge_fund' | 'monitoring' | 'sec_report' | 'marine_traffic' | 'bis_report' | 'planner' | 'gov_db';
 
 export interface UserProfile {
     riskTolerance: "Conservative" | "Moderate" | "Aggressive";
@@ -691,4 +692,15 @@ export interface BISReportData {
   };
   keyTakeaways: string[];
   executiveSummary: string;
+}
+
+export interface GovDatabaseResult {
+  sec13F: string;
+  secNPort: string;
+  sec13DG: string;
+  secForm4: string;
+  cftcCot: string;
+  usASpending: string;
+  treasuryTic: string;
+  summary: string;
 }
