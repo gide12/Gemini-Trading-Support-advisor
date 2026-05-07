@@ -102,9 +102,11 @@ const NewsFrontView: React.FC = () => {
       {/* Top Section: Featured Story */}
       <div className="grid grid-cols-1 gap-6">
         {/* Featured Story */}
-        <div 
-          className="bg-gradient-to-br from-[#0f172a] to-[#0B1221] rounded-xl border border-cyan-500/30 p-6 shadow-lg relative overflow-hidden group cursor-pointer"
-          onClick={() => window.open(NEWS_ITEMS[0].url, '_blank')}
+        <a 
+          href={NEWS_ITEMS[0].url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-gradient-to-br from-[#0f172a] to-[#0B1221] rounded-xl border border-cyan-500/30 p-6 shadow-lg relative overflow-hidden group cursor-pointer block"
         >
           <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
           
@@ -127,7 +129,7 @@ const NewsFrontView: React.FC = () => {
           <div className="flex items-center gap-2 text-cyan-400 text-sm font-bold uppercase tracking-wider group-hover:translate-x-1 transition-transform">
             Read Full Analysis <ArrowRight className="w-4 h-4" />
           </div>
-        </div>
+        </a>
       </div>
 
       {/* News Feed Grid */}
@@ -138,10 +140,12 @@ const NewsFrontView: React.FC = () => {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {NEWS_ITEMS.slice(1).map((news) => (
-            <div 
+            <a 
               key={news.id} 
+              href={news.url}
+              target="_blank"
+              rel="noopener noreferrer"
               className="bg-[#0f172a] rounded-xl border border-slate-800 p-5 shadow-lg hover:border-cyan-500/30 transition-colors cursor-pointer flex flex-col h-full group"
-              onClick={() => window.open(news.url, '_blank')}
             >
               <div className="flex items-center justify-between mb-3">
                 <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded border ${
@@ -172,7 +176,7 @@ const NewsFrontView: React.FC = () => {
                   {news.sentiment === 'neutral' && <Activity className="w-3 h-3 text-slate-400" />}
                 </div>
               </div>
-            </div>
+            </a>
           ))}
         </div>
       </div>

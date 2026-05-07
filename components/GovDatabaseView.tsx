@@ -2,12 +2,23 @@ import React, { useState } from "react";
 import { fetchGovDatabase } from "../services/geminiService";
 import { GovDatabaseResult } from "../types";
 import { Landmark, FileText, Globe, DollarSign, Activity, FileCheck, Shield, ChevronRight, ExternalLink, Search } from "lucide-react";
+import Markdown from "react-markdown";
 
 const GovDatabaseView: React.FC = () => {
   const [ticker, setTicker] = useState("");
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<GovDatabaseResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const renderSafeString = (val: any) => {
+    if (!val) return "Data not available.";
+    const text = typeof val === 'string' ? val : JSON.stringify(val);
+    return (
+      <div className="markdown-body prose prose-invert max-w-none prose-sm text-slate-300 prose-a:text-blue-400 prose-strong:text-white">
+        <Markdown>{text}</Markdown>
+      </div>
+    );
+  };
 
   const handleFetch = async () => {
     if (!ticker) return;
@@ -90,7 +101,7 @@ const GovDatabaseView: React.FC = () => {
               <Activity className="w-5 h-5" />
               Intelligence Synthesis
             </h3>
-            <p className="text-slate-200 text-base leading-relaxed">{data.summary}</p>
+            <div className="text-slate-200 text-base leading-relaxed">{renderSafeString(data.summary)}</div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -112,7 +123,7 @@ const GovDatabaseView: React.FC = () => {
                     <span>13F - Institutional Holdings</span>
                     <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                   </h4>
-                  <p className="text-sm text-slate-300 leading-relaxed">{data.sec13F}</p>
+                  <div className="text-sm text-slate-300 leading-relaxed">{renderSafeString(data.sec13F)}</div>
                 </div>
                 
                 <div className="bg-[#1e293b]/60 hover:bg-[#1e293b] p-5 rounded-xl border border-slate-700/50 transition-colors group">
@@ -120,7 +131,7 @@ const GovDatabaseView: React.FC = () => {
                     <span>N-PORT - Mutual Fund Exposure</span>
                     <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                   </h4>
-                  <p className="text-sm text-slate-300 leading-relaxed">{data.secNPort}</p>
+                  <div className="text-sm text-slate-300 leading-relaxed">{renderSafeString(data.secNPort)}</div>
                 </div>
 
                 <div className="bg-[#1e293b]/60 hover:bg-[#1e293b] p-5 rounded-xl border border-slate-700/50 transition-colors group">
@@ -128,7 +139,7 @@ const GovDatabaseView: React.FC = () => {
                     <span>13D/G - Beneficial Ownership</span>
                     <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                   </h4>
-                  <p className="text-sm text-slate-300 leading-relaxed">{data.sec13DG}</p>
+                  <div className="text-sm text-slate-300 leading-relaxed">{renderSafeString(data.sec13DG)}</div>
                 </div>
 
                 <div className="bg-[#1e293b]/60 hover:bg-[#1e293b] p-5 rounded-xl border border-slate-700/50 transition-colors group">
@@ -136,7 +147,7 @@ const GovDatabaseView: React.FC = () => {
                     <span>Form 4 - Insider Trading</span>
                     <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                   </h4>
-                  <p className="text-sm text-slate-300 leading-relaxed">{data.secForm4}</p>
+                  <div className="text-sm text-slate-300 leading-relaxed">{renderSafeString(data.secForm4)}</div>
                 </div>
               </div>
             </div>
@@ -164,7 +175,7 @@ const GovDatabaseView: React.FC = () => {
                             Search DB <ExternalLink className="w-3 h-3" />
                         </a>
                       </div>
-                      <p className="text-sm text-slate-300 leading-relaxed">{data.usASpending}</p>
+                      <div className="text-sm text-slate-300 leading-relaxed">{renderSafeString(data.usASpending)}</div>
                   </div>
                 </div>
 
@@ -177,7 +188,7 @@ const GovDatabaseView: React.FC = () => {
                         <span>CFTC COT Report</span>
                         <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                       </h4>
-                      <p className="text-sm text-slate-300 leading-relaxed">{data.cftcCot}</p>
+                      <div className="text-sm text-slate-300 leading-relaxed">{renderSafeString(data.cftcCot)}</div>
                   </div>
                 </div>
 
@@ -194,7 +205,7 @@ const GovDatabaseView: React.FC = () => {
                             Portal <ExternalLink className="w-3 h-3" />
                           </a>
                       </div>
-                      <p className="text-sm text-slate-300 leading-relaxed">{data.treasuryTic}</p>
+                      <div className="text-sm text-slate-300 leading-relaxed">{renderSafeString(data.treasuryTic)}</div>
                   </div>
                 </div>
               </div>

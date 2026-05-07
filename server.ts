@@ -3,6 +3,9 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import YahooFinance from "yahoo-finance2";
+import dns from "node:dns";
+
+dns.setDefaultResultOrder("ipv4first");
 
 const yahooFinance = new YahooFinance();
 

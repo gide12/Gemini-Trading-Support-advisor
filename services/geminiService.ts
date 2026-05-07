@@ -822,7 +822,19 @@ export const getETFProfile = async (ticker: string): Promise<ETFProfile> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const response = await ai.models.generateContent({
       model: modelName,
-      contents: `ETF holdings for ${ticker}. JSON.`,
+      contents: `Provide ETF profile for ${ticker}. 
+      Respond STRICTLY as JSON with the following structure:
+      {
+        "ticker": "string",
+        "name": "string",
+        "topHoldings": [
+          {
+            "ticker": "string",
+            "name": "string",
+            "weight": 0.0 // percentage weight (e.g. 5.5 for 5.5%)
+          }
+        ]
+      }`,
       config: { responseMimeType: "application/json" }
   });
   return cleanAndParseJSON(response.text);
@@ -1057,16 +1069,16 @@ Include information from:
 
 Provide a detailed summary and specific insights extracted from each database. If a database is not directly applicable to the specific ticker (e.g. COT for an individual stock), provide a brief explanation or related proxy data.
 
-Respond STRICTLY with a JSON object matching this structure:
+Respond STRICTLY with a JSON object matching this structure, where each string value MUST BE formatted in rich Markdown (use bolding, bullet points, headers, or tables internally where it makes sense to organize the data):
 {
-  "sec13F": "Institutional ownership trends, major buyers/sellers from recent 13F filings.",
-  "secNPort": "Mutual fund exposure and shifts based on N-PORT data.",
-  "sec13DG": "Activist blocks or >5% ownership stakes from 13D/13G filings.",
-  "secForm4": "Recent insider buying or selling patterns.",
-  "cftcCot": "Relevant futures positioning or macro context.",
-  "usASpending": "Relevant government contracts or grants.",
-  "treasuryTic": "Foreign investment flows or macro context.",
-  "summary": "Overall synthesis of what government and regulatory data reveals about the asset."
+  "sec13F": "Institutional ownership trends, major buyers/sellers (markdown format).",
+  "secNPort": "Mutual fund exposure and shifts (markdown format).",
+  "sec13DG": "Activist blocks or >5% ownership stakes (markdown format).",
+  "secForm4": "Recent insider buying or selling patterns (markdown format).",
+  "cftcCot": "Relevant futures positioning or macro context (markdown format).",
+  "usASpending": "Relevant government contracts or grants (markdown format).",
+  "treasuryTic": "Foreign investment flows or macro context (markdown format).",
+  "summary": "Overall synthesis of what government and regulatory data reveals about the asset (markdown format)."
 }`;
     
   const response = await ai.models.generateContent({

@@ -5,7 +5,8 @@ import { getInitialHoldings, getPortfolioHistory, getInitialMarketData } from ".
 import { runMPTAnalysis, getETFProfile, runHedgeAnalysis, runAdvancedPricingAnalysis, runCAPMAPTAnalysis } from "../services/geminiService";
 import { 
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    ComposedChart, Line, Scatter, ScatterChart, ZAxis, Cell, BarChart, Bar, Legend
+    ComposedChart, Line, Scatter, ScatterChart, ZAxis, Cell, BarChart, Bar, Legend,
+    PieChart, Pie
 } from 'recharts';
 
 const AssetIcon = ({ ticker }: { ticker: string }) => {
@@ -95,6 +96,8 @@ const PortfolioView: React.FC = () => {
   const [etfLoading, setEtfLoading] = useState(false);
   const [etfResult, setEtfResult] = useState<ETFProfile | null>(null);
   const [etfWatchlist, setEtfWatchlist] = useState<string[]>(['SPY', 'QQQ', 'ARKK', 'VOO', 'SMH']);
+
+  const [activeTab, setActiveTab] = useState<'overview' | 'holdings' | 'quant'>('overview');
 
   useEffect(() => {
     let mounted = true;
@@ -392,63 +395,119 @@ const PortfolioView: React.FC = () => {
       }
   };
 
+  const allocationData = holdings.map(h => ({ name: h.ticker, value: h.marketValue }));
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#ec4899', '#06b6d4', '#6366f1'];
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">
-      {/* Portfolio Overview Card */}
-      <div className="lg:col-span-2 space-y-6">
-        <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
-             <div className="flex-1">
-                <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-green-400">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 7.756a4.5 4.5 0 100 8.488M7.5 10.5h5.25m-5.25 3h5.25M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Total Portfolio Value
-                </h2>
-                <div className="text-4xl font-bold text-white">
-                    ${(totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-             </div>
-             
-             <div className="bg-[#1e293b]/50 border border-purple-500/20 rounded-lg p-3 min-w-[200px]">
-                <h3 className="text-xs font-bold text-slate-400 uppercase mb-1">Portfolio Net Gain</h3>
-                <div className={`text-2xl font-bold font-mono ${totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {totalPL >= 0 ? '+' : ''}{(totalPL || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </div>
-                <div className="w-full bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
-                    <div 
-                        className={`h-full ${totalPL >= 0 ? 'bg-green-500' : 'bg-red-500'}`} 
-                        style={{width: `${Math.min(Math.abs((totalPL/totalValue)*100) * 5, 100)}%`}}
-                    ></div>
-                </div>
-                <div className="text-[10px] text-slate-500 mt-1 text-right">
-                    Net Impact: {totalValue > 0 ? ((totalPL/totalValue)*100).toFixed(2) : 0}%
-                </div>
-             </div>
-          </div>
-          
-          <div className="h-[300px] w-full">
-             <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={history}>
-                  <defs>
-                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                  <XAxis dataKey="date" stroke="#64748b" tick={{fontSize: 10}} tickFormatter={(val) => val.slice(5)} />
-                  <YAxis stroke="#64748b" tick={{fontSize: 10}} domain={['auto', 'auto']} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#7e22ce' }}
-                    itemStyle={{ color: '#a855f7' }}
-                  />
-                  <Area type="monotone" dataKey="value" stroke="#a855f7" fillOpacity={1} fill="url(#colorValue)" />
-                </AreaChart>
-             </ResponsiveContainer>
-          </div>
+    <div className="space-y-6 fade-in">
+        {/* Robo Advisor Navigation Header */}
+        <div className="flex flex-wrap gap-2 bg-[#0f172a]/80 backdrop-blur-md rounded-xl p-2 border border-slate-800 shadow-xl w-full max-w-3xl">
+            <button onClick={() => setActiveTab('overview')} className={`flex-1 min-w-[150px] px-6 py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${activeTab === 'overview' ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-900/20 border border-blue-400/30' : 'text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent'}`}>Advisor Dashboard</button>
+            <button onClick={() => setActiveTab('holdings')} className={`flex-1 min-w-[150px] px-6 py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${activeTab === 'holdings' ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-lg shadow-emerald-900/20 border border-emerald-400/30' : 'text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent'}`}>Assets & Setup</button>
+            <button onClick={() => setActiveTab('quant')} className={`flex-1 min-w-[150px] px-6 py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${activeTab === 'quant' ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-lg shadow-purple-900/20 border border-purple-400/30' : 'text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent'}`}>Advanced Quant</button>
         </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">
+          {activeTab === 'overview' && (
+            <div className="lg:col-span-3 space-y-6">
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    {/* Main Chart */}
+                    <div className="xl:col-span-2 bg-gradient-to-br from-[#0f172a] to-[#0b1221] rounded-2xl border border-slate-700/50 p-6 shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4 relative z-10">
+                            <div className="flex-1">
+                                <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                    Total Portfolio Balance
+                                </h2>
+                                <div className="text-5xl font-black text-white tracking-tight">
+                                    ${(totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+                            </div>
+                            
+                            <div className="bg-[#1e293b]/50 border border-slate-600/30 rounded-xl p-4 min-w-[220px] backdrop-blur-sm">
+                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Net Return</h3>
+                                <div className={`text-3xl font-black font-mono tracking-tight ${totalPL >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                    {totalPL >= 0 ? '+' : ''}{(totalPL || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                </div>
+                                <div className="text-xs text-slate-400 mt-2 font-medium">
+                                    {totalValue > 0 ? ((totalPL/totalValue)*100).toFixed(2) : 0}% All time
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="h-[350px] w-full mt-8 relative z-10">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={history}>
+                                <defs>
+                                    <linearGradient id="colorValueBlue" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                                <XAxis dataKey="date" stroke="#64748b" tick={{fontSize: 10}} tickFormatter={(val) => val.slice(5)} />
+                                <YAxis stroke="#64748b" tick={{fontSize: 10}} domain={['auto', 'auto']} tickFormatter={(val) => `$${val/1000}k`} />
+                                <Tooltip 
+                                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#3b82f6', borderRadius: '8px' }}
+                                    itemStyle={{ color: '#60a5fa', fontWeight: 'bold' }}
+                                />
+                                <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorValueBlue)" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Allocation Donut */}
+                    <div className="bg-[#0f172a] rounded-2xl border border-slate-700/50 p-6 shadow-xl flex flex-col">
+                        <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-6">Asset Allocation</h3>
+                        <div className="flex-1 min-h-[250px] w-full relative">
+                            {holdings.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={allocationData}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={100}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                            stroke="none"
+                                        >
+                                            {allocationData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip 
+                                            formatter={(value: number) => `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                                            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px' }}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <p className="text-sm text-slate-500 uppercase tracking-widest font-bold">No assets found</p>
+                                </div>
+                            )}
+                        </div>
+                        <div className="mt-4 grid grid-cols-2 gap-2 max-h-[150px] overflow-y-auto custom-scrollbar">
+                            {holdings.map((h, i) => (
+                                <div key={h.ticker} className="flex items-center gap-2 p-2 bg-slate-900/50 rounded-lg">
+                                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-xs font-bold text-white truncate">{h.ticker}</div>
+                                        <div className="text-[10px] text-slate-400">{(h.marketValue/totalValue * 100).toFixed(1)}%</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+          )}
+
+          {activeTab === 'quant' && (
+             <div className="lg:col-span-3 space-y-6">
         {/* Portfolio Hedging & Risk Diagnostics */}
         <div className="bg-[#0f172a] rounded-xl border border-pink-500/30 p-6 shadow-lg shadow-pink-900/10">
             <div className="flex justify-between items-center mb-6">
@@ -536,11 +595,11 @@ const PortfolioView: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5 text-[11px]">
-                                {hedgeResult.exposures.map((ex, i) => (
+                                {hedgeResult.exposures?.map((ex, i) => (
                                     <tr key={i} className="hover:bg-pink-500/5 transition-colors">
                                         <td className="px-6 py-3 font-bold text-white uppercase">{ex.asset}</td>
-                                        <td className="px-6 py-3 text-right text-slate-400 font-mono">${ex.grossExposure.toLocaleString()}</td>
-                                        <td className="px-6 py-3 text-right text-white font-mono font-bold">${ex.netExposure.toLocaleString()}</td>
+                                        <td className="px-6 py-3 text-right text-slate-400 font-mono">${ex.grossExposure?.toLocaleString()}</td>
+                                        <td className="px-6 py-3 text-right text-white font-mono font-bold">${ex.netExposure?.toLocaleString()}</td>
                                         <td className="px-6 py-3 text-center">
                                             <div className="flex items-center justify-center gap-2">
                                                 <div className="w-12 h-1.5 bg-slate-800 rounded-full overflow-hidden">
@@ -549,7 +608,7 @@ const PortfolioView: React.FC = () => {
                                                 <span className="font-mono text-slate-400">{ex.hedgingCoverage}%</span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-3 text-right text-rose-400 font-mono">-${ex.costOfHedge.toFixed(2)}</td>
+                                        <td className="px-6 py-3 text-right text-rose-400 font-mono">-${ex.costOfHedge?.toFixed(2)}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -567,7 +626,7 @@ const PortfolioView: React.FC = () => {
                         </div>
                         <div className="space-y-3">
                             <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Actionable Optimization Insights</h4>
-                            {hedgeResult.recommendations.map((rec, i) => (
+                            {hedgeResult.recommendations?.map((rec, i) => (
                                 <div key={i} className="bg-[#131b2e] border border-white/5 p-4 rounded-xl flex gap-4 items-start group hover:border-pink-500/30 transition-all">
                                     <div className={`mt-1 text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${rec.priority === 'High' ? 'bg-rose-500 text-white' : 'bg-slate-800 text-slate-500'}`}>
                                         {rec.priority}
@@ -903,6 +962,67 @@ const PortfolioView: React.FC = () => {
                 </div>
             )}
         </div>
+        </div>
+      )}
+
+      {activeTab === 'holdings' && (
+        <div className="lg:col-span-3 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Left col: Add Asset Form */}
+                <div className="lg:col-span-1 space-y-6">
+                    <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg shadow-purple-900/10">
+                        <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                            <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                            Asset Setup
+                        </h3>
+                        <form onSubmit={handleAddOrUpdate} className="space-y-4">
+                            <div>
+                                <label className="block text-xs text-slate-400 mb-1 uppercase font-bold tracking-wider">Ticker Symbol</label>
+                                <input 
+                                    type="text" 
+                                    value={tickerInput}
+                                    onChange={(e) => setTickerInput(e.target.value.toUpperCase())}
+                                    placeholder="e.g. AAPL"
+                                    className="w-full bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-purple-500 outline-none uppercase font-mono text-sm transition-colors"
+                                    required
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-slate-400 mb-1 uppercase font-bold tracking-wider">Shares / Qty</label>
+                                    <input 
+                                        type="number" 
+                                        value={sharesInput}
+                                        onChange={(e) => setSharesInput(e.target.value)}
+                                        placeholder="0.00"
+                                        step="0.01"
+                                        className="w-full bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-purple-500 outline-none font-mono text-sm transition-colors"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-slate-400 mb-1 uppercase font-bold tracking-wider">Avg Cost</label>
+                                    <input 
+                                        type="number" 
+                                        value={costInput}
+                                        onChange={(e) => setCostInput(e.target.value)}
+                                        placeholder="0.00"
+                                        step="0.01"
+                                        className="w-full bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-purple-500 outline-none font-mono text-sm transition-colors"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <button type="submit" className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded transition-colors text-sm shadow-lg shadow-purple-900/40 uppercase tracking-widest mt-4">
+                                Add / Update Position
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                {/* Right col: Table and other settings */}
+                <div className="lg:col-span-2 space-y-6">
 
         {/* Holdings Table */}
         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 overflow-hidden shadow-lg">
@@ -992,9 +1112,10 @@ const PortfolioView: React.FC = () => {
             </div>
         </div>
       </div>
+    </div>
 
-      <div className="space-y-6">
-         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
+    <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
+         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg flex flex-col">
              <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-400">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3 3l-3 3" />
@@ -1016,11 +1137,49 @@ const PortfolioView: React.FC = () => {
                      </button>
                  </div>
              </form>
+             {etfResult && (
+                <div className="mt-4 bg-slate-900/50 rounded-xl p-4 border border-purple-500/20 flex-1">
+                    <h4 className="text-white font-bold text-sm mb-2">{etfResult.ticker} - {etfResult.name}</h4>
+                    <div className="space-y-2 mb-4 max-h-32 overflow-y-auto custom-scrollbar">
+                        {etfResult.topHoldings?.map((h, i) => (
+                            <div key={i} className="flex justify-between items-center text-xs text-slate-300">
+                                <span>{h.ticker} <span className="text-slate-500 ml-1 truncate max-w-[100px] inline-block align-bottom">{h.name}</span></span>
+                                <span>{h.weight?.toFixed(2)}%</span>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                         <div className="flex gap-2 items-center">
+                            <span className="text-xs text-slate-400 w-16">Capital $</span>
+                            <input 
+                                type="number" 
+                                value={etfCapital}
+                                onChange={(e) => setEtfCapital(e.target.value)}
+                                min="1000"
+                                className="flex-1 bg-[#1e293b] border border-slate-700 rounded px-2 py-1.5 text-white focus:border-purple-500 outline-none text-xs"
+                            />
+                        </div>
+                        <div className="flex gap-2 items-center">
+                            <span className="text-xs text-slate-400 w-16">Leverage X</span>
+                            <input 
+                                type="number" 
+                                value={etfLeverage}
+                                onChange={(e) => setEtfLeverage(e.target.value)}
+                                min="1" max="5" step="0.5"
+                                className="flex-1 bg-[#1e293b] border border-slate-700 rounded px-2 py-1.5 text-white focus:border-purple-500 outline-none text-xs"
+                            />
+                        </div>
+                        <button onClick={handleAdoptETF} className="mt-2 w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded text-xs transition-colors tracking-widest uppercase shadow-lg shadow-purple-900/20 mt-auto">
+                            Replicate & Overwrite Portfolio
+                        </button>
+                    </div>
+                </div>
+             )}
          </div>
 
-         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
+         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg flex flex-col">
             <h3 className="text-lg font-semibold text-white mb-4">Allocation</h3>
-            <div className="space-y-4">
+            <div className="space-y-4 flex-1">
                 {holdings.length === 0 && <p className="text-sm text-slate-500">No assets to display.</p>}
                 {holdings.map((h) => (
                     <div key={h.ticker}>
@@ -1036,9 +1195,9 @@ const PortfolioView: React.FC = () => {
             </div>
          </div>
 
-         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg">
+         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg flex flex-col">
             <h3 className="text-lg font-semibold text-white mb-4">Stock Market Index</h3>
-            <div className="space-y-4">
+            <div className="space-y-4 flex-1">
                 {marketIndices.map((index) => (
                     <div key={index.symbol} className="flex justify-between items-center border-b border-slate-800 pb-2 last:border-0 last:pb-0">
                         <div>
@@ -1055,6 +1214,9 @@ const PortfolioView: React.FC = () => {
                 ))}
             </div>
          </div>
+      </div>
+  </div>
+)}
       </div>
     </div>
   );
