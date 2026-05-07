@@ -33,7 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onGoHome }
         { id: 'sec_report', label: 'SEC Report', icon: <FileText className="w-4 h-4" /> },
         { id: 'bis_report', label: 'BIS Report', icon: <Landmark className="w-4 h-4" /> },
         { id: 'gov_db', label: 'GOV Database', icon: <Landmark className="w-4 h-4" /> },
-        { id: 'community', label: 'Community', icon: <Network className="w-4 h-4" /> },
+        { id: 'portfolio', label: 'Robo Advisor', icon: <Briefcase className="w-4 h-4" /> },
       ]
     },
     {
@@ -49,7 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onGoHome }
     {
       title: "Terminal",
       items: [
-        { id: 'portfolio', label: 'Portfolio', icon: <Briefcase className="w-4 h-4" /> },
+        { id: 'community', label: 'Community', icon: <Network className="w-4 h-4" /> },
         { id: 'planner', label: 'Portfolio Planner', icon: <Target className="w-4 h-4" /> },
         { id: 'market', label: 'Live Market', icon: <Globe className="w-4 h-4" /> },
         { id: 'monitoring', label: 'Monitoring', icon: <ShieldAlert className="w-4 h-4" /> },
