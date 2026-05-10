@@ -1136,6 +1136,13 @@ const PortfolioView: React.FC = () => {
                          {etfLoading ? 'Scanning...' : 'Scan'}
                      </button>
                  </div>
+                 <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-slate-400">
+                     <span>Hints:</span>
+                     <button type="button" onClick={() => setEtfTicker('SMH')} className="hover:text-purple-400 hover:underline">Semiconductor (SMH)</button>
+                     <button type="button" onClick={() => setEtfTicker('XME')} className="hover:text-purple-400 hover:underline">Mining (XME)</button>
+                     <button type="button" onClick={() => setEtfTicker('XLF')} className="hover:text-purple-400 hover:underline">Financial (XLF)</button>
+                     <button type="button" onClick={() => setEtfTicker('ARKK')} className="hover:text-purple-400 hover:underline">Innovation (ARKK)</button>
+                 </div>
              </form>
              {etfResult && (
                 <div className="mt-4 bg-slate-900/50 rounded-xl p-4 border border-purple-500/20 flex-1">
