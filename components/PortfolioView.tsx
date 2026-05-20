@@ -1,8 +1,9 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Holding, MPTAnalysisResult, ETFProfile, DeltaGammaHedgeResult, AdvancedPricingResult, CAPMAPTResult, InvestorView, MarketTicker } from "../types";
 import { getInitialHoldings, getPortfolioHistory, getInitialMarketData } from "../services/marketDataService";
 import { runMPTAnalysis, getETFProfile, runHedgeAnalysis, runAdvancedPricingAnalysis, runCAPMAPTAnalysis } from "../services/geminiService";
+import AssetCalendar from "./AssetCalendar";
 import { 
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     ComposedChart, Line, Scatter, ScatterChart, ZAxis, Cell, BarChart, Bar, Legend,
@@ -86,6 +87,7 @@ const PortfolioView: React.FC = () => {
   const [capmLoading, setCapmLoading] = useState(false);
   const [capmResult, setCapmResult] = useState<CAPMAPTResult | null>(null);
   const [capmTicker, setCapmTicker] = useState("");
+  const [calendarTicker, setCalendarTicker] = useState("");
   const [rfRate, setRfRate] = useState(4.25);
   const [marketReturn, setMarketReturn] = useState(10.0);
 
@@ -113,17 +115,46 @@ const PortfolioView: React.FC = () => {
     return () => { mounted = false };
   }, []);
 
+  // Auto-sync quant and properties when holdings change
+  const lastQuantHoldingsStr = useRef("");
+  
   // Recalculate totals whenever holdings change
   useEffect(() => {
     const val = holdings.reduce((acc, curr) => acc + (curr.marketValue || 0), 0);
     const cost = holdings.reduce((acc, curr) => acc + (curr.quantity * curr.avgBuyPrice), 0);
     setTotalValue(val);
     setTotalPL(val - cost);
+    // Regenerate history so the chart matches the new total value
+    if (val > 0) {
+        setHistory(getPortfolioHistory(val));
+    } else {
+        setHistory(getPortfolioHistory(35000)); // Default visualization scale if empty
+    }
+    
     if (holdings.length > 0) {
-        if (!pricingTicker) setPricingTicker(holdings[0].ticker);
-        if (!capmTicker) setCapmTicker(holdings[0].ticker);
+        if (!pricingTicker || !holdings.some(h => h.ticker === pricingTicker)) setPricingTicker(holdings[0].ticker);
+        if (!capmTicker || !holdings.some(h => h.ticker === capmTicker)) setCapmTicker(holdings[0].ticker);
+        if (!calendarTicker || !holdings.some(h => h.ticker === calendarTicker)) setCalendarTicker(holdings[0].ticker);
     }
   }, [holdings]);
+
+  useEffect(() => {
+     if (activeTab === 'quant') {
+         const currentStr = JSON.stringify(holdings);
+         if (lastQuantHoldingsStr.current !== currentStr) {
+             lastQuantHoldingsStr.current = currentStr;
+             if (holdings.length > 0) {
+                 handleRunHedge();
+                 if (pricingTicker && holdings.some(h => h.ticker === pricingTicker)) handleRunAdvancedPricing();
+                 if (capmTicker && holdings.some(h => h.ticker === capmTicker)) handleRunCAPMAPT();
+             } else {
+                 setHedgeResult(null);
+                 setPricingResult(null);
+                 setCapmResult(null);
+             }
+         }
+     }
+  }, [activeTab, holdings, pricingTicker, capmTicker]);
 
   const handleAddOrUpdate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -502,6 +533,30 @@ const PortfolioView: React.FC = () => {
                             ))}
                         </div>
                     </div>
+                </div>
+
+                {/* Advisor Asset Calendar */}
+                <div className="bg-[#0f172a] rounded-2xl border border-slate-700/50 p-6 shadow-xl relative overflow-hidden mt-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-sm font-bold text-white uppercase tracking-widest">Asset Performance Calendar</h3>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-400 font-bold uppercase">Current Asset:</span>
+                            <select 
+                                value={calendarTicker}
+                                onChange={(e) => setCalendarTicker(e.target.value)}
+                                className="bg-[#1e293b] border border-slate-600 outline-none text-xs font-bold text-white rounded px-3 py-1.5 focus:border-blue-500"
+                            >
+                                {holdings.map(h => <option key={h.ticker} value={h.ticker}>{h.ticker}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    {calendarTicker ? (
+                        <AssetCalendar ticker={calendarTicker} />
+                    ) : (
+                        <div className="flex items-center justify-center h-32 border-2 border-dashed border-slate-800 rounded-xl">
+                            <span className="text-slate-500 text-sm font-bold uppercase tracking-widest">Select an asset to view calendar</span>
+                        </div>
+                    )}
                 </div>
             </div>
           )}
@@ -1114,15 +1169,15 @@ const PortfolioView: React.FC = () => {
       </div>
     </div>
 
-    <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
-         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg flex flex-col">
+    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mt-8 border-t border-slate-800/50 pt-8">
+         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg flex flex-col hover:border-purple-500/50 transition-colors">
              <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-400">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3 3l-3 3" />
                  </svg>
                  ETF Replication Engine
              </h3>
-             <p className="text-xs text-slate-400 mb-4">Adopt institutional allocations from major ETFs (e.g. QQQ, ARKK) into your portfolio.</p>
+             <p className="text-xs text-slate-400 mb-4">Adopt institutional allocations from major ETFs into your portfolio.</p>
              <form onSubmit={handleScanETF} className="mb-2">
                  <div className="flex gap-2">
                      <input 
@@ -1130,95 +1185,135 @@ const PortfolioView: React.FC = () => {
                          value={etfTicker}
                          onChange={(e) => setEtfTicker(e.target.value.toUpperCase())}
                          placeholder="ETF Ticker (e.g. QQQ)"
-                         className="flex-1 bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-purple-500 outline-none text-sm uppercase"
+                         className="flex-1 bg-[#1e293b] border border-slate-700 rounded-lg px-3 py-2 text-white focus:border-purple-500 outline-none text-sm uppercase transition-colors"
                      />
-                     <button type="submit" disabled={!etfTicker || etfLoading} className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-3 rounded text-sm disabled:opacity-50">
+                     <button type="submit" disabled={!etfTicker || etfLoading} className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm disabled:opacity-50 transition-colors shadow-lg shadow-blue-900/20">
                          {etfLoading ? 'Scanning...' : 'Scan'}
                      </button>
                  </div>
-                 <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-slate-400">
-                     <span>Hints:</span>
-                     <button type="button" onClick={() => setEtfTicker('SMH')} className="hover:text-purple-400 hover:underline">Semiconductor (SMH)</button>
-                     <button type="button" onClick={() => setEtfTicker('XME')} className="hover:text-purple-400 hover:underline">Mining (XME)</button>
-                     <button type="button" onClick={() => setEtfTicker('XLF')} className="hover:text-purple-400 hover:underline">Financial (XLF)</button>
-                     <button type="button" onClick={() => setEtfTicker('ARKK')} className="hover:text-purple-400 hover:underline">Innovation (ARKK)</button>
+                 <div className="mt-3 flex flex-wrap gap-2 text-[10px] text-slate-400 font-medium bg-[#1e293b]/50 p-2 rounded-lg border border-white/5">
+                     <span className="text-slate-500 uppercase tracking-widest mr-1">Hints:</span>
+                     <button type="button" onClick={() => setEtfTicker('SMH')} className="hover:text-purple-400 hover:underline transition-colors">Semiconductor (SMH)</button>
+                     <button type="button" onClick={() => setEtfTicker('XME')} className="hover:text-purple-400 hover:underline transition-colors">Mining (XME)</button>
+                     <button type="button" onClick={() => setEtfTicker('XLF')} className="hover:text-purple-400 hover:underline transition-colors">Financial (XLF)</button>
+                     <button type="button" onClick={() => setEtfTicker('ARKK')} className="hover:text-purple-400 hover:underline transition-colors">Innovation (ARKK)</button>
                  </div>
              </form>
              {etfResult && (
-                <div className="mt-4 bg-slate-900/50 rounded-xl p-4 border border-purple-500/20 flex-1">
-                    <h4 className="text-white font-bold text-sm mb-2">{etfResult.ticker} - {etfResult.name}</h4>
-                    <div className="space-y-2 mb-4 max-h-32 overflow-y-auto custom-scrollbar">
+                <div className="mt-4 bg-[#1e293b]/80 rounded-xl p-4 border border-purple-500/20 flex-1 flex flex-col shadow-inner">
+                    <h4 className="text-white font-bold text-sm mb-3 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        {etfResult.ticker} <span className="font-normal text-slate-400 text-xs">({etfResult.name})</span>
+                    </h4>
+                    <div className="space-y-2 mb-4 max-h-[160px] overflow-y-auto custom-scrollbar pr-2 flex-1">
                         {etfResult.topHoldings?.map((h, i) => (
-                            <div key={i} className="flex justify-between items-center text-xs text-slate-300">
-                                <span>{h.ticker} <span className="text-slate-500 ml-1 truncate max-w-[100px] inline-block align-bottom">{h.name}</span></span>
-                                <span>{h.weight?.toFixed(2)}%</span>
+                            <div key={i} className="flex justify-between items-center text-xs text-slate-300 bg-slate-900/50 py-1.5 px-2 rounded border border-white/5">
+                                <span className="font-medium text-white">{h.ticker} <span className="text-slate-500 ml-1 truncate max-w-[100px] inline-block align-bottom font-normal">{h.name}</span></span>
+                                <span className="font-mono text-emerald-400">{h.weight?.toFixed(2)}%</span>
                             </div>
                         ))}
                     </div>
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-3 mt-auto bg-slate-900/80 p-3 rounded-lg border border-slate-700">
                          <div className="flex gap-2 items-center">
-                            <span className="text-xs text-slate-400 w-16">Capital $</span>
-                            <input 
-                                type="number" 
-                                value={etfCapital}
-                                onChange={(e) => setEtfCapital(e.target.value)}
-                                min="1000"
-                                className="flex-1 bg-[#1e293b] border border-slate-700 rounded px-2 py-1.5 text-white focus:border-purple-500 outline-none text-xs"
-                            />
+                            <span className="text-xs text-slate-400 w-16 font-bold uppercase tracking-wider">Capital</span>
+                            <div className="relative flex-1">
+                                <span className="absolute left-2 top-1.5 text-slate-500 font-mono text-xs">$</span>
+                                <input 
+                                    type="number" 
+                                    value={etfCapital}
+                                    onChange={(e) => setEtfCapital(e.target.value)}
+                                    min="1000"
+                                    className="w-full bg-[#0f172a] border border-slate-700 rounded pl-5 pr-2 py-1.5 text-white focus:border-purple-500 outline-none text-xs font-mono"
+                                />
+                            </div>
                         </div>
                         <div className="flex gap-2 items-center">
-                            <span className="text-xs text-slate-400 w-16">Leverage X</span>
-                            <input 
-                                type="number" 
-                                value={etfLeverage}
-                                onChange={(e) => setEtfLeverage(e.target.value)}
-                                min="1" max="5" step="0.5"
-                                className="flex-1 bg-[#1e293b] border border-slate-700 rounded px-2 py-1.5 text-white focus:border-purple-500 outline-none text-xs"
-                            />
+                            <span className="text-xs text-slate-400 w-16 font-bold uppercase tracking-wider">Leverage</span>
+                            <div className="relative flex-1">
+                                <input 
+                                    type="number" 
+                                    value={etfLeverage}
+                                    onChange={(e) => setEtfLeverage(e.target.value)}
+                                    min="1" max="5" step="0.5"
+                                    className="w-full bg-[#0f172a] border border-slate-700 rounded pr-6 pl-2 py-1.5 text-white focus:border-purple-500 outline-none text-xs font-mono text-right"
+                                />
+                                <span className="absolute right-2 top-1.5 text-slate-500 font-mono text-xs">x</span>
+                            </div>
                         </div>
-                        <button onClick={handleAdoptETF} className="mt-2 w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded text-xs transition-colors tracking-widest uppercase shadow-lg shadow-purple-900/20 mt-auto">
-                            Replicate & Overwrite Portfolio
+                        <button onClick={handleAdoptETF} className="mt-2 w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded text-[10px] transition-colors tracking-widest uppercase shadow-lg shadow-purple-900/40 border border-purple-400/30">
+                            Replicate & Overwrite
                         </button>
                     </div>
                 </div>
              )}
          </div>
 
-         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg flex flex-col">
-            <h3 className="text-lg font-semibold text-white mb-4">Allocation</h3>
-            <div className="space-y-4 flex-1">
-                {holdings.length === 0 && <p className="text-sm text-slate-500">No assets to display.</p>}
-                {holdings.map((h) => (
-                    <div key={h.ticker}>
-                        <div className="flex justify-between text-sm mb-1">
-                            <span className="text-slate-300">{h.ticker}</span>
-                            <span className="text-slate-400">{totalValue > 0 ? ((h.marketValue / totalValue) * 100).toFixed(1) : 0}%</span>
-                        </div>
-                        <div className="w-full bg-slate-800 rounded-full h-2">
-                            <div className="bg-purple-600 h-2 rounded-full transition-all duration-500" style={{ width: `${totalValue > 0 ? (h.marketValue / totalValue) * 100 : 0}%` }}></div>
-                        </div>
-                    </div>
-                ))}
+         <div className="bg-[#0f172a] rounded-xl border border-slate-700/50 p-6 shadow-lg flex flex-col hover:border-slate-600 transition-colors">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-emerald-400">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
+                </svg>
+                Allocation Overview
+            </h3>
+            <div className="bg-[#1e293b]/50 rounded-xl p-4 border border-white/5 flex-1 flex flex-col">
+                <div className="space-y-4 flex-1 overflow-y-auto max-h-[300px] custom-scrollbar pr-2">
+                    {holdings.length === 0 && <div className="text-sm text-slate-500 italic text-center py-8">No assets to display.</div>}
+                    {holdings.map((h) => {
+                        const weight = totalValue > 0 ? (h.marketValue / totalValue) * 100 : 0;
+                        return (
+                            <div key={h.ticker} className="group">
+                                <div className="flex justify-between text-sm mb-1.5 items-end">
+                                    <span className="text-slate-200 font-medium flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-purple-500 group-hover:scale-150 transition-transform"></div>
+                                        {h.ticker}
+                                    </span>
+                                    <span className="text-slate-400 font-mono text-xs">{weight.toFixed(1)}%</span>
+                                </div>
+                                <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                                    <div className="bg-gradient-to-r from-purple-600 to-blue-500 h-1.5 rounded-full transition-all duration-1000 ease-out" style={{ width: `${weight}%` }}></div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
          </div>
 
-         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg flex flex-col">
-            <h3 className="text-lg font-semibold text-white mb-4">Stock Market Index</h3>
-            <div className="space-y-4 flex-1">
-                {marketIndices.map((index) => (
-                    <div key={index.symbol} className="flex justify-between items-center border-b border-slate-800 pb-2 last:border-0 last:pb-0">
-                        <div>
-                            <div className="text-sm font-medium text-slate-200">{index.name}</div>
-                            <div className="text-xs text-slate-500">{index.symbol}</div>
-                        </div>
-                        <div className="text-right">
-                            <div className="text-sm font-mono text-white">{index.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                            <div className={`text-xs font-mono ${index.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {index.change >= 0 ? '+' : ''}{index.change.toFixed(2)} ({index.changePercent >= 0 ? '+' : ''}{index.changePercent.toFixed(2)}%)
+         <div className="bg-[#0f172a] rounded-xl border border-slate-700/50 p-6 shadow-lg flex flex-col hover:border-slate-600 transition-colors">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-rose-400">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                </svg>
+                Market Indices
+            </h3>
+            <div className="bg-[#1e293b]/50 rounded-xl border border-white/5 flex-1 overflow-hidden">
+                <div className="space-y-0 flex-1 overflow-y-auto max-h-[300px] custom-scrollbar">
+                    {marketIndices.map((index) => {
+                        const isPositive = index.change >= 0;
+                        return (
+                            <div key={index.symbol} className="flex justify-between items-center px-4 py-3 border-b border-slate-800 hover:bg-slate-800/50 transition-colors last:border-0 group">
+                                <div className="flex items-center gap-3">
+                                    <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${isPositive ? 'bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20' : 'bg-rose-500/10 text-rose-400 group-hover:bg-rose-500/20'} transition-colors`}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-4 h-4 ${!isPositive && 'rotate-180'}`}>
+                                            <path fillRule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div className="text-[13px] font-bold text-slate-200 leading-tight">{index.name}</div>
+                                        <div className="text-[10px] text-slate-500 font-mono mt-0.5">{index.symbol}</div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-[13px] font-mono text-white font-medium">{index.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                    <div className={`text-[10px] font-mono font-bold mt-0.5 ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                        {isPositive ? '+' : ''}{index.change.toFixed(2)} ({isPositive ? '+' : ''}{index.changePercent.toFixed(2)}%)
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                ))}
+                        );
+                    })}
+                </div>
             </div>
          </div>
       </div>

@@ -25,15 +25,35 @@ export const getInitialHoldings = async (): Promise<Holding[]> => {
   }
 };
 
-export const getPortfolioHistory = () => {
-  // Generate simulated 30 day equity curve
+export const getPortfolioHistory = (targetValue: number = 35000) => {
+  // Generate simulated 30 day equity curve ending at targetValue
   const data = [];
-  let value = 35000;
   const now = new Date();
+  
+  // Create a sequence of returns backward
+  const returns = [];
+  let cumReturn = 1;
+  
+  for (let i = 0; i < 30; i++) {
+    const dailyReturn = 1 + (Math.random() - 0.45) * 0.02; // Slight upward bias
+    returns.push(dailyReturn);
+    cumReturn *= dailyReturn;
+  }
+  
+  // Starting value that will result in targetValue after all returns
+  let value = targetValue / cumReturn;
+  
   for (let i = 30; i >= 0; i--) {
     const date = new Date(now);
     date.setDate(date.getDate() - i);
-    value = value * (1 + (Math.random() - 0.45) * 0.02); // Slight upward bias
+    
+    if (i < 30) {
+      value = value * returns[30 - i - 1]; 
+    }
+    
+    // Ensure the last point is exactly targetValue
+    if (i === 0) value = targetValue;
+    
     data.push({
       date: date.toISOString().split('T')[0],
       value: Math.floor(value)
@@ -72,5 +92,33 @@ export const simulateMarketUpdate = (tickers: MarketTicker[]): MarketTicker[] =>
       volume: t.volume + Math.floor(Math.random() * 5000)
     };
   });
+};
+
+export const getAssetCalendarPerformance = (ticker: string, days: number = 30) => {
+    // Generate simulated last days of daily performance for calendar view
+    const data = [];
+    const now = new Date();
+    // Deterministic seed based on ticker
+    let seed = 0;
+    for (let i = 0; i < ticker.length; i++) {
+        seed += ticker.charCodeAt(i);
+    }
+    
+    for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        
+        // Pseudo-random pseudo-deterministic
+        const pseudoRandom = Math.sin(seed + i) * 10000;
+        const normalized = pseudoRandom - Math.floor(pseudoRandom);
+        
+        const changePercent = (normalized - 0.45) * 5; // -2.25% to 2.75%
+        data.push({
+            date: date.toISOString().split('T')[0],
+            changePercent: Number(changePercent.toFixed(2))
+        });
+    }
+    
+    return data;
 };
 
