@@ -75,20 +75,20 @@ const BisReportView: React.FC = () => {
                         <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global Liquidity</h3>
                     </div>
                     <div className="flex items-end justify-between mb-4">
-                        <div className="text-2xl font-black text-white font-mono">{data.globalLiquidity.usdCredit}</div>
+                        <div className="text-2xl font-black text-white font-mono">{data?.globalLiquidity?.usdCredit || 'N/A'}</div>
                         <div className="flex items-center gap-1 text-xs font-bold">
-                            {data.globalLiquidity.trend === 'Expanding' && <TrendingUp className="w-4 h-4 text-emerald-400" />}
-                            {data.globalLiquidity.trend === 'Contracting' && <TrendingDown className="w-4 h-4 text-rose-400" />}
-                            {data.globalLiquidity.trend === 'Stable' && <Minus className="w-4 h-4 text-slate-400" />}
-                            <span className={data.globalLiquidity.trend === 'Expanding' ? 'text-emerald-400' : data.globalLiquidity.trend === 'Contracting' ? 'text-rose-400' : 'text-slate-400'}>
-                                {data.globalLiquidity.trend}
+                            {data?.globalLiquidity?.trend === 'Expanding' && <TrendingUp className="w-4 h-4 text-emerald-400" />}
+                            {data?.globalLiquidity?.trend === 'Contracting' && <TrendingDown className="w-4 h-4 text-rose-400" />}
+                            {data?.globalLiquidity?.trend === 'Stable' && <Minus className="w-4 h-4 text-slate-400" />}
+                            <span className={data?.globalLiquidity?.trend === 'Expanding' ? 'text-emerald-400' : data?.globalLiquidity?.trend === 'Contracting' ? 'text-rose-400' : 'text-slate-400'}>
+                                {data?.globalLiquidity?.trend || 'N/A'}
                            </span>
                         </div>
                     </div>
                     <div className="mt-auto bg-slate-800/50 p-2 rounded">
                         <div className="text-[9px] text-slate-500 uppercase font-bold mb-1">YoY Change</div>
-                        <div className={`text-sm font-mono font-bold ${data.globalLiquidity.yoyChange >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {data.globalLiquidity.yoyChange > 0 ? '+' : ''}{data.globalLiquidity.yoyChange}%
+                        <div className={`text-sm font-mono font-bold ${Number(data?.globalLiquidity?.yoyChange) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {Number(data?.globalLiquidity?.yoyChange) > 0 ? '+' : ''}{data?.globalLiquidity?.yoyChange}%
                         </div>
                     </div>
                 </div>
@@ -99,15 +99,15 @@ const BisReportView: React.FC = () => {
                         <Globe className="w-4 h-4 text-blue-400" />
                         <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cross-Border Claims</h3>
                     </div>
-                    <div className="text-2xl font-black text-white font-mono mb-4">{data.crossBorderClaims.total}</div>
+                    <div className="text-2xl font-black text-white font-mono mb-4">{data?.crossBorderClaims?.total || 'N/A'}</div>
                     <div className="space-y-2 mt-auto">
                         <div className="flex justify-between items-center bg-slate-800/50 p-2 rounded">
                             <span className="text-[10px] text-slate-400 uppercase font-bold">Advanced Econ</span>
-                            <span className="font-mono font-bold text-white text-sm">{data.crossBorderClaims.advancedEconomies}</span>
+                            <span className="font-mono font-bold text-white text-sm">{data?.crossBorderClaims?.advancedEconomies || '-'}</span>
                         </div>
                         <div className="flex justify-between items-center bg-slate-800/50 p-2 rounded">
                             <span className="text-[10px] text-slate-400 uppercase font-bold">Emerging Mkts</span>
-                            <span className="font-mono font-bold text-white text-sm">{data.crossBorderClaims.emergingMarkets}</span>
+                            <span className="font-mono font-bold text-white text-sm">{data?.crossBorderClaims?.emergingMarkets || '-'}</span>
                         </div>
                     </div>
                 </div>
@@ -120,15 +120,15 @@ const BisReportView: React.FC = () => {
                     </div>
                     <div className="mt-auto space-y-4">
                         <div className={`w-full py-3 text-center rounded text-sm font-black uppercase tracking-wider border ${
-                            data.policyRates.stance === 'Hawkish' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                            data.policyRates.stance === 'Dovish' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                            data?.policyRates?.stance === 'Hawkish' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                            data?.policyRates?.stance === 'Dovish' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                             'bg-slate-500/10 text-slate-400 border-slate-500/20'
                         }`}>
-                            Stance: {data.policyRates.stance}
+                            Stance: {data?.policyRates?.stance || 'N/A'}
                         </div>
                         <div className="bg-slate-800/50 p-2 rounded flex justify-between items-center">
                             <span className="text-[9px] text-slate-500 uppercase font-bold">Divergence Index</span>
-                            <span className="font-mono font-bold text-purple-400">{data.policyRates.divergenceIndex}</span>
+                            <span className="font-mono font-bold text-purple-400">{data?.policyRates?.divergenceIndex || 0}</span>
                         </div>
                     </div>
                 </div>
@@ -140,12 +140,12 @@ const BisReportView: React.FC = () => {
                         <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Systemic Risk</h3>
                     </div>
                     <div className="flex items-end justify-between mb-4">
-                        <div className="text-4xl font-black text-white font-mono">{data.systemicRisk.indicator}</div>
+                        <div className="text-4xl font-black text-white font-mono">{data?.systemicRisk?.indicator || 0}</div>
                         <div className="text-xs text-slate-500 font-mono">/ 100</div>
                     </div>
                     <div className="mt-auto bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
                         <div className="text-[9px] text-amber-500/70 uppercase font-bold mb-1">Primary Vulnerability</div>
-                        <div className="text-sm font-bold text-amber-400 leading-tight">{data.systemicRisk.primaryVulnerability}</div>
+                        <div className="text-sm font-bold text-amber-400 leading-tight">{data?.systemicRisk?.primaryVulnerability || 'N/A'}</div>
                     </div>
                 </div>
             </div>
@@ -153,12 +153,12 @@ const BisReportView: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 bg-[#1e293b]/50 p-6 rounded-xl border border-slate-700/50 shadow-lg">
                     <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">Executive Summary</h3>
-                    <p className="text-sm text-slate-300 leading-relaxed">{data.executiveSummary}</p>
+                    <p className="text-sm text-slate-300 leading-relaxed">{data?.executiveSummary || 'No summary available.'}</p>
                 </div>
                 <div className="bg-[#1e293b]/50 p-6 rounded-xl border border-slate-700/50 shadow-lg">
                     <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">Key Takeaways</h3>
                     <ul className="space-y-3">
-                        {data.keyTakeaways.map((takeaway, idx) => (
+                        {data?.keyTakeaways?.map((takeaway, idx) => (
                             <li key={idx} className="flex gap-3 text-sm text-slate-300">
                                 <span className="text-amber-500 mt-1 shrink-0">•</span>
                                 <span>{takeaway}</span>

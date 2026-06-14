@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View } from "../types";
 import { 
   Newspaper, Activity, BarChart3, Target, 
@@ -18,6 +18,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onGoHome }
     "Analytics": true,
     "Terminal": true
   });
+
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timerId = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timerId);
+  }, []);
 
   const toggleGroup = (title: string) => {
     setExpandedGroups(prev => ({ ...prev, [title]: !prev[title] }));
@@ -60,18 +69,29 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onGoHome }
   return (
     <div className="flex flex-col h-full bg-[#0B1221] border-r border-slate-800/50">
       {/* Logo */}
-      <div className="p-5 border-b border-slate-800/50 flex items-center gap-3 cursor-pointer group shrink-0" onClick={onGoHome}>
-        <div className="w-8 h-8 text-cyan-500 group-hover:text-cyan-400 transition-colors shrink-0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
-            <path d="M4 4.5a16 16 0 0 1 16 0" />
-            <path d="M4 19.5a16 16 0 0 0 16 0" />
-            <path d="M9 5v14" />
-            <path d="M15 5v14" />
-          </svg>
+      <div className="p-4 border-b border-slate-800/80 flex flex-col gap-4 cursor-pointer group shrink-0" onClick={onGoHome}>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 text-cyan-500 group-hover:text-cyan-400 transition-colors shrink-0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+              <path d="M4 4.5a16 16 0 0 1 16 0" />
+              <path d="M4 19.5a16 16 0 0 0 16 0" />
+              <path d="M9 5v14" />
+              <path d="M15 5v14" />
+            </svg>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <h1 style={{ fontFamily: 'Inter, sans-serif' }} className="text-2xl font-extrabold text-slate-100 tracking-tighter leading-none">
+              GEMINI
+            </h1>
+            <h2 className="text-[9px] font-medium text-slate-400 uppercase tracking-[0.2em] mt-0.5">
+              Invest Market Station
+            </h2>
+            <div className="font-mono text-[9px] text-slate-500 mt-1.5 flex items-center gap-1.5 bg-slate-900/50 w-fit px-1.5 py-0.5 rounded border border-slate-800">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              {currentTime.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })} UTC
+            </div>
+          </div>
         </div>
-        <h1 className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-200 tracking-tight leading-tight">
-          GEMINI<br/>Invest Market Station
-        </h1>
       </div>
 
       {/* Navigation */}
@@ -112,10 +132,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onGoHome }
       </div>
 
       {/* Footer */}
-      <div className="p-5 border-t border-slate-800/50 shrink-0 bg-[#0f172a]/30">
-        <div className="flex items-center gap-3 text-xs font-bold text-slate-500 uppercase tracking-wider">
-          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
-          System Online
+      <div className="p-4 border-t border-slate-800/50 shrink-0 bg-[#0f172a]/30">
+        <div className="flex items-center justify-between pointer-events-none">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+            System Online
+          </div>
+          <span className="text-[10px] font-mono text-slate-600">v2.4.0</span>
         </div>
       </div>
     </div>

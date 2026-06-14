@@ -632,8 +632,8 @@ Return JSON exactly in this format:
                 "date": "February 2, 2026",
                 "globalLiquidity": {
                     "usdCredit": "string",
-                    "trend": "Expanding" | "Contracting" | "Stable",
-                    "yoyChange": number
+                    "trend": "Expanding",
+                    "yoyChange": 0.0
                 },
                 "crossBorderClaims": {
                     "total": "string",
@@ -641,11 +641,11 @@ Return JSON exactly in this format:
                     "advancedEconomies": "string"
                 },
                 "policyRates": {
-                    "stance": "Hawkish" | "Dovish" | "Neutral",
-                    "divergenceIndex": number
+                    "stance": "Hawkish",
+                    "divergenceIndex": 0
                 },
                 "systemicRisk": {
-                    "indicator": number,
+                    "indicator": 0,
                     "primaryVulnerability": "string"
                 },
                 "keyTakeaways": ["string"],
