@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { Holding, MPTAnalysisResult, ETFProfile, DeltaGammaHedgeResult, AdvancedPricingResult, CAPMAPTResult, InvestorView, MarketTicker } from "../types";
-import { getInitialHoldings, getPortfolioHistory, getInitialMarketData } from "../services/marketDataService";
+import { getInitialHoldings, getPortfolioHistory, getInitialMarketData, getQuote } from "../services/marketDataService";
 import { runMPTAnalysis, getETFProfile, runHedgeAnalysis, runAdvancedPricingAnalysis, runCAPMAPTAnalysis } from "../services/geminiService";
 import AssetCalendar from "./AssetCalendar";
 import { 
@@ -58,7 +58,7 @@ const PortfolioView: React.FC = () => {
   // Form State
   const [tickerInput, setTickerInput] = useState("");
   const [sharesInput, setSharesInput] = useState("");
-  const [costInput, setCostInput] = useState("");
+  const [isAddingPos, setIsAddingPos] = useState(false);
 
   // MPT State
   const [mptLoading, setMptLoading] = useState(false);
@@ -156,51 +156,67 @@ const PortfolioView: React.FC = () => {
      }
   }, [activeTab, holdings, pricingTicker, capmTicker]);
 
-  const handleAddOrUpdate = (e: React.FormEvent) => {
+  const handleAddOrUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tickerInput || !sharesInput || !costInput) return;
+    if (!tickerInput || !sharesInput) return;
 
-    addOrUpdateAsset(tickerInput, parseFloat(sharesInput), parseFloat(costInput));
-    
-    // Reset form
-    setTickerInput("");
-    setSharesInput("");
-    setCostInput("");
+    setIsAddingPos(true);
+    try {
+        const currentPrice = await getQuote(tickerInput.toUpperCase());
+        if (!currentPrice) {
+            alert("Could not fetch price for ticker: " + tickerInput);
+            return;
+        }
+        await addOrUpdateAsset(tickerInput, parseFloat(sharesInput), currentPrice);
+    } finally {
+        setIsAddingPos(false);
+        setTickerInput("");
+        setSharesInput("");
+    }
   };
 
-  const addOrUpdateAsset = (tickerStr: string, quantity: number, avgBuyPrice: number) => {
+  const addOrUpdateAsset = async (tickerStr: string, quantity: number, currentPrice: number) => {
     const ticker = tickerStr.toUpperCase();
     
-    // Simulate current price
-    const volatility = (Math.random() - 0.4) * 0.1; 
-    const currentPrice = avgBuyPrice * (1 + volatility);
-    const marketValue = quantity * currentPrice;
-    const pl = marketValue - (quantity * avgBuyPrice);
-    const plPercent = (pl / (quantity * avgBuyPrice)) * 100;
-    const npv = marketValue * (0.98 + Math.random() * 0.05);
-
-    // Simulate stats
-    const mean = (Math.random() * 0.08) - 0.02; // -2% to 6%
-    const variance = Math.random() * 0.02;
-    const deviation = Math.sqrt(variance);
-
-    const newHolding: Holding = {
-        ticker,
-        quantity,
-        avgBuyPrice,
-        currentPrice,
-        marketValue,
-        pl,
-        plPercent,
-        mean,
-        variance,
-        deviation,
-        npv
-    };
-
+    // avgBuyPrice is currentPrice initially if new. If existing, recalculate.
     setHoldings(prev => {
         const existingIdx = prev.findIndex(h => h.ticker === ticker);
         const next = [...prev];
+        
+        let avgBuyPrice = currentPrice;
+        let newQty = quantity;
+        
+        if (existingIdx >= 0) {
+            const old = next[existingIdx];
+            newQty = old.quantity + quantity;
+            // Value based weighted average cost
+            avgBuyPrice = ((old.quantity * old.avgBuyPrice) + (quantity * currentPrice)) / newQty;
+        }
+        
+        const marketValue = newQty * currentPrice;
+        const pl = marketValue - (newQty * avgBuyPrice);
+        const plPercent = avgBuyPrice > 0 ? (pl / (newQty * avgBuyPrice)) * 100 : 0;
+        const npv = marketValue * (0.98 + Math.random() * 0.05);
+
+        // Simulate stats
+        const mean = (Math.random() * 0.08) - 0.02; // -2% to 6%
+        const variance = Math.random() * 0.02;
+        const deviation = Math.sqrt(variance);
+
+        const newHolding: Holding = {
+            ticker,
+            quantity: newQty,
+            avgBuyPrice,
+            currentPrice,
+            marketValue,
+            pl,
+            plPercent,
+            mean,
+            variance,
+            deviation,
+            npv
+        };
+
         if (existingIdx >= 0) {
             next[existingIdx] = newHolding;
         } else {
@@ -430,67 +446,66 @@ const PortfolioView: React.FC = () => {
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#ec4899', '#06b6d4', '#6366f1'];
 
   return (
-    <div className="space-y-6 fade-in">
+    <div className="space-y-6 fade-in max-w-7xl mx-auto">
         {/* Robo Advisor Navigation Header */}
-        <div className="flex flex-wrap gap-2 bg-[#0f172a]/80 backdrop-blur-md rounded-xl p-2 border border-slate-800 shadow-xl w-full max-w-3xl">
-            <button onClick={() => setActiveTab('overview')} className={`flex-1 min-w-[150px] px-6 py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${activeTab === 'overview' ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-900/20 border border-blue-400/30' : 'text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent'}`}>Advisor Dashboard</button>
-            <button onClick={() => setActiveTab('holdings')} className={`flex-1 min-w-[150px] px-6 py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${activeTab === 'holdings' ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-lg shadow-emerald-900/20 border border-emerald-400/30' : 'text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent'}`}>Assets & Setup</button>
-            <button onClick={() => setActiveTab('quant')} className={`flex-1 min-w-[150px] px-6 py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${activeTab === 'quant' ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-lg shadow-purple-900/20 border border-purple-400/30' : 'text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent'}`}>Advanced Quant</button>
+        <div className="flex bg-[#0f172a] rounded-lg p-1 border border-slate-800 w-full max-w-xl mx-auto shadow-sm">
+            <button onClick={() => setActiveTab('overview')} className={`flex-1 px-4 py-2 rounded-md text-xs font-semibold uppercase tracking-wider transition-all ${activeTab === 'overview' ? 'bg-slate-800 text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}>Dashboard</button>
+            <button onClick={() => setActiveTab('holdings')} className={`flex-1 px-4 py-2 rounded-md text-xs font-semibold uppercase tracking-wider transition-all ${activeTab === 'holdings' ? 'bg-slate-800 text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}>Assets</button>
+            <button onClick={() => setActiveTab('quant')} className={`flex-1 px-4 py-2 rounded-md text-xs font-semibold uppercase tracking-wider transition-all ${activeTab === 'quant' ? 'bg-slate-800 text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}>Quant</button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">
+        <div className="fade-in">
           {activeTab === 'overview' && (
-            <div className="lg:col-span-3 space-y-6">
+            <div className="space-y-6">
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                     {/* Main Chart */}
-                    <div className="xl:col-span-2 bg-gradient-to-br from-[#0f172a] to-[#0b1221] rounded-2xl border border-slate-700/50 p-6 shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4 relative z-10">
+                    <div className="xl:col-span-2 bg-[#020617] rounded-2xl border border-slate-800 p-8 shadow-sm relative overflow-hidden">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4 relative z-10">
                             <div className="flex-1">
-                                <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
                                     Total Portfolio Balance
                                 </h2>
-                                <div className="text-5xl font-black text-white tracking-tight">
+                                <div className="text-4xl font-medium text-slate-100 tracking-tight">
                                     ${(totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </div>
                             </div>
                             
-                            <div className="bg-[#1e293b]/50 border border-slate-600/30 rounded-xl p-4 min-w-[220px] backdrop-blur-sm">
-                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Net Return</h3>
-                                <div className={`text-3xl font-black font-mono tracking-tight ${totalPL >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            <div className="text-right">
+                                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Net Return</h3>
+                                <div className={`text-2xl font-medium tracking-tight ${totalPL >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                                     {totalPL >= 0 ? '+' : ''}{(totalPL || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                 </div>
-                                <div className="text-xs text-slate-400 mt-2 font-medium">
+                                <div className="text-sm text-slate-500 mt-1">
                                     {totalValue > 0 ? ((totalPL/totalValue)*100).toFixed(2) : 0}% All time
                                 </div>
                             </div>
                         </div>
                         
-                        <div className="h-[350px] w-full mt-8 relative z-10">
+                        <div className="h-[350px] w-full mt-4 relative z-10">
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={history}>
                                 <defs>
                                     <linearGradient id="colorValueBlue" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15}/>
                                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                                <XAxis dataKey="date" stroke="#64748b" tick={{fontSize: 10}} tickFormatter={(val) => val.slice(5)} />
-                                <YAxis stroke="#64748b" tick={{fontSize: 10}} domain={['auto', 'auto']} tickFormatter={(val) => `$${val/1000}k`} />
+                                <XAxis dataKey="date" stroke="#64748b" tick={{fontSize: 10}} tickFormatter={(val) => val.slice(5)} axisLine={false} tickLine={false} />
+                                <YAxis stroke="#64748b" tick={{fontSize: 10}} domain={['auto', 'auto']} tickFormatter={(val) => `$${val/1000}k`} axisLine={false} tickLine={false} />
                                 <Tooltip 
-                                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#3b82f6', borderRadius: '8px' }}
-                                    itemStyle={{ color: '#60a5fa', fontWeight: 'bold' }}
+                                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }}
+                                    itemStyle={{ color: '#e2e8f0', fontWeight: '500' }}
                                 />
-                                <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorValueBlue)" />
+                                <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorValueBlue)" />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
                     {/* Allocation Donut */}
-                    <div className="bg-[#0f172a] rounded-2xl border border-slate-700/50 p-6 shadow-xl flex flex-col">
-                        <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-6">Asset Allocation</h3>
+                    <div className="bg-[#020617] rounded-2xl border border-slate-800 p-6 flex flex-col shadow-sm">
+                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-6">Asset Allocation</h3>
                         <div className="flex-1 min-h-[250px] w-full relative">
                             {holdings.length > 0 ? (
                                 <ResponsiveContainer width="100%" height="100%">
@@ -521,14 +536,14 @@ const PortfolioView: React.FC = () => {
                                 </div>
                             )}
                         </div>
-                        <div className="mt-4 grid grid-cols-2 gap-2 max-h-[150px] overflow-y-auto custom-scrollbar">
+                        <div className="mt-6 space-y-2 max-h-[150px] overflow-y-auto custom-scrollbar pr-2">
                             {holdings.map((h, i) => (
-                                <div key={h.ticker} className="flex items-center gap-2 p-2 bg-slate-900/50 rounded-lg">
-                                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-bold text-white truncate">{h.ticker}</div>
-                                        <div className="text-[10px] text-slate-400">{(h.marketValue/totalValue * 100).toFixed(1)}%</div>
+                                <div key={h.ticker} className="flex items-center justify-between p-2 hover:bg-slate-800/50 rounded-lg transition-colors border border-transparent hover:border-slate-800 cursor-default">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
+                                        <div className="text-sm font-medium text-slate-200">{h.ticker}</div>
                                     </div>
+                                    <div className="text-xs font-mono text-slate-400">{(h.marketValue/totalValue * 100).toFixed(1)}%</div>
                                 </div>
                             ))}
                         </div>
@@ -536,15 +551,15 @@ const PortfolioView: React.FC = () => {
                 </div>
 
                 {/* Advisor Asset Calendar */}
-                <div className="bg-[#0f172a] rounded-2xl border border-slate-700/50 p-6 shadow-xl relative overflow-hidden mt-6">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-sm font-bold text-white uppercase tracking-widest">Asset Performance Calendar</h3>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs text-slate-400 font-bold uppercase">Current Asset:</span>
+                <div className="bg-[#020617] rounded-2xl border border-slate-800 p-8 shadow-sm relative overflow-hidden mt-6">
+                    <div className="flex justify-between items-center mb-8">
+                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Asset Performance Calendar</h3>
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs text-slate-500 font-medium">Asset</span>
                             <select 
                                 value={calendarTicker}
                                 onChange={(e) => setCalendarTicker(e.target.value)}
-                                className="bg-[#1e293b] border border-slate-600 outline-none text-xs font-bold text-white rounded px-3 py-1.5 focus:border-blue-500"
+                                className="bg-[#0f172a] border border-slate-700 outline-none text-xs font-medium text-slate-200 rounded-md px-3 py-1.5 focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition-all cursor-pointer"
                             >
                                 {holdings.map(h => <option key={h.ticker} value={h.ticker}>{h.ticker}</option>)}
                             </select>
@@ -562,21 +577,20 @@ const PortfolioView: React.FC = () => {
           )}
 
           {activeTab === 'quant' && (
-             <div className="lg:col-span-3 space-y-6">
+             <div className="space-y-6 max-w-7xl mx-auto">
         {/* Portfolio Hedging & Risk Diagnostics */}
-        <div className="bg-[#0f172a] rounded-xl border border-pink-500/30 p-6 shadow-lg shadow-pink-900/10">
-            <div className="flex justify-between items-center mb-6">
+        <div className="bg-[#020617] rounded-2xl border border-slate-800 p-8 shadow-sm">
+            <div className="flex justify-between items-center mb-8 border-b border-slate-800/80 pb-6">
                 <div>
-                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <svg className="w-6 h-6 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                        Portfolio Hedging & Risk Diagnostics
+                    <h3 className="text-lg font-medium text-slate-100 flex items-center gap-2">
+                        Risk Diagnostics
                     </h3>
-                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mt-1">Multi-Asset Protection Assessment</p>
+                    <p className="text-xs text-slate-500 font-medium mt-1">Multi-Asset Protection Assessment</p>
                 </div>
                 <button 
                     onClick={handleRunHedge}
                     disabled={hedgeLoading || holdings.length === 0}
-                    className="bg-pink-600 hover:bg-pink-500 text-white text-xs font-black uppercase px-6 py-2.5 rounded-full transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-pink-900/40"
+                    className="bg-slate-100 hover:bg-white text-slate-900 text-xs font-semibold px-5 py-2 rounded-md transition-all disabled:opacity-50 flex items-center shadow-sm"
                 >
                     {hedgeLoading ? 'Analyzing Performance...' : 'Run Diagnostics'}
                 </button>
@@ -586,39 +600,39 @@ const PortfolioView: React.FC = () => {
                 <div className="animate-fade-in space-y-8">
                     {/* Top Level Quant Metrics */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="bg-[#1e293b]/50 border border-pink-500/10 p-4 rounded-2xl flex flex-col items-center text-center">
-                            <span className="text-[9px] text-slate-500 font-black uppercase mb-2">Hedging Efficiency</span>
-                            <div className="text-2xl font-black text-pink-400">{hedgeResult.metrics?.hedgingEfficiency}%</div>
-                            <div className="w-full h-1 bg-slate-800 rounded-full mt-2">
-                                <div className="h-full bg-pink-500" style={{width: `${hedgeResult.metrics?.hedgingEfficiency}%`}}></div>
+                        <div className="bg-[#0f172a] border border-slate-800 p-5 rounded-xl flex flex-col">
+                            <span className="text-xs text-slate-500 font-medium mb-1">Hedging Efficiency</span>
+                            <div className="text-2xl font-medium text-slate-200 mt-2">{hedgeResult.metrics?.hedgingEfficiency}%</div>
+                            <div className="w-full h-1 bg-slate-800 rounded-full mt-auto pt-4 relative bottom-0">
+                                <div className="h-full bg-slate-400 rounded-full" style={{width: `${hedgeResult.metrics?.hedgingEfficiency}%`}}></div>
                             </div>
                         </div>
-                        <div className="bg-[#1e293b]/50 border border-emerald-500/10 p-4 rounded-2xl flex flex-col items-center text-center">
-                            <span className="text-[9px] text-slate-500 font-black uppercase mb-2">Beta Reduction</span>
-                            <div className="text-2xl font-black text-emerald-400">
-                                {hedgeResult.metrics?.unhedgedBeta?.toFixed(2)} <span className="text-slate-600 text-sm">→</span> {hedgeResult.metrics?.hedgedBeta?.toFixed(2)}
+                        <div className="bg-[#0f172a] border border-slate-800 p-5 rounded-xl flex flex-col">
+                            <span className="text-xs text-slate-500 font-medium mb-1">Beta Reduction</span>
+                            <div className="text-2xl font-medium text-slate-200 mt-2">
+                                {hedgeResult.metrics?.unhedgedBeta?.toFixed(2)} <span className="text-slate-600 text-sm mx-1">→</span> {hedgeResult.metrics?.hedgedBeta?.toFixed(2)}
                             </div>
-                            <span className="text-[8px] text-slate-500 mt-1 uppercase font-bold">Systemic Offset</span>
+                            <span className="text-xs text-slate-500 mt-auto pt-4 font-medium">Systemic Offset</span>
                         </div>
-                        <div className="bg-[#1e293b]/50 border border-cyan-500/10 p-4 rounded-2xl flex flex-col items-center text-center">
-                            <span className="text-[9px] text-slate-500 font-black uppercase mb-2">VaR Reduction (95%)</span>
-                            <div className="text-2xl font-black text-cyan-400">
+                        <div className="bg-[#0f172a] border border-slate-800 p-5 rounded-xl flex flex-col">
+                            <span className="text-xs text-slate-500 font-medium mb-1">VaR Reduction (95%)</span>
+                            <div className="text-2xl font-medium text-slate-200 mt-2">
                                 {hedgeResult.metrics?.varianceReduction}%
                             </div>
-                            <span className="text-[8px] text-slate-500 mt-1 uppercase font-bold">Tail Mitigation</span>
+                            <span className="text-xs text-slate-500 mt-auto pt-4 font-medium">Tail Mitigation</span>
                         </div>
-                        <div className="bg-[#1e293b]/50 border border-amber-500/10 p-4 rounded-2xl flex flex-col items-center text-center">
-                            <span className="text-[9px] text-slate-500 font-black uppercase mb-2">CVaR (Hedged)</span>
-                            <div className="text-2xl font-black text-amber-400">
+                        <div className="bg-[#0f172a] border border-slate-800 p-5 rounded-xl flex flex-col">
+                            <span className="text-xs text-slate-500 font-medium mb-1">CVaR (Hedged)</span>
+                            <div className="text-2xl font-medium text-slate-200 mt-2">
                                 ${(hedgeResult.metrics?.hedgedCVaR || 0).toLocaleString()}
                             </div>
-                            <span className="text-[8px] text-slate-500 mt-1 uppercase font-bold">Expectation of Tail</span>
+                            <span className="text-xs text-slate-500 mt-auto pt-4 font-medium">Expectation of Tail</span>
                         </div>
                     </div>
 
                     {/* Historical Comparison Chart */}
-                    <div className="bg-[#0b0e14] p-6 rounded-2xl border border-white/5">
-                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Historical Comparison: Unhedged vs. Hedged P&L</h4>
+                    <div className="bg-[#0f172a] p-6 rounded-xl border border-slate-800">
+                        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-6 border-b border-slate-800 pb-4">Historical Comparison</h4>
                         <div className="h-64 w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <ComposedChart data={hedgeResult.pnlComparison}>
@@ -706,48 +720,47 @@ const PortfolioView: React.FC = () => {
         </div>
 
         {/* Capital Asset Modeling (CAPM & APT) */}
-        <div className="bg-[#0f172a] rounded-xl border border-indigo-500/30 p-6 shadow-lg shadow-indigo-900/10">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
+        <div className="bg-[#020617] rounded-2xl border border-slate-800 p-8 shadow-sm mt-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6 border-b border-slate-800/80 pb-6">
                 <div>
-                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <svg className="w-6 h-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    <h3 className="text-lg font-medium text-slate-100 flex items-center gap-2">
                         Capital Asset Modeling (CAPM & APT)
                     </h3>
-                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mt-1">Risk-adjusted return expectations and multi-factor macro sensitivity</p>
+                    <p className="text-xs text-slate-500 font-medium mt-1">Risk-adjusted return expectations and multi-factor macro sensitivity</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
                     <div className="flex flex-col gap-1">
-                        <span className="text-[8px] text-slate-500 uppercase font-black">Universe Segment</span>
+                        <span className="text-[10px] text-slate-500 font-semibold uppercase">Universe Segment</span>
                         <select 
                             value={capmTicker}
                             onChange={(e) => setCapmTicker(e.target.value)}
-                            className="bg-[#1e293b] border border-indigo-500/30 text-[10px] font-bold text-white rounded px-2.5 py-1.5 outline-none focus:border-indigo-500"
+                            className="bg-[#0f172a] border border-slate-700 text-xs font-medium text-slate-200 rounded-md px-2.5 py-1.5 outline-none focus:border-slate-500"
                         >
                             {holdings.map(h => <option key={h.ticker} value={h.ticker}>{h.ticker}</option>)}
                         </select>
                     </div>
                     <div className="flex flex-col gap-1">
-                        <span className="text-[8px] text-slate-500 uppercase font-black">Rf Rate (%)</span>
+                        <span className="text-[10px] text-slate-500 font-semibold uppercase">Rf Rate (%)</span>
                         <input 
                             type="number" 
                             value={rfRate} 
                             onChange={(e) => setRfRate(parseFloat(e.target.value))}
-                            className="bg-[#1e293b] border border-indigo-500/30 text-[10px] font-mono text-white rounded px-2 py-1.5 w-16 outline-none"
+                            className="bg-[#0f172a] border border-slate-700 text-xs font-mono text-slate-200 rounded-md px-2 py-1.5 w-16 outline-none"
                         />
                     </div>
                     <div className="flex flex-col gap-1">
-                        <span className="text-[8px] text-slate-500 uppercase font-black">Market Ret (%)</span>
+                        <span className="text-[10px] text-slate-500 font-semibold uppercase">Market Ret (%)</span>
                         <input 
                             type="number" 
                             value={marketReturn} 
                             onChange={(e) => setMarketReturn(parseFloat(e.target.value))}
-                            className="bg-[#1e293b] border border-indigo-500/30 text-[10px] font-mono text-white rounded px-2 py-1.5 w-16 outline-none"
+                            className="bg-[#0f172a] border border-slate-700 text-xs font-mono text-slate-200 rounded-md px-2 py-1.5 w-16 outline-none"
                         />
                     </div>
                     <button 
                         onClick={handleRunCAPMAPT}
                         disabled={capmLoading || !capmTicker}
-                        className="self-end bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase px-5 py-2 rounded transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-indigo-900/40"
+                        className="self-end bg-slate-100 hover:bg-white text-slate-900 text-xs font-semibold px-4 py-2 rounded-md transition-all disabled:opacity-50 flex items-center shadow-sm"
                     >
                         {capmLoading ? 'Modeling Matrix...' : 'Run Simulation'}
                     </button>
@@ -758,40 +771,36 @@ const PortfolioView: React.FC = () => {
                 <div className="animate-fade-in space-y-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         {/* CAPM PERFORMANCE PANEL */}
-                        <div className="bg-[#0b0e14] border border-indigo-500/20 p-6 rounded-2xl shadow-xl relative overflow-hidden group">
-                            <div className="absolute -right-8 -top-8 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <svg className="w-40 h-40 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
-                            </div>
-                            <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                        <div className="bg-[#0f172a] border border-slate-800 p-6 rounded-xl shadow-sm relative overflow-hidden">
+                            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-800 pb-4">
                                 CAPM Performance Diagnostics
                             </h4>
                             <div className="grid grid-cols-2 gap-4 mb-6">
-                                <div className="bg-slate-900/50 p-4 rounded-xl border border-white/5 flex flex-col items-center justify-center">
-                                    <div className="text-[9px] text-slate-500 font-black uppercase mb-1">Expected Return (Ke)</div>
-                                    <div className="text-3xl font-black text-white font-mono">{(capmResult.capm?.expectedReturn || 0).toFixed(2)}%</div>
+                                <div className="bg-[#020617] p-5 rounded-lg border border-slate-800 flex flex-col items-center justify-center text-center">
+                                    <div className="text-[10px] text-slate-500 font-semibold uppercase mb-2">Expected Return (Ke)</div>
+                                    <div className="text-2xl font-medium text-slate-200 font-mono">{(capmResult.capm?.expectedReturn || 0).toFixed(2)}%</div>
                                 </div>
-                                <div className="bg-slate-900/50 p-4 rounded-xl border border-white/5 flex flex-col items-center justify-center">
-                                    <div className="text-[9px] text-slate-500 font-black uppercase mb-1">Beta Coefficient (β)</div>
-                                    <div className="text-3xl font-black text-white font-mono">{(capmResult.capm?.beta || 0).toFixed(2)}</div>
+                                <div className="bg-[#020617] p-5 rounded-lg border border-slate-800 flex flex-col items-center justify-center text-center">
+                                    <div className="text-[10px] text-slate-500 font-semibold uppercase mb-2">Beta Coefficient (β)</div>
+                                    <div className="text-2xl font-medium text-slate-200 font-mono">{(capmResult.capm?.beta || 0).toFixed(2)}</div>
                                 </div>
                             </div>
                             <div className="grid grid-cols-3 gap-3">
-                                <div className="text-center p-3 bg-black/40 rounded-lg border border-white/5">
-                                    <div className="text-[8px] text-slate-600 font-black uppercase mb-1">Alpha (α)</div>
-                                    <div className={`text-sm font-bold font-mono ${(capmResult.capm?.alpha || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                <div className="text-center p-4 bg-[#020617] rounded-lg border border-slate-800">
+                                    <div className="text-[10px] text-slate-500 font-semibold uppercase mb-2">Alpha (α)</div>
+                                    <div className={`text-sm font-medium font-mono ${(capmResult.capm?.alpha || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                                         {(capmResult.capm?.alpha || 0) >= 0 ? '+' : ''}{(capmResult.capm?.alpha || 0).toFixed(2)}%
                                     </div>
                                 </div>
-                                <div className="text-center p-3 bg-black/40 rounded-lg border border-white/5">
-                                    <div className="text-[8px] text-slate-600 font-black uppercase mb-1">SML Position</div>
-                                    <div className={`text-[10px] font-black uppercase ${capmResult.capm?.securityMarketLineStatus === 'Above' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                <div className="text-center p-4 bg-[#020617] rounded-lg border border-slate-800">
+                                    <div className="text-[10px] text-slate-500 font-semibold uppercase mb-2">SML Position</div>
+                                    <div className={`text-xs font-medium uppercase ${capmResult.capm?.securityMarketLineStatus === 'Above' ? 'text-emerald-500' : 'text-amber-500'}`}>
                                         {capmResult.capm?.securityMarketLineStatus || 'N/A'}
                                     </div>
                                 </div>
-                                <div className="text-center p-3 bg-black/40 rounded-lg border border-white/5">
-                                    <div className="text-[8px] text-slate-600 font-black uppercase mb-1">Valuation Status</div>
-                                    <div className={`text-[10px] font-black uppercase ${capmResult.capm?.valuationStatus === 'Undervalued' ? 'text-emerald-400' : capmResult.capm?.valuationStatus === 'Overvalued' ? 'text-rose-400' : 'text-blue-400'}`}>
+                                <div className="text-center p-4 bg-[#020617] rounded-lg border border-slate-800">
+                                    <div className="text-[10px] text-slate-500 font-semibold uppercase mb-2">Valuation</div>
+                                    <div className={`text-xs font-medium uppercase ${capmResult.capm?.valuationStatus === 'Undervalued' ? 'text-emerald-500' : capmResult.capm?.valuationStatus === 'Overvalued' ? 'text-rose-500' : 'text-blue-500'}`}>
                                         {capmResult.capm?.valuationStatus || 'Fairly Valued'}
                                     </div>
                                 </div>
@@ -799,26 +808,25 @@ const PortfolioView: React.FC = () => {
                         </div>
 
                         {/* APT FACTOR SENSITIVITIES PANEL */}
-                        <div className="bg-[#0b0e14] border border-emerald-500/20 p-6 rounded-2xl shadow-xl">
-                            <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                        <div className="bg-[#0f172a] border border-slate-800 p-6 rounded-xl shadow-sm">
+                            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-800 pb-4">
                                 APT Factor Sensitivities
                             </h4>
-                            <div className="space-y-5">
+                            <div className="space-y-6">
                                 {(capmResult.apt?.factors || []).map((f: any, i: number) => (
                                     <div key={i} className="group">
-                                        <div className="flex justify-between items-end text-[10px] mb-2">
+                                        <div className="flex justify-between items-end mb-2">
                                             <div className="flex flex-col">
-                                                <span className="text-slate-400 font-black uppercase tracking-tighter">{f.name}</span>
-                                                <span className={`text-[8px] font-black uppercase ${f.direction === 'Positive' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                <span className="text-sm font-medium text-slate-200">{f.name}</span>
+                                                <span className={`text-xs font-semibold ${f.direction === 'Positive' ? 'text-emerald-500' : 'text-rose-500'}`}>
                                                     {f.direction} Exposure • {f.strength}
                                                 </span>
                                             </div>
-                                            <span className="text-white font-mono font-bold text-sm">β: {(f.beta || 0).toFixed(2)}</span>
+                                            <span className="text-slate-400 font-mono font-medium text-sm">β: {(f.beta || 0).toFixed(2)}</span>
                                         </div>
                                         <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
                                             <div 
-                                                className={`h-full transition-all duration-1000 ${f.beta > 1 ? 'bg-emerald-500' : f.beta > 0.5 ? 'bg-emerald-400' : 'bg-amber-400'}`} 
+                                                className={`h-full transition-all duration-1000 ${f.beta > 1 ? 'bg-slate-300' : f.beta > 0.5 ? 'bg-slate-400' : 'bg-slate-500'}`} 
                                                 style={{ width: `${Math.min(Math.abs(f.beta || 0) * 50, 100)}%` }}
                                             ></div>
                                         </div>
@@ -1043,7 +1051,7 @@ const PortfolioView: React.FC = () => {
                                     required
                                 />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4">
                                 <div>
                                     <label className="block text-xs text-slate-400 mb-1 uppercase font-bold tracking-wider">Shares / Qty</label>
                                     <input 
@@ -1056,21 +1064,9 @@ const PortfolioView: React.FC = () => {
                                         required
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-xs text-slate-400 mb-1 uppercase font-bold tracking-wider">Avg Cost</label>
-                                    <input 
-                                        type="number" 
-                                        value={costInput}
-                                        onChange={(e) => setCostInput(e.target.value)}
-                                        placeholder="0.00"
-                                        step="0.01"
-                                        className="w-full bg-[#1e293b] border border-slate-700 rounded px-3 py-2 text-white focus:border-purple-500 outline-none font-mono text-sm transition-colors"
-                                        required
-                                    />
-                                </div>
                             </div>
-                            <button type="submit" className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded transition-colors text-sm shadow-lg shadow-purple-900/40 uppercase tracking-widest mt-4">
-                                Add / Update Position
+                            <button disabled={isAddingPos || !tickerInput || !sharesInput} type="submit" className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded transition-colors text-sm shadow-lg shadow-purple-900/40 uppercase tracking-widest mt-4 disabled:opacity-50">
+                                {isAddingPos ? "Adding..." : "Add / Update Position"}
                             </button>
                         </form>
                     </div>
@@ -1168,16 +1164,13 @@ const PortfolioView: React.FC = () => {
         </div>
       </div>
     </div>
-
-    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mt-8 border-t border-slate-800/50 pt-8">
-         <div className="bg-[#0f172a] rounded-xl border border-purple-500/30 p-6 shadow-lg flex flex-col hover:border-purple-500/50 transition-colors">
-             <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
-                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-400">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3 3l-3 3" />
-                 </svg>
+    
+    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mt-8 border-t border-slate-800/50 pt-8 max-w-7xl mx-auto border-transparent">
+         <div className="bg-[#020617] rounded-xl border border-slate-800 p-6 flex flex-col hover:border-slate-700 transition-colors shadow-sm">
+             <h3 className="text-sm font-medium text-slate-100 mb-2 flex items-center gap-2">
                  ETF Replication Engine
              </h3>
-             <p className="text-xs text-slate-400 mb-4">Adopt institutional allocations from major ETFs into your portfolio.</p>
+             <p className="text-xs text-slate-500 mb-6">Adopt institutional allocations from major ETFs into your portfolio.</p>
              <form onSubmit={handleScanETF} className="mb-2">
                  <div className="flex gap-2">
                      <input 
@@ -1185,62 +1178,61 @@ const PortfolioView: React.FC = () => {
                          value={etfTicker}
                          onChange={(e) => setEtfTicker(e.target.value.toUpperCase())}
                          placeholder="ETF Ticker (e.g. QQQ)"
-                         className="flex-1 bg-[#1e293b] border border-slate-700 rounded-lg px-3 py-2 text-white focus:border-purple-500 outline-none text-sm uppercase transition-colors"
+                         className="flex-1 bg-[#0f172a] border border-slate-700 rounded-md px-3 py-2 text-slate-200 focus:border-slate-500 focus:ring-1 focus:ring-slate-500 outline-none text-xs uppercase transition-colors"
                      />
-                     <button type="submit" disabled={!etfTicker || etfLoading} className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm disabled:opacity-50 transition-colors shadow-lg shadow-blue-900/20">
+                     <button type="submit" disabled={!etfTicker || etfLoading} className="bg-slate-100 hover:bg-white text-slate-900 font-semibold py-2 px-4 rounded-md text-xs disabled:opacity-50 transition-colors shadow-sm">
                          {etfLoading ? 'Scanning...' : 'Scan'}
                      </button>
                  </div>
-                 <div className="mt-3 flex flex-wrap gap-2 text-[10px] text-slate-400 font-medium bg-[#1e293b]/50 p-2 rounded-lg border border-white/5">
-                     <span className="text-slate-500 uppercase tracking-widest mr-1">Hints:</span>
-                     <button type="button" onClick={() => setEtfTicker('SMH')} className="hover:text-purple-400 hover:underline transition-colors">Semiconductor (SMH)</button>
-                     <button type="button" onClick={() => setEtfTicker('XME')} className="hover:text-purple-400 hover:underline transition-colors">Mining (XME)</button>
-                     <button type="button" onClick={() => setEtfTicker('XLF')} className="hover:text-purple-400 hover:underline transition-colors">Financial (XLF)</button>
-                     <button type="button" onClick={() => setEtfTicker('ARKK')} className="hover:text-purple-400 hover:underline transition-colors">Innovation (ARKK)</button>
+                 <div className="mt-4 flex flex-wrap gap-2 text-[10px] text-slate-500 font-medium">
+                     <span className="uppercase tracking-widest mr-1">Hints:</span>
+                     <button type="button" onClick={() => setEtfTicker('SMH')} className="hover:text-slate-300 transition-colors">Semiconductor (SMH)</button>
+                     <button type="button" onClick={() => setEtfTicker('XME')} className="hover:text-slate-300 transition-colors">Mining (XME)</button>
+                     <button type="button" onClick={() => setEtfTicker('XLF')} className="hover:text-slate-300 transition-colors">Financial (XLF)</button>
+                     <button type="button" onClick={() => setEtfTicker('ARKK')} className="hover:text-slate-300 transition-colors">Innovation (ARKK)</button>
                  </div>
              </form>
              {etfResult && (
-                <div className="mt-4 bg-[#1e293b]/80 rounded-xl p-4 border border-purple-500/20 flex-1 flex flex-col shadow-inner">
-                    <h4 className="text-white font-bold text-sm mb-3 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        {etfResult.ticker} <span className="font-normal text-slate-400 text-xs">({etfResult.name})</span>
+                <div className="mt-6 border-t border-slate-800 pt-4 flex-1 flex flex-col">
+                    <h4 className="text-slate-200 font-medium text-sm mb-4 flex items-center gap-2">
+                        {etfResult.ticker} <span className="font-normal text-slate-500 text-xs">{etfResult.name}</span>
                     </h4>
-                    <div className="space-y-2 mb-4 max-h-[160px] overflow-y-auto custom-scrollbar pr-2 flex-1">
+                    <div className="space-y-1 mb-6 max-h-[160px] overflow-y-auto custom-scrollbar pr-2 flex-1">
                         {etfResult.topHoldings?.map((h, i) => (
-                            <div key={i} className="flex justify-between items-center text-xs text-slate-300 bg-slate-900/50 py-1.5 px-2 rounded border border-white/5">
-                                <span className="font-medium text-white">{h.ticker} <span className="text-slate-500 ml-1 truncate max-w-[100px] inline-block align-bottom font-normal">{h.name}</span></span>
-                                <span className="font-mono text-emerald-400">{h.weight?.toFixed(2)}%</span>
+                            <div key={i} className="flex justify-between items-center text-xs text-slate-400 py-1.5 border-b border-slate-800/50 last:border-0 hover:bg-slate-800/30 px-2 rounded-md transition-colors">
+                                <span className="font-medium text-slate-300">{h.ticker}</span>
+                                <span className="font-mono text-slate-500">{h.weight?.toFixed(2)}%</span>
                             </div>
                         ))}
                     </div>
-                    <div className="flex flex-col gap-3 mt-auto bg-slate-900/80 p-3 rounded-lg border border-slate-700">
-                         <div className="flex gap-2 items-center">
-                            <span className="text-xs text-slate-400 w-16 font-bold uppercase tracking-wider">Capital</span>
+                    <div className="flex flex-col gap-3 mt-auto bg-[#0f172a] p-4 rounded-lg border border-slate-800">
+                         <div className="flex gap-3 items-center">
+                            <span className="text-xs text-slate-500 w-16 font-medium">Capital</span>
                             <div className="relative flex-1">
-                                <span className="absolute left-2 top-1.5 text-slate-500 font-mono text-xs">$</span>
+                                <span className="absolute left-3 top-2 text-slate-500 font-mono text-xs">$</span>
                                 <input 
                                     type="number" 
                                     value={etfCapital}
                                     onChange={(e) => setEtfCapital(e.target.value)}
                                     min="1000"
-                                    className="w-full bg-[#0f172a] border border-slate-700 rounded pl-5 pr-2 py-1.5 text-white focus:border-purple-500 outline-none text-xs font-mono"
+                                    className="w-full bg-[#020617] border border-slate-700 rounded-md pl-6 pr-3 py-1.5 text-slate-200 focus:border-slate-500 outline-none text-xs font-mono"
                                 />
                             </div>
                         </div>
-                        <div className="flex gap-2 items-center">
-                            <span className="text-xs text-slate-400 w-16 font-bold uppercase tracking-wider">Leverage</span>
+                        <div className="flex gap-3 items-center">
+                            <span className="text-xs text-slate-500 w-16 font-medium">Leverage</span>
                             <div className="relative flex-1">
                                 <input 
                                     type="number" 
                                     value={etfLeverage}
                                     onChange={(e) => setEtfLeverage(e.target.value)}
                                     min="1" max="5" step="0.5"
-                                    className="w-full bg-[#0f172a] border border-slate-700 rounded pr-6 pl-2 py-1.5 text-white focus:border-purple-500 outline-none text-xs font-mono text-right"
+                                    className="w-full bg-[#020617] border border-slate-700 rounded-md pr-6 pl-3 py-1.5 text-slate-200 focus:border-slate-500 outline-none text-xs font-mono text-right"
                                 />
-                                <span className="absolute right-2 top-1.5 text-slate-500 font-mono text-xs">x</span>
+                                <span className="absolute right-3 top-2 text-slate-500 font-mono text-xs">x</span>
                             </div>
                         </div>
-                        <button onClick={handleAdoptETF} className="mt-2 w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded text-[10px] transition-colors tracking-widest uppercase shadow-lg shadow-purple-900/40 border border-purple-400/30">
+                        <button onClick={handleAdoptETF} className="mt-3 w-full bg-slate-800 hover:bg-slate-700 text-white font-medium py-2 rounded-md text-xs transition-colors shadow-sm">
                             Replicate & Overwrite
                         </button>
                     </div>
@@ -1248,30 +1240,26 @@ const PortfolioView: React.FC = () => {
              )}
          </div>
 
-         <div className="bg-[#0f172a] rounded-xl border border-slate-700/50 p-6 shadow-lg flex flex-col hover:border-slate-600 transition-colors">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-emerald-400">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
-                </svg>
+         <div className="bg-[#020617] rounded-xl border border-slate-800 p-6 flex flex-col hover:border-slate-700 transition-colors shadow-sm">
+            <h3 className="text-sm font-medium text-slate-100 mb-6 flex items-center gap-2">
                 Allocation Overview
             </h3>
-            <div className="bg-[#1e293b]/50 rounded-xl p-4 border border-white/5 flex-1 flex flex-col">
-                <div className="space-y-4 flex-1 overflow-y-auto max-h-[300px] custom-scrollbar pr-2">
-                    {holdings.length === 0 && <div className="text-sm text-slate-500 italic text-center py-8">No assets to display.</div>}
-                    {holdings.map((h) => {
+            <div className="flex-1 flex flex-col">
+                <div className="space-y-5 flex-1 overflow-y-auto max-h-[300px] custom-scrollbar pr-2">
+                    {holdings.length === 0 && <div className="text-sm text-slate-500 text-center py-8">No assets to display.</div>}
+                    {holdings.map((h, i) => {
                         const weight = totalValue > 0 ? (h.marketValue / totalValue) * 100 : 0;
                         return (
                             <div key={h.ticker} className="group">
-                                <div className="flex justify-between text-sm mb-1.5 items-end">
-                                    <span className="text-slate-200 font-medium flex items-center gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-purple-500 group-hover:scale-150 transition-transform"></div>
+                                <div className="flex justify-between text-xs mb-2 items-end cursor-default">
+                                    <span className="text-slate-300 font-medium flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
                                         {h.ticker}
                                     </span>
-                                    <span className="text-slate-400 font-mono text-xs">{weight.toFixed(1)}%</span>
+                                    <span className="text-slate-500 font-mono">{weight.toFixed(1)}%</span>
                                 </div>
-                                <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                                    <div className="bg-gradient-to-r from-purple-600 to-blue-500 h-1.5 rounded-full transition-all duration-1000 ease-out" style={{ width: `${weight}%` }}></div>
+                                <div className="w-full bg-slate-800 rounded-full h-1 overflow-hidden">
+                                    <div className="h-1 rounded-full transition-all duration-1000 ease-out" style={{ width: `${weight}%`, backgroundColor: COLORS[i % COLORS.length] }}></div>
                                 </div>
                             </div>
                         );
@@ -1280,34 +1268,26 @@ const PortfolioView: React.FC = () => {
             </div>
          </div>
 
-         <div className="bg-[#0f172a] rounded-xl border border-slate-700/50 p-6 shadow-lg flex flex-col hover:border-slate-600 transition-colors">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-rose-400">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-                </svg>
+         <div className="bg-[#020617] rounded-xl border border-slate-800 p-6 flex flex-col hover:border-slate-700 transition-colors shadow-sm">
+            <h3 className="text-sm font-medium text-slate-100 mb-6 flex items-center gap-2">
                 Market Indices
             </h3>
-            <div className="bg-[#1e293b]/50 rounded-xl border border-white/5 flex-1 overflow-hidden">
-                <div className="space-y-0 flex-1 overflow-y-auto max-h-[300px] custom-scrollbar">
+            <div className="flex-1 overflow-hidden">
+                <div className="space-y-0 flex-1 overflow-y-auto max-h-[300px] custom-scrollbar pr-1">
                     {marketIndices.map((index) => {
                         const isPositive = index.change >= 0;
                         return (
-                            <div key={index.symbol} className="flex justify-between items-center px-4 py-3 border-b border-slate-800 hover:bg-slate-800/50 transition-colors last:border-0 group">
-                                <div className="flex items-center gap-3">
-                                    <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${isPositive ? 'bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20' : 'bg-rose-500/10 text-rose-400 group-hover:bg-rose-500/20'} transition-colors`}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-4 h-4 ${!isPositive && 'rotate-180'}`}>
-                                            <path fillRule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z" clipRule="evenodd" />
-                                        </svg>
-                                    </div>
+                            <div key={index.symbol} className="flex justify-between items-center px-3 py-3 border-b border-slate-800/50 hover:bg-slate-800/30 rounded-md transition-colors last:border-0 group cursor-default">
+                                <div className="flex items-center gap-4">
                                     <div>
-                                        <div className="text-[13px] font-bold text-slate-200 leading-tight">{index.name}</div>
+                                        <div className="text-xs font-medium text-slate-200 leading-tight">{index.name}</div>
                                         <div className="text-[10px] text-slate-500 font-mono mt-0.5">{index.symbol}</div>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-[13px] font-mono text-white font-medium">{index.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                                    <div className={`text-[10px] font-mono font-bold mt-0.5 ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                        {isPositive ? '+' : ''}{index.change.toFixed(2)} ({isPositive ? '+' : ''}{index.changePercent.toFixed(2)}%)
+                                    <div className="text-xs font-mono text-slate-300 font-medium">{index.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                    <div className={`text-[10px] font-mono font-medium mt-0.5 w-16 text-right ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                        {isPositive ? '+' : ''}{index.changePercent.toFixed(2)}%
                                     </div>
                                 </div>
                             </div>
@@ -1317,7 +1297,7 @@ const PortfolioView: React.FC = () => {
             </div>
          </div>
       </div>
-  </div>
+      </div>
 )}
       </div>
     </div>

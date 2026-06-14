@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import HedgeFundView from "./HedgeFundView";
 
 const MonitoringView: React.FC = () => {
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -153,6 +154,10 @@ const MonitoringView: React.FC = () => {
                         </ul>
                     </div>
                 </div>
+            </div>
+
+            <div className="mt-8 bg-[#0f172a] rounded-xl border border-blue-500/30 p-6 shadow-lg">
+                <HedgeFundView />
             </div>
         </div>
     );

@@ -7,7 +7,7 @@ import dns from "node:dns";
 
 dns.setDefaultResultOrder("ipv4first");
 
-const yahooFinance = new YahooFinance();
+const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,6 +42,22 @@ async function startServer() {
     } catch (error) {
       console.error("market-data fetch error:", error);
       res.status(500).json({ error: "Failed to fetch market data" });
+    }
+  });
+
+  app.get("/api/quote/:ticker", async (req, res) => {
+    try {
+      const ticker = req.params.ticker.toUpperCase();
+      const quote = await yahooFinance.quote(ticker);
+      if (!quote) return res.status(404).json({ error: "Ticker not found" });
+      
+      res.json({
+        symbol: quote.symbol,
+        price: quote.regularMarketPrice,
+      });
+    } catch (error) {
+      console.error("quote fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch quote" });
     }
   });
 

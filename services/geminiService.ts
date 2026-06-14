@@ -27,7 +27,7 @@ import {
   GovDatabaseResult
 } from "../types";
 
-const modelName = "gemini-3-flash-preview";
+const modelName = "gemini-3.1-pro-preview";
 
 const cleanAndParseJSON = (text: string) => {
   if (!text) throw new Error("AI returned an empty response.");
@@ -62,7 +62,7 @@ export const analyzeStock = async (ticker: string, analysisType: AnalysisType): 
   try {
     if (analysisType === AnalysisType.Fundamental) {
         const response = await ai.models.generateContent({
-            model: "gemini-3-pro-preview",
+            model: "gemini-3.1-pro-preview",
             contents: `Act as a senior buy-side equity analyst. Produce a professional-grade fundamental analysis for ${ticker} as of February 2, 2026.
             Synthesize:
             1. Economic Moat: Scale, network effects, IP, pricing power.
@@ -573,7 +573,7 @@ Return JSON exactly in this format:
 
     if (analysisType === AnalysisType.MarineTraffic) {
         const response = await ai.models.generateContent({
-            model: "gemini-3-pro-preview",
+            model: "gemini-3.1-pro-preview",
             contents: `Act as a global supply chain and maritime intelligence analyst. Provide a MarineTraffic and port congestion analysis for ${ticker} (or the general macroeconomic shipping environment if ${ticker} is an index/macro asset) as of February 2, 2026.
             Include:
             1. Chokepoint Throughput Index (0-100) and major bottlenecks.
@@ -617,7 +617,7 @@ Return JSON exactly in this format:
 
     if (analysisType === AnalysisType.BISReport) {
         const response = await ai.models.generateContent({
-            model: "gemini-3-pro-preview",
+            model: "gemini-3.1-pro-preview",
             contents: `Act as a central bank and macro-liquidity analyst. Provide a Bank for International Settlements (BIS) style macro report for the current global environment (or specifically tailored to ${ticker} if it's a macro asset/currency) as of February 2, 2026.
             Include:
             1. Global Liquidity (USD credit, trend, YoY change).
@@ -811,7 +811,7 @@ export const runOptimalFuzzyDesignAnalysis = async (ticker: string): Promise<Opt
 export const runMPTAnalysis = async (holdings: Holding[], strategy: string, views: any[]): Promise<MPTAnalysisResult> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-3.1-pro-preview",
       contents: `MPT analysis for ${JSON.stringify(holdings)}. JSON.`,
       config: { responseMimeType: "application/json" }
   });
@@ -843,7 +843,7 @@ export const getETFProfile = async (ticker: string): Promise<ETFProfile> => {
 export const runCAPMAPTAnalysis = async (ticker: string, rfRate: number, marketReturn: number): Promise<CAPMAPTResult> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-3.1-pro-preview",
       contents: `CAPM/APT for ${ticker}. JSON.`,
       config: { responseMimeType: "application/json" }
   });
@@ -997,7 +997,7 @@ Return JSON exactly in this format:
 export const runHedgeAnalysis = async (holdings: Holding[]): Promise<DeltaGammaHedgeResult> => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
-        model: "gemini-3-pro-preview",
+        model: "gemini-3.1-pro-preview",
         contents: `Delta-Gamma hedge for ${JSON.stringify(holdings)}. JSON.`,
         config: { responseMimeType: "application/json" }
     });

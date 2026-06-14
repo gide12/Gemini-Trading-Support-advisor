@@ -94,6 +94,18 @@ export const simulateMarketUpdate = (tickers: MarketTicker[]): MarketTicker[] =>
   });
 };
 
+export const getQuote = async (ticker: string): Promise<number | null> => {
+  try {
+    const res = await fetch(`/api/quote/${ticker}`);
+    if (!res.ok) throw new Error(`Quote fetch failed: ${res.statusText}`);
+    const data = await res.json();
+    return data.price;
+  } catch (e) {
+    console.error("quote error", e);
+    return null;
+  }
+};
+
 export const getAssetCalendarPerformance = (ticker: string, days: number = 30) => {
     // Generate simulated last days of daily performance for calendar view
     const data = [];

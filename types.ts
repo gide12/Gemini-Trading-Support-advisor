@@ -18,7 +18,7 @@ export enum AnalysisType {
   GovDatabase = "GOV Database"
 }
 
-export type View = 'news' | 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum' | 'hedge_fund' | 'monitoring' | 'sec_report' | 'marine_traffic' | 'bis_report' | 'planner' | 'gov_db';
+export type View = 'news' | 'analysis' | 'portfolio' | 'backtest' | 'market' | 'ml' | 'community' | 'fuzzy' | 'chart' | 'quantum' | 'monitoring' | 'sec_report' | 'marine_traffic' | 'bis_report' | 'planner' | 'gov_db';
 
 export interface UserProfile {
     riskTolerance: "Conservative" | "Moderate" | "Aggressive";

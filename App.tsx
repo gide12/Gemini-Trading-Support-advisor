@@ -70,7 +70,6 @@ const App: React.FC = () => {
           {currentView === 'community' && <CommunityView />}
           {currentView === 'fuzzy' && <FuzzyLogicView />}
           {currentView === 'quantum' && <QuantumView />}
-          {currentView === 'hedge_fund' && <HedgeFundView />}
           {currentView === 'monitoring' && <MonitoringView />}
           {currentView === 'sec_report' && <SecReportView />}
           {currentView === 'marine_traffic' && <MarineTrafficView />}

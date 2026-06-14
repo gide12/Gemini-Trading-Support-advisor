@@ -139,7 +139,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                 className="relative z-10 px-20 py-8 bg-white/5 backdrop-blur-md border border-white/20 text-white text-sm font-black uppercase tracking-[0.6em] transition-all duration-700 hover:bg-white hover:text-black hover:border-white shadow-[0_0_60px_rgba(0,0,0,0.5)] overflow-hidden rounded-full"
             >
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/10 to-cyan-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                Initialize Alpha Node
+                Press to start
             </button>
             <div className="absolute inset-0 bg-cyan-500/20 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
         </div>
